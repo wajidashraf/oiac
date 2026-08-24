@@ -1,10 +1,13 @@
 import { useEffect } from 'react'
 import ContentCard from '../components/ContentCard'
+import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
 import StatusBadge from '../components/StatusBadge'
-import { appointments } from '../data/portalData'
+import { appointments, type AppointmentRecord } from '../data/portalData'
 
-export default function Appointments() {
+type AppointmentsProps = { items?: readonly AppointmentRecord[] }
+
+export default function Appointments({ items = appointments }: AppointmentsProps) {
   useEffect(() => {
     document.title = 'Appointments — OIAC Engage'
   }, [])
@@ -12,9 +15,13 @@ export default function Appointments() {
   return (
     <div className="page">
       <PageHeader eyebrow="Activity" title="Appointments" description="Review scheduled conversations and their current status." />
-      <ContentCard title="Your appointments" meta={<span>{appointments.length} records</span>}>
+      <ContentCard title="Your appointments" meta={<span>{items.length} records</span>}>
+        {items.length === 0 ? (
+          <EmptyState title="No appointments yet" description="Scheduled conversations with member services will appear here." />
+        ) : <>
+        <p className="availability-note">Appointment details will be available after data connection.</p>
         <ul className="record-list">
-          {appointments.map((appointment) => (
+          {items.map((appointment) => (
             <li key={appointment.id} className="record-list__item">
               <div className="date-tile" aria-hidden="true">
                 <span>{appointment.date.split(' ')[1]}</span>
@@ -26,10 +33,10 @@ export default function Appointments() {
                 <span>With {appointment.with}</span>
               </div>
               <StatusBadge tone={appointment.status === 'Confirmed' ? 'positive' : appointment.status === 'Pending' ? 'attention' : 'neutral'}>{appointment.status}</StatusBadge>
-              <button type="button" className="button button--quiet" aria-label={`View ${appointment.title}`}>View</button>
             </li>
           ))}
         </ul>
+        </>}
       </ContentCard>
     </div>
   )

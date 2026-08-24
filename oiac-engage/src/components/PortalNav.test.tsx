@@ -26,3 +26,15 @@ test('exposes top-level links and expands the Activity routes', async () => {
   expect(screen.getByRole('link', { name: 'Events' })).toHaveAttribute('href', '/activity/events')
   expect(screen.getByRole('link', { name: 'Appointments' })).toHaveAttribute('href', '/activity/appointments')
 })
+
+test('closes the responsive menu after navigation', async () => {
+  const user = userEvent.setup()
+  render(<MemoryRouter><PortalNav /></MemoryRouter>)
+
+  const menuToggle = screen.getByRole('button', { name: 'Menu' })
+  await user.click(menuToggle)
+  expect(menuToggle).toHaveAttribute('aria-expanded', 'true')
+
+  await user.click(screen.getByRole('link', { name: 'My Reports' }))
+  expect(menuToggle).toHaveAttribute('aria-expanded', 'false')
+})

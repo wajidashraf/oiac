@@ -1,15 +1,18 @@
 import { useEffect } from 'react'
 import ContentCard from '../components/ContentCard'
+import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
 import StatusBadge from '../components/StatusBadge'
-import { reports } from '../data/portalData'
+import { reports, type ReportRecord } from '../data/portalData'
 
-export default function MyReports() {
+type MyReportsProps = { items?: readonly ReportRecord[] }
+
+export default function MyReports({ items = reports }: MyReportsProps) {
   useEffect(() => {
     document.title = 'My Reports — OIAC Engage'
   }, [])
 
-  const availableCount = reports.filter((report) => report.status === 'Available').length
+  const availableCount = items.filter((report) => report.status === 'Available').length
 
   return (
     <div className="page">
@@ -20,14 +23,18 @@ export default function MyReports() {
       />
 
       <div className="summary-strip" aria-label="Report summary">
-        <div><strong>{reports.length}</strong><span>Total reports</span></div>
+        <div><strong>{items.length}</strong><span>Total reports</span></div>
         <div><strong>{availableCount}</strong><span>Available now</span></div>
-        <div><strong>{reports.length - availableCount}</strong><span>In review</span></div>
+        <div><strong>{items.length - availableCount}</strong><span>In review</span></div>
       </div>
 
       <ContentCard title="Report library" meta={<span>Static preview data</span>}>
+        {items.length === 0 ? (
+          <EmptyState title="No reports yet" description="Reports connected to your membership will appear here." />
+        ) : <>
+        <p className="availability-note">Report details will be available after data connection.</p>
         <ul className="record-list">
-          {reports.map((report) => (
+          {items.map((report) => (
             <li key={report.id} className="record-list__item">
               <div className="record-list__main">
                 <strong>{report.title}</strong>
@@ -37,10 +44,10 @@ export default function MyReports() {
                 </div>
               </div>
               <StatusBadge tone={report.status === 'Available' ? 'positive' : 'attention'}>{report.status}</StatusBadge>
-              <button type="button" className="button button--quiet" aria-label={`View ${report.title}`}>View</button>
             </li>
           ))}
         </ul>
+        </>}
       </ContentCard>
     </div>
   )

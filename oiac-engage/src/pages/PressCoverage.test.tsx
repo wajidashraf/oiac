@@ -10,5 +10,7 @@ test('presents coverage with publication details and summaries', () => {
   expect(screen.getByText('Partnership programme expands opportunities for members')).toBeInTheDocument()
   expect(screen.getByText('14 Aug 2026')).toBeInTheDocument()
   expect(screen.getByText(/latest programme milestone/i)).toBeInTheDocument()
+  expect(screen.getByText('Source links will be available after data connection.')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /view coverage/i })).not.toBeInTheDocument()
   expect(document.title).toBe('Press Coverage — OIAC Engage')
 })

@@ -1,10 +1,13 @@
 import { useEffect } from 'react'
 import ContentCard from '../components/ContentCard'
+import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
 import StatusBadge from '../components/StatusBadge'
-import { agendaItems } from '../data/portalData'
+import { agendaItems, type AgendaItem } from '../data/portalData'
 
-export default function MyCalendar() {
+type MyCalendarProps = { items?: readonly AgendaItem[] }
+
+export default function MyCalendar({ items = agendaItems }: MyCalendarProps) {
   useEffect(() => {
     document.title = 'My Calendar — OIAC Engage'
   }, [])
@@ -24,9 +27,12 @@ export default function MyCalendar() {
           <span>Monday · 2026</span>
         </aside>
 
-        <ContentCard title="Upcoming agenda" meta={<span>{agendaItems.length} items</span>}>
+        <ContentCard title="Upcoming agenda" meta={<span>{items.length} items</span>}>
+          {items.length === 0 ? (
+            <EmptyState title="No calendar items yet" description="Events and appointments will appear here when they are scheduled." />
+          ) :
           <ol className="timeline-list">
-            {agendaItems.map((item) => (
+            {items.map((item) => (
               <li key={item.id}>
                 <div className="timeline-list__date">
                   <time>{item.date}</time>
@@ -39,6 +45,7 @@ export default function MyCalendar() {
               </li>
             ))}
           </ol>
+          }
         </ContentCard>
       </div>
     </div>

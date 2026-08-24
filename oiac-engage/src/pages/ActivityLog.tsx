@@ -1,9 +1,13 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
 import StatusBadge from '../components/StatusBadge'
-import { activityItems } from '../data/portalData'
+import { activityItems, type ActivityItem } from '../data/portalData'
 
-export default function ActivityLog() {
+type ActivityLogProps = { items?: readonly ActivityItem[] }
+
+export default function ActivityLog({ items = activityItems }: ActivityLogProps) {
+  const [category, setCategory] = useState('all')
   useEffect(() => {
     document.title = 'Activity Log — OIAC Engage'
   }, [])
@@ -17,15 +21,17 @@ export default function ActivityLog() {
       />
       <div className="toolbar">
         <label htmlFor="activity-category">Category</label>
-        <select id="activity-category" defaultValue="all">
+        <select id="activity-category" value={category} onChange={(event) => setCategory(event.target.value)}>
           <option value="all">All activity</option>
           <option value="report">Reports</option>
           <option value="event">Events</option>
           <option value="appointment">Appointments</option>
         </select>
       </div>
-      <ol className="activity-feed">
-        {activityItems.map((item) => (
+      {items.length === 0 ? (
+        <EmptyState title="No activity yet" description="Updates to your reports, events, and appointments will appear here." />
+      ) : <ol className="activity-feed">
+        {items.filter((item) => category === 'all' || item.category.toLowerCase() === category).map((item) => (
           <li key={item.id}>
             <div className="activity-feed__marker" aria-hidden="true" />
             <div className="activity-feed__content">
@@ -38,7 +44,7 @@ export default function ActivityLog() {
             </div>
           </li>
         ))}
-      </ol>
+      </ol>}
     </div>
   )
 }

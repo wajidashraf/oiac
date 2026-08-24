@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 
 const topLevelLinks = [
@@ -26,6 +26,11 @@ export default function PortalNav() {
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   const [activityOpen, setActivityOpen] = useState(location.pathname.startsWith('/activity'))
+
+  useEffect(() => {
+    setMenuOpen(false)
+    setActivityOpen(location.pathname.startsWith('/activity'))
+  }, [location.pathname])
 
   return (
     <nav className="portal-nav" aria-label="Primary navigation">

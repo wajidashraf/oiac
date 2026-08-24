@@ -1,10 +1,21 @@
-import type { PropsWithChildren } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, type PropsWithChildren } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import PortalNav from './PortalNav'
 
 export default function AppShell({ children }: PropsWithChildren) {
+  const location = useLocation()
+
+  useEffect(() => {
+    const heading = document.querySelector<HTMLElement>('#main-content h1')
+    if (heading) {
+      heading.tabIndex = -1
+      heading.focus()
+    }
+  }, [location.pathname])
+
   return (
     <div className="portal-shell">
+      <a className="skip-link" href="#main-content">Skip to main content</a>
       <header className="site-header">
         <div className="site-header__inner">
           <Link className="site-brand" to="/" aria-label="OIAC Engage home">
@@ -14,7 +25,7 @@ export default function AppShell({ children }: PropsWithChildren) {
           <PortalNav />
         </div>
       </header>
-      <main className="site-main" id="main-content">{children}</main>
+      <main className="site-main" id="main-content" tabIndex={-1}>{children}</main>
       <footer className="site-footer">
         <p>OIAC Engage · Member portal</p>
       </footer>

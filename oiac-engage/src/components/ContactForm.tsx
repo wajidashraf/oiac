@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 
 type FormValues = {
   name: string
@@ -24,6 +24,12 @@ export default function ContactForm() {
   const [values, setValues] = useState<FormValues>(emptyValues)
   const [errors, setErrors] = useState<FormErrors>({})
   const [submitted, setSubmitted] = useState(false)
+  const fieldRefs = {
+    name: useRef<HTMLInputElement>(null),
+    email: useRef<HTMLInputElement>(null),
+    subject: useRef<HTMLInputElement>(null),
+    message: useRef<HTMLTextAreaElement>(null),
+  }
 
   function updateField(field: keyof FormValues, value: string) {
     setValues((current) => ({ ...current, [field]: value }))
@@ -37,6 +43,8 @@ export default function ContactForm() {
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length > 0) {
       setSubmitted(false)
+      const firstInvalidField = (Object.keys(nextErrors) as (keyof FormValues)[])[0]
+      fieldRefs[firstInvalidField].current?.focus()
       return
     }
     setSubmitted(true)
@@ -51,22 +59,22 @@ export default function ContactForm() {
       <div className="form-grid">
         <div className="field">
           <label htmlFor="contact-name">Name</label>
-          <input id="contact-name" value={values.name} onChange={(event) => updateField('name', event.target.value)} aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? 'contact-name-error' : undefined} />
+          <input ref={fieldRefs.name} id="contact-name" name="name" autoComplete="name" required value={values.name} onChange={(event) => updateField('name', event.target.value)} aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? 'contact-name-error' : undefined} />
           {errors.name ? <span className="field__error" id="contact-name-error">{errors.name}</span> : null}
         </div>
         <div className="field">
           <label htmlFor="contact-email">Email</label>
-          <input id="contact-email" type="email" value={values.email} onChange={(event) => updateField('email', event.target.value)} aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'contact-email-error' : undefined} />
+          <input ref={fieldRefs.email} id="contact-email" name="email" type="email" autoComplete="email" required value={values.email} onChange={(event) => updateField('email', event.target.value)} aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'contact-email-error' : undefined} />
           {errors.email ? <span className="field__error" id="contact-email-error">{errors.email}</span> : null}
         </div>
         <div className="field field--full">
           <label htmlFor="contact-subject">Subject</label>
-          <input id="contact-subject" value={values.subject} onChange={(event) => updateField('subject', event.target.value)} aria-invalid={Boolean(errors.subject)} aria-describedby={errors.subject ? 'contact-subject-error' : undefined} />
+          <input ref={fieldRefs.subject} id="contact-subject" name="subject" autoComplete="off" required value={values.subject} onChange={(event) => updateField('subject', event.target.value)} aria-invalid={Boolean(errors.subject)} aria-describedby={errors.subject ? 'contact-subject-error' : undefined} />
           {errors.subject ? <span className="field__error" id="contact-subject-error">{errors.subject}</span> : null}
         </div>
         <div className="field field--full">
           <label htmlFor="contact-message">Message</label>
-          <textarea id="contact-message" rows={6} value={values.message} onChange={(event) => updateField('message', event.target.value)} aria-invalid={Boolean(errors.message)} aria-describedby={errors.message ? 'contact-message-error' : 'contact-message-help'} />
+          <textarea ref={fieldRefs.message} id="contact-message" name="message" autoComplete="off" required rows={6} value={values.message} onChange={(event) => updateField('message', event.target.value)} aria-invalid={Boolean(errors.message)} aria-describedby={errors.message ? 'contact-message-help contact-message-error' : 'contact-message-help'} />
           <span className="field__help" id="contact-message-help">Do not include sensitive personal information in this UI preview.</span>
           {errors.message ? <span className="field__error" id="contact-message-error">{errors.message}</span> : null}
         </div>

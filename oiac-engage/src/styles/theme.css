@@ -14,6 +14,7 @@
   --color-warning: #855b08;
   --color-warning-soft: #fff2d4;
   --color-danger: #a12b35;
+  --color-focus: #17467f;
   --font-display: 'Outfit', sans-serif;
   --font-body: 'DM Sans', sans-serif;
   --space-1: 0.25rem;
@@ -48,13 +49,17 @@ a { color: var(--color-primary-strong); text-underline-offset: 0.2em; }
 
 a:hover { color: var(--color-primary); }
 
-:focus-visible { outline: 3px solid #80b8ff; outline-offset: 3px; }
+:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
 
 h1, h2, h3, p { margin-top: 0; }
 
 h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-height: 1.15; }
 
 .portal-shell { display: flex; min-height: 100vh; flex-direction: column; }
+
+.skip-link { position: fixed; z-index: 100; top: var(--space-3); left: var(--space-3); transform: translateY(-200%); border-radius: var(--radius-sm); background: var(--color-text); color: white; font-weight: 700; padding: var(--space-3) var(--space-4); }
+
+.skip-link:focus { transform: translateY(0); color: white; }
 
 .site-header { position: sticky; z-index: 20; top: 0; border-bottom: 1px solid var(--color-border); background: rgb(255 255 255 / 96%); backdrop-filter: blur(12px); }
 
@@ -114,13 +119,21 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 
 .content-card__header { display: flex; min-height: 4.25rem; align-items: center; justify-content: space-between; gap: var(--space-4); border-bottom: 1px solid var(--color-border); padding: var(--space-4) var(--space-5); }
 
-.content-card__header h2 { margin: 0; font-size: 1.15rem; }
+.content-card__header h2, .content-card__header h3 { margin: 0; font-size: 1.15rem; }
 
 .content-card__meta { color: var(--color-text-muted); font-size: 0.82rem; }
 
 .content-card__body { padding: var(--space-5); }
 
 .content-card__body > :last-child { margin-bottom: 0; }
+
+.empty-state { border: 1px dashed var(--color-border); border-radius: var(--radius-md); background: var(--color-background); padding: var(--space-6); text-align: center; }
+
+.empty-state h2 { margin-bottom: var(--space-2); font-size: 1.15rem; }
+
+.empty-state p, .availability-note { color: var(--color-text-muted); font-size: 0.86rem; line-height: 1.55; }
+
+.availability-note { margin-bottom: var(--space-4); }
 
 .stack-list, .record-list, .simple-list, .activity-feed, .timeline-list { margin: 0; padding: 0; list-style: none; }
 
