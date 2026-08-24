@@ -29,7 +29,7 @@ export default function MyCalendar({ items = agendaItems }: MyCalendarProps) {
 
         <ContentCard title="Upcoming agenda" meta={<span>{items.length} items</span>}>
           {items.length === 0 ? (
-            <EmptyState title="No calendar items yet" description="Events and appointments will appear here when they are scheduled." />
+            <EmptyState headingLevel="h3" title="No calendar items yet" description="Events and appointments will appear here when they are scheduled." />
           ) :
           <ol className="timeline-list">
             {items.map((item) => (

@@ -17,7 +17,7 @@ export default function Appointments({ items = appointments }: AppointmentsProps
       <PageHeader eyebrow="Activity" title="Appointments" description="Review scheduled conversations and their current status." />
       <ContentCard title="Your appointments" meta={<span>{items.length} records</span>}>
         {items.length === 0 ? (
-          <EmptyState title="No appointments yet" description="Scheduled conversations with member services will appear here." />
+          <EmptyState headingLevel="h3" title="No appointments yet" description="Scheduled conversations with member services will appear here." />
         ) : <>
         <p className="availability-note">Appointment details will be available after data connection.</p>
         <ul className="record-list">

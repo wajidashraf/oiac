@@ -11,6 +11,7 @@ export default function ActivityLog({ items = activityItems }: ActivityLogProps)
   useEffect(() => {
     document.title = 'Activity Log — OIAC Engage'
   }, [])
+  const visibleItems = items.filter((item) => category === 'all' || item.category.toLowerCase() === category)
 
   return (
     <div className="page">
@@ -30,8 +31,10 @@ export default function ActivityLog({ items = activityItems }: ActivityLogProps)
       </div>
       {items.length === 0 ? (
         <EmptyState title="No activity yet" description="Updates to your reports, events, and appointments will appear here." />
+      ) : visibleItems.length === 0 ? (
+        <EmptyState title="No matching activity" description="There is no activity in the selected category." />
       ) : <ol className="activity-feed">
-        {items.filter((item) => category === 'all' || item.category.toLowerCase() === category).map((item) => (
+        {visibleItems.map((item) => (
           <li key={item.id}>
             <div className="activity-feed__marker" aria-hidden="true" />
             <div className="activity-feed__content">

@@ -18,7 +18,7 @@ export default function Home() {
           title="Welcome to OIAC Engage"
           description="Your reports, schedule, activity, and member updates in one place."
         />
-        <div className="quick-links" aria-label="Portal shortcuts">
+        <div className="quick-links" role="group" aria-label="Portal shortcuts">
           <Link className="quick-link" to="/my-reports">
             <span className="quick-link__label">View my reports</span>
             <span>{reports.length} reports</span>

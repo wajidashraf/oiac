@@ -67,7 +67,12 @@ try {
         targets: violation.nodes.flatMap((node) => node.target),
       })),
       passes: audit.passes.length,
-      incomplete: audit.incomplete.length,
+      incomplete: audit.incomplete.map((check) => ({
+        id: check.id,
+        impact: check.impact,
+        description: check.description,
+        targets: check.nodes.flatMap((node) => node.target),
+      })),
     })
     await page.close()
   }

@@ -1,11 +1,15 @@
-import { useEffect, type PropsWithChildren } from 'react'
+import { useEffect, useRef, type PropsWithChildren } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import PortalNav from './PortalNav'
 
 export default function AppShell({ children }: PropsWithChildren) {
   const location = useLocation()
+  const previousPath = useRef(location.pathname)
 
   useEffect(() => {
+    if (previousPath.current === location.pathname) return
+    previousPath.current = location.pathname
+
     const heading = document.querySelector<HTMLElement>('#main-content h1')
     if (heading) {
       heading.tabIndex = -1

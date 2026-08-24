@@ -22,7 +22,7 @@ export default function MyReports({ items = reports }: MyReportsProps) {
         description="Review the reports and statements currently associated with your membership."
       />
 
-      <div className="summary-strip" aria-label="Report summary">
+      <div className="summary-strip" role="group" aria-label="Report summary">
         <div><strong>{items.length}</strong><span>Total reports</span></div>
         <div><strong>{availableCount}</strong><span>Available now</span></div>
         <div><strong>{items.length - availableCount}</strong><span>In review</span></div>
@@ -30,7 +30,7 @@ export default function MyReports({ items = reports }: MyReportsProps) {
 
       <ContentCard title="Report library" meta={<span>Static preview data</span>}>
         {items.length === 0 ? (
-          <EmptyState title="No reports yet" description="Reports connected to your membership will appear here." />
+          <EmptyState headingLevel="h3" title="No reports yet" description="Reports connected to your membership will appear here." />
         ) : <>
         <p className="availability-note">Report details will be available after data connection.</p>
         <ul className="record-list">

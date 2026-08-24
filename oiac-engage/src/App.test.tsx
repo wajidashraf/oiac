@@ -27,3 +27,12 @@ test('moves keyboard focus to the page heading after client-side navigation', as
   await user.click(screen.getByRole('link', { name: /view my reports/i }))
   expect(screen.getByRole('heading', { name: 'My Reports', level: 1 })).toHaveFocus()
 })
+
+test('keeps the skip link as the first tab stop on initial load', async () => {
+  const user = userEvent.setup()
+  render(<MemoryRouter initialEntries={['/']}><App /></MemoryRouter>)
+
+  expect(document.body).toHaveFocus()
+  await user.tab()
+  expect(screen.getByRole('link', { name: 'Skip to main content' })).toHaveFocus()
+})
