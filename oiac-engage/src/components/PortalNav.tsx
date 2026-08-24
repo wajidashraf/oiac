@@ -78,6 +78,8 @@ export default function PortalNav() {
             {link.label}
           </NavLink>
         ))}
+
+        <a className="portal-nav__signin" href="/SignIn?returnUrl=%2F">Sign in</a>
       </div>
     </nav>
   )

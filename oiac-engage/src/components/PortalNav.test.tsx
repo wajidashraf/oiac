@@ -17,6 +17,7 @@ test('exposes top-level links and expands the Activity routes', async () => {
   expect(screen.getByRole('link', { name: 'My Calendar' })).toHaveAttribute('href', '/my-calendar')
   expect(screen.getByRole('link', { name: 'Contact' })).toHaveAttribute('href', '/contact')
   expect(screen.getByRole('link', { name: 'Press Coverage' })).toHaveAttribute('href', '/press-coverage')
+  expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/SignIn?returnUrl=%2F')
 
   const activityToggle = screen.getByRole('button', { name: 'Activity' })
   expect(activityToggle).toHaveAttribute('aria-expanded', 'false')

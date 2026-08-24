@@ -4,6 +4,7 @@ import ContentCard from '../components/ContentCard'
 import PageHeader from '../components/PageHeader'
 import StatusBadge from '../components/StatusBadge'
 import { activityItems, agendaItems, reports } from '../data/portalData'
+import { portalRoles } from '../data/portalRoles'
 
 export default function Home() {
   useEffect(() => {
@@ -31,6 +32,28 @@ export default function Home() {
             <span className="quick-link__label">Review activity</span>
             <span>{activityItems.length} recent updates</span>
           </Link>
+        </div>
+      </section>
+
+      <section className="role-directory" aria-labelledby="role-directory-title">
+        <div className="role-directory__heading">
+          <div>
+            <p className="section-kicker">Role-based access</p>
+            <h2 id="role-directory-title">Ways to participate</h2>
+          </div>
+          <p>Choose the area that matches how you work with OIAC.</p>
+        </div>
+        <div className="role-grid">
+          {portalRoles.map((role) => (
+            <Link className={`role-card role-card--${role.id}`} key={role.id} to={role.destination}>
+              <span className="role-card__marker" aria-hidden="true">{role.name.charAt(0)}</span>
+              <span className="role-card__content">
+                <strong>{role.name}</strong>
+                <span>{role.description}</span>
+                <span className="role-card__action">{role.action} <span aria-hidden="true">→</span></span>
+              </span>
+            </Link>
+          ))}
         </div>
       </section>
 

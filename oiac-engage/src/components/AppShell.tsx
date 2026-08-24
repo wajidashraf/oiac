@@ -23,15 +23,17 @@ export default function AppShell({ children }: PropsWithChildren) {
       <header className="site-header">
         <div className="site-header__inner">
           <Link className="site-brand" to="/" aria-label="OIAC Engage home">
-            <span className="site-brand__mark" aria-hidden="true">OE</span>
-            <span>OIAC Engage</span>
+            <span className="site-brand__wordmark" aria-hidden="true">
+              <strong>OIAC</strong>
+              <small>Engage</small>
+            </span>
           </Link>
           <PortalNav />
         </div>
       </header>
       <main className="site-main" id="main-content" tabIndex={-1}>{children}</main>
       <footer className="site-footer">
-        <p>OIAC Engage · Member portal</p>
+        <p>OIAC Engage · Organization of Iranian American Communities — U.S.</p>
       </footer>
     </div>
   )
