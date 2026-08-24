@@ -1,0 +1,6 @@
+{
+  "$schema": "https://www.schemastore.org/powerpages.config.json",
+  "siteName": "OIAC Engage",
+  "compiledPath": "dist",
+  "defaultLandingPage": "index.html"
+}
