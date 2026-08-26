@@ -101,7 +101,7 @@ export default function Home() {
               <th scope="col">Representative</th>
               <th scope="col">Date</th>
               <th scope="col">Outcome</th>
-              <th scope="col"><span className="sr-only">Actions</span></th>
+              <th scope="col" aria-label="Actions" />
             </tr>
           </thead>
           <tbody>
@@ -123,10 +123,10 @@ export default function Home() {
           <ul className="dashboard-event-list">
             {dashboardEvents.map((event) => (
               <li key={event.id}>
-                <span className="dashboard-date-tile" aria-hidden="true">
+                <time className="dashboard-date-tile">
                   <strong>{event.day}</strong>
                   <span>{event.month}</span>
-                </span>
+                </time>
                 <span>{event.title}</span>
               </li>
             ))}

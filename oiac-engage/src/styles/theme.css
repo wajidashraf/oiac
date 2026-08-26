@@ -47,7 +47,7 @@ body { min-width: 320px; min-height: 100vh; margin: 0; background: var(--color-b
 
 button, input, textarea, select { font: inherit; }
 
-button, a { -webkit-tap-highlight-color: transparent; }
+button, a { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 
 a { color: var(--color-primary-strong); text-underline-offset: 0.2em; }
 
@@ -57,9 +57,7 @@ a:hover { color: var(--color-primary); }
 
 h1, h2, h3, p { margin-top: 0; }
 
-h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-height: 1.15; }
-
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); clip-path: inset(50%); white-space: nowrap; }
+h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-height: 1.15; scroll-margin-top: 5rem; text-wrap: balance; }
 
 .portal-shell { display: flex; min-height: 100vh; flex-direction: column; }
 
@@ -227,7 +225,7 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   text-align: center;
 }
 
-.dashboard-metric strong { color: var(--color-primary-strong); font-family: var(--font-display); font-size: 1.85rem; font-weight: 600; line-height: 1; }
+.dashboard-metric strong { color: var(--color-primary-strong); font-family: var(--font-display); font-size: 1.85rem; font-variant-numeric: tabular-nums; font-weight: 600; line-height: 1; }
 
 .dashboard-metric span { margin-top: var(--space-2); color: var(--color-text-muted); font-size: 0.78rem; line-height: 1.35; }
 
@@ -243,7 +241,7 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 
 .dashboard-table-scroll:focus-visible { outline-offset: 2px; }
 
-.dashboard-table { width: 100%; min-width: 48rem; border-collapse: collapse; color: var(--color-text); font-size: 0.78rem; }
+.dashboard-table { width: 100%; min-width: 48rem; border-collapse: collapse; color: var(--color-text); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
 
 .dashboard-table th, .dashboard-table td { border-bottom: 1px solid var(--color-border); padding: 0.78rem 1rem; text-align: left; vertical-align: middle; }
 
@@ -314,7 +312,7 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 
 .dashboard-invite-list strong, .dashboard-announcement-list strong, .dashboard-team-list strong { color: var(--color-text); font-size: 0.76rem; line-height: 1.4; }
 
-.dashboard-invite-list li > div > span, .dashboard-announcement-list div > span, .dashboard-team-list div > span { color: #81938f; font-size: 0.7rem; line-height: 1.4; }
+.dashboard-invite-list li > div > span, .dashboard-announcement-list div > span, .dashboard-team-list div > span { color: var(--color-primary); font-size: 0.7rem; line-height: 1.4; }
 
 .dashboard-invite-list .status-badge { margin-top: -0.15rem; }
 

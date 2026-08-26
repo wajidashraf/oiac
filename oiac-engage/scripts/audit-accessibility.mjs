@@ -13,6 +13,7 @@ const scenarios = [
   { name: 'appointments', route: '/activity/appointments', authenticated: true },
   { name: 'press-coverage', route: '/press-coverage', authenticated: true },
   { name: 'resources', route: '/resources', authenticated: true },
+  { name: 'report', route: '/report', authenticated: true },
 ]
 
 async function launchBrowser() {

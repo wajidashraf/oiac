@@ -38,6 +38,13 @@ test('renders both dashboard datasets as semantic tables', () => {
   expect(within(submissionsTable).getByRole('columnheader', { name: 'Status' })).toBeInTheDocument()
 })
 
+test('exposes upcoming event dates as semantic time elements', () => {
+  renderHome()
+
+  expect(screen.getAllByText('Sep', { selector: 'time span' })).toHaveLength(2)
+  expect(screen.getByText('Oct', { selector: 'time span' })).toBeInTheDocument()
+})
+
 test('routes submit and every report edit action to the shared report page', () => {
   renderHome()
 
