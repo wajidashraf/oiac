@@ -25,7 +25,7 @@ export function readPowerPagesSession(source: unknown = window): AuthSession {
   const user = (source as PowerPagesWindow)?.Microsoft?.Dynamic365?.Portal?.User
   const userName = user?.userName?.trim()
 
-  if (!userName) return ANONYMOUS_SESSION
+  if (!user || !userName) return ANONYMOUS_SESSION
 
   return {
     status: 'authenticated',
