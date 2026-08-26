@@ -799,6 +799,7 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   .dashboard-team-list li { min-height: 4.8rem; }
   .dashboard-panel .content-card__header h2,
   .dashboard-panel .content-card__header h3,
+  .dashboard-section__heading h2,
   .dashboard-event-list li > span:last-child,
   .dashboard-invite-list strong,
   .dashboard-announcement-list strong,
@@ -818,7 +819,7 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   .dashboard-table thead th,
   .dashboard-identity__eyebrow,
   .dashboard-date-tile span,
-  .dashboard-admin-label { font-size: 0.75rem; }
+  .dashboard-admin-label { font-size: 0.875rem; }
   .dashboard-date-tile strong { font-size: 1rem; }
 }
 
