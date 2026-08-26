@@ -41,8 +41,16 @@ test('renders both dashboard datasets as semantic tables', () => {
 test('exposes upcoming event dates as semantic time elements', () => {
   renderHome()
 
-  expect(screen.getAllByText('Sep', { selector: 'time span' })).toHaveLength(2)
-  expect(screen.getByText('Oct', { selector: 'time span' })).toBeInTheDocument()
+  const septemberDates = screen.getAllByText('Sep', { selector: 'time span' })
+  expect(septemberDates).toHaveLength(2)
+  expect(septemberDates[0].closest('time')).toHaveAttribute('datetime', '2026-09-08')
+  expect(screen.getByText('Oct', { selector: 'time span' }).closest('time')).toHaveAttribute('datetime', '2026-10-02')
+
+  const reportsTable = screen.getByRole('table', { name: 'Meeting Reports' })
+  expect(within(reportsTable).getByText('Aug 5, 2026').closest('time')).toHaveAttribute('datetime', '2026-08-05')
+
+  const submissionsTable = screen.getByRole('table', { name: 'Volunteer Submissions' })
+  expect(within(submissionsTable).getByText('Aug 13, 2026').closest('time')).toHaveAttribute('datetime', '2026-08-13')
 })
 
 test('routes submit and every report edit action to the shared report page', () => {

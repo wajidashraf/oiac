@@ -797,6 +797,29 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   .dashboard-table { min-width: 45rem; }
   .dashboard-table-scroll { scrollbar-width: thin; }
   .dashboard-team-list li { min-height: 4.8rem; }
+  .dashboard-panel .content-card__header h2,
+  .dashboard-panel .content-card__header h3,
+  .dashboard-event-list li > span:last-child,
+  .dashboard-invite-list strong,
+  .dashboard-announcement-list strong,
+  .dashboard-training-list a,
+  .dashboard-team-list strong { font-size: 1rem; }
+  .dashboard-table { min-width: 52rem; font-size: 1rem; }
+  .dashboard-shortcuts a,
+  .dashboard-metric span,
+  .dashboard-submit-report,
+  .dashboard-panel__footer-link,
+  .dashboard-team-list li > a,
+  .dashboard-type-label,
+  .page--dashboard .status-badge { font-size: 0.875rem; }
+  .dashboard-invite-list li > div > span,
+  .dashboard-announcement-list div > span,
+  .dashboard-team-list div > span { font-size: 0.875rem; }
+  .dashboard-table thead th,
+  .dashboard-identity__eyebrow,
+  .dashboard-date-tile span,
+  .dashboard-admin-label { font-size: 0.75rem; }
+  .dashboard-date-tile strong { font-size: 1rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

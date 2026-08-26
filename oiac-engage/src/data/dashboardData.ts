@@ -9,6 +9,7 @@ export type MeetingReport = {
   meeting: string
   representative: string
   date: string
+  dateTime: string
   outcome: string
 }
 
@@ -16,6 +17,7 @@ export type DashboardEvent = {
   id: string
   day: string
   month: string
+  dateTime: string
   title: string
 }
 
@@ -58,6 +60,7 @@ export type VolunteerSubmission = {
   type: 'Email' | 'Appointment' | 'Event Participation'
   subject: string
   date: string
+  dateTime: string
   status: 'Submitted' | 'Confirmed' | 'Completed'
 }
 
@@ -74,6 +77,7 @@ export const meetingReports: readonly MeetingReport[] = [
     meeting: 'Advocacy Briefing — Rep. Chen Office',
     representative: "Rep. Chen's Office",
     date: 'Aug 5, 2026',
+    dateTime: '2026-08-05',
     outcome: 'Supportive',
   },
   {
@@ -81,6 +85,7 @@ export const meetingReports: readonly MeetingReport[] = [
     meeting: 'Meeting with Sen. Carter Staff',
     representative: "Sen. Carter's Office",
     date: 'Jul 18, 2026',
+    dateTime: '2026-07-18',
     outcome: 'Neutral',
   },
   {
@@ -88,14 +93,15 @@ export const meetingReports: readonly MeetingReport[] = [
     meeting: 'District Outreach — VA Delegation',
     representative: 'VA Congressional Delegation',
     date: 'Jun 30, 2026',
+    dateTime: '2026-06-30',
     outcome: 'Very Supportive',
   },
 ]
 
 export const dashboardEvents: readonly DashboardEvent[] = [
-  { id: 'capitol-hill', day: '8', month: 'Sep', title: 'Capitol Hill Advocacy Day — Washington, D.C.' },
-  { id: 'captain-briefing', day: '15', month: 'Sep', title: 'Volunteer Captain Briefing — Microsoft Teams' },
-  { id: 'heritage-month', day: '2', month: 'Oct', title: 'Iranian American Heritage Month Kickoff' },
+  { id: 'capitol-hill', day: '8', month: 'Sep', dateTime: '2026-09-08', title: 'Capitol Hill Advocacy Day — Washington, D.C.' },
+  { id: 'captain-briefing', day: '15', month: 'Sep', dateTime: '2026-09-15', title: 'Volunteer Captain Briefing — Microsoft Teams' },
+  { id: 'heritage-month', day: '2', month: 'Oct', dateTime: '2026-10-02', title: 'Iranian American Heritage Month Kickoff' },
 ]
 
 export const meetingInvites: readonly MeetingInvite[] = [
@@ -172,6 +178,7 @@ export const volunteerSubmissions: readonly VolunteerSubmission[] = [
     type: 'Email',
     subject: 'Outreach to Rep. Johnson office re: Iranian American issues',
     date: 'Aug 13, 2026',
+    dateTime: '2026-08-13',
     status: 'Submitted',
   },
   {
@@ -179,6 +186,7 @@ export const volunteerSubmissions: readonly VolunteerSubmission[] = [
     type: 'Appointment',
     subject: 'Meeting with Sen. Carter staff — immigration policy',
     date: 'Aug 10, 2026',
+    dateTime: '2026-08-10',
     status: 'Confirmed',
   },
   {
@@ -186,6 +194,7 @@ export const volunteerSubmissions: readonly VolunteerSubmission[] = [
     type: 'Event Participation',
     subject: 'Participated in Community Forum — Chicago',
     date: 'Jul 28, 2026',
+    dateTime: '2026-07-28',
     status: 'Completed',
   },
 ]

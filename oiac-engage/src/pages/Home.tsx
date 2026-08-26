@@ -109,7 +109,7 @@ export default function Home() {
               <tr key={report.id}>
                 <th scope="row">{report.meeting}</th>
                 <td>{report.representative}</td>
-                <td><time>{report.date}</time></td>
+                <td><time dateTime={report.dateTime}>{report.date}</time></td>
                 <td>{report.outcome}</td>
                 <td><Link aria-label={`Edit ${report.meeting}`} to="/report">Edit</Link></td>
               </tr>
@@ -123,7 +123,7 @@ export default function Home() {
           <ul className="dashboard-event-list">
             {dashboardEvents.map((event) => (
               <li key={event.id}>
-                <time className="dashboard-date-tile">
+                <time className="dashboard-date-tile" dateTime={event.dateTime}>
                   <strong>{event.day}</strong>
                   <span>{event.month}</span>
                 </time>
@@ -226,7 +226,7 @@ export default function Home() {
               <tr key={submission.id}>
                 <td><span className="dashboard-type-label">{submission.type}</span></td>
                 <th scope="row">{submission.subject}</th>
-                <td><time>{submission.date}</time></td>
+                <td><time dateTime={submission.dateTime}>{submission.date}</time></td>
                 <td><StatusBadge tone={submissionTone(submission.status)}>{submission.status}</StatusBadge></td>
               </tr>
             ))}
