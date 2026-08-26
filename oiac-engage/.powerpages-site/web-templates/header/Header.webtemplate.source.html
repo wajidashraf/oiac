@@ -1,1 +1,11 @@
-<div/>
+<header class="auth-site-header">
+  <div class="auth-site-header__inner">
+    <a class="auth-site-brand" href="/" aria-label="OIAC Engage home">
+      <img src="/logo.png" alt="Organization of Iranian American Communities">
+      <span>OIAC Engage</span>
+    </a>
+    {% unless user %}
+      <a class="auth-site-button" href="/SignIn?returnUrl=%2F">Sign In</a>
+    {% endunless %}
+  </div>
+</header>

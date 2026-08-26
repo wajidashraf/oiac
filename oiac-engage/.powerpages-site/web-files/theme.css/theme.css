@@ -1852,3 +1852,303 @@ h6,
 a:not(.btn):hover {
   text-decoration: underline !important;
 }
+
+/* OIAC native authentication ------------------------------------------------ */
+.auth-site-header,
+.auth-site-footer {
+  background: #fff;
+  color: #49605c;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+.auth-site-header {
+  border-bottom: 1px solid #dde3e2;
+}
+
+.auth-site-footer {
+  border-top: 1px solid #dde3e2;
+}
+
+.auth-site-header__inner,
+.auth-site-footer__inner {
+  display: flex;
+  width: min(97.5rem, calc(100% - 2rem));
+  margin: 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.auth-site-header__inner {
+  min-height: 6.5rem;
+}
+
+.auth-site-footer__inner {
+  min-height: 9rem;
+  padding: 1.5rem 0;
+}
+
+.auth-site-brand,
+.auth-site-footer__identity,
+.auth-site-footer nav {
+  display: flex;
+  align-items: center;
+}
+
+.auth-site-brand {
+  gap: 0.85rem;
+  color: #3d4e4b;
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 1.2rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-site-brand:hover,
+.auth-site-brand:focus {
+  color: #3d4e4b;
+  text-decoration: none !important;
+}
+
+.auth-site-brand img,
+.auth-site-footer__identity img {
+  width: 6.75rem;
+  height: auto;
+}
+
+.auth-site-button {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #3d4e4b;
+  border-radius: 0.4rem;
+  padding: 0.7rem 1.4rem;
+  background: #3d4e4b;
+  color: #fff;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.auth-site-button:hover,
+.auth-site-button:focus {
+  border-color: #273633;
+  background: #273633;
+  color: #fff;
+  text-decoration: none !important;
+}
+
+.auth-site-button:focus-visible,
+.auth-site-brand:focus-visible,
+.auth-site-footer a:focus-visible {
+  outline: 3px solid #c78528;
+  outline-offset: 3px;
+}
+
+.auth-site-footer__identity {
+  max-width: 37rem;
+  gap: 1rem;
+  font-weight: 600;
+}
+
+.auth-site-footer nav {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.8rem 1.5rem;
+}
+
+.auth-site-footer nav a {
+  color: #3d4e4b;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-site-footer nav a:hover,
+.auth-site-footer nav a:focus {
+  color: #273633;
+  text-decoration: underline !important;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) {
+  background: #f9fafa;
+  color: #263532;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .wrapper-body {
+  min-height: 46rem;
+  padding: clamp(3rem, 7vw, 6rem) 1rem;
+  background: #f9fafa;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .page-copy {
+  width: min(50rem, 100%);
+  margin: 0 auto;
+  border: 1px solid #dde3e2;
+  border-radius: 0.75rem;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: #fff;
+  box-shadow: 0 1.25rem 3rem rgba(39, 54, 51, 0.08);
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) h1,
+:is(body:has(.nav-account), body:has(.forgot-password)) h2,
+:is(body:has(.nav-account), body:has(.forgot-password)) legend {
+  color: #273633;
+  font-family: "Source Serif 4", Georgia, serif;
+  letter-spacing: -0.02em;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) label,
+:is(body:has(.nav-account), body:has(.forgot-password)) .control-label {
+  color: #344744;
+  font-weight: 700;
+}
+
+body:has(.nav-account) .nav-account {
+  display: flex;
+  overflow-x: auto;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #dde3e2;
+}
+
+body:has(.nav-account) .nav-account > li > a {
+  border: 0;
+  border-bottom: 3px solid transparent;
+  padding: 0.85rem 1rem;
+  color: #627572;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+body:has(.nav-account) .nav-account > li.active > a,
+body:has(.nav-account) .nav-account > li.active > a:hover,
+body:has(.nav-account) .nav-account > li.active > a:focus {
+  border: 0;
+  border-bottom: 3px solid #c78528;
+  background: transparent;
+  color: #273633;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .form-control {
+  min-height: 3rem;
+  border: 1px solid #9ab0ad;
+  border-radius: 0.35rem;
+  padding: 0.65rem 0.8rem;
+  color: #263532;
+  box-shadow: none;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .form-control:focus {
+  border-color: #3d4e4b;
+  outline: 3px solid rgba(61, 78, 75, 0.18);
+  outline-offset: 1px;
+  box-shadow: none;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .btn-primary,
+.auth-site-button {
+  min-height: 2.75rem;
+  border-color: #3d4e4b;
+  background: #3d4e4b;
+  color: #fff;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .btn-primary {
+  border-radius: 0.4rem;
+  padding: 0.7rem 1.5rem;
+  font-weight: 700;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .btn-primary:hover,
+:is(body:has(.nav-account), body:has(.forgot-password)) .btn-primary:focus {
+  border-color: #273633;
+  background: #273633;
+  color: #fff;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .btn:focus-visible,
+:is(body:has(.nav-account), body:has(.forgot-password)) a:focus-visible {
+  outline: 3px solid #c78528;
+  outline-offset: 3px;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .help-block,
+:is(body:has(.nav-account), body:has(.forgot-password)) .field-validation-valid,
+:is(body:has(.nav-account), body:has(.forgot-password)) .checkbox {
+  color: #627572;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .validation-summary-errors,
+:is(body:has(.nav-account), body:has(.forgot-password)) .field-validation-error,
+:is(body:has(.nav-account), body:has(.forgot-password)) .alert-danger {
+  color: #922f32;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .validation-summary-errors,
+:is(body:has(.nav-account), body:has(.forgot-password)) .alert-danger {
+  border: 1px solid #e4b4b5;
+  border-radius: 0.4rem;
+  padding: 0.9rem 1rem;
+  background: #fff4f4;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .required,
+:is(body:has(.nav-account), body:has(.forgot-password)) .required-marker {
+  color: #922f32;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .forgot-password,
+:is(body:has(.nav-account), body:has(.forgot-password)) a[href*="ForgotPassword"] {
+  color: #3d4e4b;
+  font-weight: 700;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) input[type="checkbox"] {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: #3d4e4b;
+}
+
+@media (max-width: 720px) {
+  .auth-site-header__inner {
+    min-height: 5.5rem;
+  }
+
+  .auth-site-brand span {
+    display: none;
+  }
+
+  .auth-site-brand img {
+    width: 6rem;
+  }
+
+  .auth-site-footer__inner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .auth-site-footer nav {
+    justify-content: flex-start;
+  }
+
+  :is(body:has(.nav-account), body:has(.forgot-password)) .wrapper-body {
+    min-height: 36rem;
+    padding: 2rem 0.75rem;
+  }
+
+  :is(body:has(.nav-account), body:has(.forgot-password)) .page-copy {
+    padding: 1.25rem;
+  }
+
+  body:has(.nav-account) .form-horizontal .control-label {
+    text-align: left;
+  }
+
+  :is(body:has(.nav-account), body:has(.forgot-password)) .form-control,
+  :is(body:has(.nav-account), body:has(.forgot-password)) .btn {
+    width: 100%;
+  }
+}
