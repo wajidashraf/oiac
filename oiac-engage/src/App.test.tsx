@@ -73,3 +73,19 @@ test('redirects an anonymous protected route with its return URL', async () => {
   })
   expect(screen.queryByRole('heading', { name: 'My Reports' })).not.toBeInTheDocument()
 })
+
+test('renders Resources only for an authenticated session', () => {
+  renderApp('/resources')
+
+  expect(screen.getByRole('heading', { name: 'Resources', level: 1 })).toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: 'Resources' })).not.toBeInTheDocument()
+})
+
+test('redirects anonymous Resources access to sign in', async () => {
+  const navigate = vi.fn()
+  renderApp('/resources', { status: 'anonymous' }, navigate)
+
+  await waitFor(() => {
+    expect(navigate).toHaveBeenCalledWith('/SignIn?returnUrl=%2Fresources')
+  })
+})

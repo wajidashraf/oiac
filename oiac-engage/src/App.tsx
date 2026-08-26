@@ -13,6 +13,7 @@ import MyCalendar from './pages/MyCalendar'
 import MyReports from './pages/MyReports'
 import NotFound from './pages/NotFound'
 import PressCoverage from './pages/PressCoverage'
+import Resources from './pages/Resources'
 
 type AppProps = {
   session?: AuthSession
@@ -48,6 +49,7 @@ export default function App({
         <Route path="/activity/events" element={<Events />} />
         <Route path="/activity/appointments" element={<Appointments />} />
         <Route path="/press-coverage" element={<PressCoverage />} />
+        <Route path="/resources" element={<Resources />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppShell>
