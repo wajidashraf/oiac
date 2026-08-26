@@ -23,9 +23,9 @@ export default function AppShell({ children }: PropsWithChildren) {
       <header className="site-header">
         <div className="site-header__inner">
           <Link className="site-brand" to="/" aria-label="OIAC Engage home">
+            <img className="site-brand__logo" src="/logo.png" alt="" />
             <span className="site-brand__wordmark" aria-hidden="true">
-              <strong>OIAC</strong>
-              <small>Engage</small>
+              <strong>OIAC Engage</strong>
             </span>
           </Link>
           <PortalNav />

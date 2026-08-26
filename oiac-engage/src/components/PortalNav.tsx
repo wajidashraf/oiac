@@ -79,7 +79,7 @@ export default function PortalNav() {
           </NavLink>
         ))}
 
-        <a className="portal-nav__signin" href="/SignIn?returnUrl=%2F">Sign in</a>
+        <a className="portal-nav__signin" href="/Account/Login/LogOff?returnUrl=%2F">Sign out</a>
       </div>
     </nav>
   )

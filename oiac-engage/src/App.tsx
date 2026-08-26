@@ -1,6 +1,10 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { readPowerPagesSession, type AuthSession } from './auth/powerPagesSession'
+import AnonymousShell from './components/AnonymousShell'
 import AppShell from './components/AppShell'
+import SignInRedirect, { type ExternalNavigate } from './components/SignInRedirect'
 import ActivityLog from './pages/ActivityLog'
+import AnonymousHome from './pages/AnonymousHome'
 import Appointments from './pages/Appointments'
 import Contact from './pages/Contact'
 import Events from './pages/Events'
@@ -10,7 +14,28 @@ import MyReports from './pages/MyReports'
 import NotFound from './pages/NotFound'
 import PressCoverage from './pages/PressCoverage'
 
-export default function App() {
+type AppProps = {
+  session?: AuthSession
+  navigate?: ExternalNavigate
+}
+
+const browserNavigate: ExternalNavigate = (href) => window.location.assign(href)
+
+export default function App({
+  session = readPowerPagesSession(),
+  navigate = browserNavigate,
+}: AppProps) {
+  if (session.status === 'anonymous') {
+    return (
+      <AnonymousShell>
+        <Routes>
+          <Route path="/" element={<AnonymousHome />} />
+          <Route path="*" element={<SignInRedirect navigate={navigate} />} />
+        </Routes>
+      </AnonymousShell>
+    )
+  }
+
   return (
     <AppShell>
       <Routes>
