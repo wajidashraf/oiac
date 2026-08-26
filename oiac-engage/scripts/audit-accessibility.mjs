@@ -2,15 +2,17 @@ import AxeBuilder from '@axe-core/playwright'
 import { chromium } from 'playwright'
 import { createServer } from 'vite'
 
-const routes = [
-  '/',
-  '/my-reports',
-  '/my-calendar',
-  '/contact',
-  '/activity/activity-log',
-  '/activity/events',
-  '/activity/appointments',
-  '/press-coverage',
+const scenarios = [
+  { name: 'anonymous-home', route: '/', authenticated: false },
+  { name: 'member-home', route: '/', authenticated: true },
+  { name: 'my-reports', route: '/my-reports', authenticated: true },
+  { name: 'my-calendar', route: '/my-calendar', authenticated: true },
+  { name: 'contact', route: '/contact', authenticated: true },
+  { name: 'activity-log', route: '/activity/activity-log', authenticated: true },
+  { name: 'events', route: '/activity/events', authenticated: true },
+  { name: 'appointments', route: '/activity/appointments', authenticated: true },
+  { name: 'press-coverage', route: '/press-coverage', authenticated: true },
+  { name: 'resources', route: '/resources', authenticated: true },
 ]
 
 async function launchBrowser() {
@@ -49,9 +51,26 @@ try {
   context = await browser.newContext()
   const results = []
 
-  for (const route of routes) {
+  for (const scenario of scenarios) {
     const page = await context.newPage()
-    const url = new URL(route, baseUrl).toString()
+    if (scenario.authenticated) {
+      await page.addInitScript(() => {
+        window.Microsoft = {
+          Dynamic365: {
+            Portal: {
+              User: {
+                userName: 'audit.member@oiac.org',
+                firstName: 'Audit',
+                lastName: 'Member',
+                contactId: 'audit-contact',
+              },
+            },
+          },
+        }
+      })
+    }
+
+    const url = new URL(scenario.route, baseUrl).toString()
     await page.goto(url, { waitUntil: 'networkidle' })
 
     const audit = await new AxeBuilder({ page })
@@ -59,7 +78,9 @@ try {
       .analyze()
 
     results.push({
-      route,
+      name: scenario.name,
+      route: scenario.route,
+      authenticated: scenario.authenticated,
       violations: audit.violations.map((violation) => ({
         id: violation.id,
         impact: violation.impact,

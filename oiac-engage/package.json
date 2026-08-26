@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "audit:a11y": "node scripts/audit-accessibility.mjs"
+    "audit:a11y": "node scripts/audit-accessibility.mjs",
+    "capture:auth": "node scripts/capture-auth-redesign.mjs"
   },
   "dependencies": {
     "react": "^19.0.0",
