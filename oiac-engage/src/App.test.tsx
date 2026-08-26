@@ -23,7 +23,8 @@ function renderApp(
 }
 
 test.each([
-  ['/', 'Welcome to OIAC Engage'],
+  ['/', 'Volunteer'],
+  ['/report', 'Report'],
   ['/my-reports', 'My Reports'],
   ['/my-calendar', 'My Calendar'],
   ['/contact', 'Contact'],
@@ -42,8 +43,8 @@ test('moves keyboard focus to the page heading after client-side navigation', as
   const user = userEvent.setup()
   renderApp('/')
 
-  await user.click(screen.getByRole('link', { name: /view my reports/i }))
-  expect(screen.getByRole('heading', { name: 'My Reports', level: 1 })).toHaveFocus()
+  await user.click(screen.getByRole('link', { name: '+ Submit Report' }))
+  expect(screen.getByRole('heading', { name: 'Report', level: 1 })).toHaveFocus()
 })
 
 test('keeps the skip link as the first tab stop on initial load', async () => {
@@ -88,4 +89,14 @@ test('redirects anonymous Resources access to sign in', async () => {
   await waitFor(() => {
     expect(navigate).toHaveBeenCalledWith('/SignIn?returnUrl=%2Fresources')
   })
+})
+
+test('redirects anonymous Report access to sign in with its return URL', async () => {
+  const navigate = vi.fn()
+  renderApp('/report', { status: 'anonymous' }, navigate)
+
+  await waitFor(() => {
+    expect(navigate).toHaveBeenCalledWith('/SignIn?returnUrl=%2Freport')
+  })
+  expect(screen.queryByRole('heading', { name: 'Report' })).not.toBeInTheDocument()
 })

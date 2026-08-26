@@ -13,6 +13,7 @@ import MyCalendar from './pages/MyCalendar'
 import MyReports from './pages/MyReports'
 import NotFound from './pages/NotFound'
 import PressCoverage from './pages/PressCoverage'
+import Report from './pages/Report'
 import Resources from './pages/Resources'
 
 type AppProps = {
@@ -49,6 +50,7 @@ export default function App({
         <Route path="/activity/events" element={<Events />} />
         <Route path="/activity/appointments" element={<Appointments />} />
         <Route path="/press-coverage" element={<PressCoverage />} />
+        <Route path="/report" element={<Report />} />
         <Route path="/resources" element={<Resources />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
