@@ -100,7 +100,7 @@ describe('Contact Web API service', () => {
     const result = await getDistrictContacts({ districtId: DISTRICT_ID, page: 1, search: '' })
 
     expect(result.contacts).toHaveLength(CONTACT_PAGE_SIZE)
-    expect(result.contacts.at(-1)?.fullName).toBe('Contact 15')
+    expect(result.contacts[CONTACT_PAGE_SIZE - 1]?.fullName).toBe('Contact 15')
     expect(result.hasNext).toBe(true)
     expect(powerPagesFetchMock).toHaveBeenCalledWith(
       expect.stringMatching(/^\/_api\/contacts\?/),

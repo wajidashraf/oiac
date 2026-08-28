@@ -1,6 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { getDistrictContacts, getLoggedInUserDistrict } from './contactService'
+import type { ContactPage } from './contactTypes'
 import { useDistrictContacts } from './useDistrictContacts'
 
 vi.mock('./contactService', () => ({
@@ -13,7 +14,7 @@ const getDistrictContactsMock = vi.mocked(getDistrictContacts)
 const CONTACT_ID = '20f9c936-6740-451e-9470-28a3c83c9909'
 const DISTRICT_ID = '367d7420-d8a2-f111-b8da-7ced8d70f293'
 
-const firstPage = {
+const firstPage: ContactPage = {
   contacts: [{
     id: '10000000-0000-0000-0000-000000000001',
     fullName: 'Sara Rahimi',
@@ -24,7 +25,7 @@ const firstPage = {
     districtId: DISTRICT_ID,
   }],
   hasNext: true,
-} as const
+}
 
 function deferred<T>() {
   let resolve!: (value: T) => void
