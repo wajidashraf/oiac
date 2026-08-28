@@ -1,41 +1,22 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { PowerPagesApiError, powerPagesFetch, powerPagesRequest } from './powerPagesApi'
+import {
+  clearPowerPagesRequestVerificationToken,
+  PowerPagesApiError,
+  powerPagesFetch,
+  powerPagesRequest,
+} from './powerPagesApi'
 
-type Deferred<T> = {
-  done(callback: (value: T) => void): Deferred<T>
-  fail(callback: (error?: unknown) => void): Deferred<T>
-}
-
-function resolvedDeferred<T>(value: T): Deferred<T> {
+function tokenResponse(
+  token = 'csrf-token',
+  init: { ok?: boolean; status?: number } = {},
+) {
   return {
-    done(callback) {
-      callback(value)
-      return this
-    },
-    fail() {
-      return this
-    },
-  }
-}
-
-function rejectedDeferred(error: unknown): Deferred<string> {
-  return {
-    done() {
-      return this
-    },
-    fail(callback) {
-      callback(error)
-      return this
-    },
-  }
-}
-
-function setShellToken(deferred: Deferred<string>) {
-  Object.assign(window, {
-    shell: {
-      getTokenDeferred: vi.fn(() => deferred),
-    },
-  })
+    ok: init.ok ?? true,
+    status: init.status ?? 200,
+    text: vi.fn().mockResolvedValue(
+      `<input name="__RequestVerificationToken" type="hidden" value="${token}" />`,
+    ),
+  } as unknown as Response
 }
 
 function jsonResponse(body: unknown, init: { ok?: boolean; status?: number } = {}) {
@@ -51,14 +32,27 @@ describe('powerPagesFetch', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
-    delete (window as Window & { shell?: unknown }).shell
+    clearPowerPagesRequestVerificationToken()
   })
 
-  test('adds the portal CSRF token and forwards request cancellation', async () => {
+  test('sends GET requests directly without waiting for a CSRF token', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ value: 'district contacts' }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await powerPagesFetch<{ value: string }>('/_api/contacts')
+
+    expect(result).toEqual({ value: 'district contacts' })
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(fetchMock).toHaveBeenCalledWith('/_api/contacts', {
+      credentials: 'same-origin',
+      headers: { Accept: 'application/json' },
+    })
+  })
+
+  test('forwards request cancellation on direct GET requests', async () => {
     const controller = new AbortController()
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ value: 'district contacts' }))
     vi.stubGlobal('fetch', fetchMock)
-    setShellToken(resolvedDeferred('csrf-token'))
 
     const result = await powerPagesFetch<{ value: string }>('/_api/contacts', {
       signal: controller.signal,
@@ -67,24 +61,21 @@ describe('powerPagesFetch', () => {
     expect(result).toEqual({ value: 'district contacts' })
     expect(fetchMock).toHaveBeenCalledWith('/_api/contacts', {
       credentials: 'same-origin',
-      headers: {
-        Accept: 'application/json',
-        __RequestVerificationToken: 'csrf-token',
-      },
+      headers: { Accept: 'application/json' },
       signal: controller.signal,
     })
   })
 
-  test('extracts the CSRF value when Power Pages returns hidden-input markup', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ value: 'district contacts' }))
+  test('retrieves and extracts the CSRF token for mutations', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(tokenResponse('csrf_token-with-symbols'))
+      .mockResolvedValueOnce(jsonResponse({ value: 'district contacts' }))
     vi.stubGlobal('fetch', fetchMock)
-    setShellToken(resolvedDeferred(
-      '<input name="__RequestVerificationToken" type="hidden" value="csrf_token-with-symbols" />',
-    ))
 
-    await powerPagesFetch('/_api/contacts')
+    await powerPagesRequest('/_api/mss_meetingreports', { method: 'POST' })
 
-    expect(fetchMock).toHaveBeenCalledWith('/_api/contacts', {
+    expect(fetchMock).toHaveBeenNthCalledWith(2, '/_api/mss_meetingreports', {
+      method: 'POST',
       credentials: 'same-origin',
       headers: {
         Accept: 'application/json',
@@ -93,21 +84,23 @@ describe('powerPagesFetch', () => {
     })
   })
 
-  test('invokes the Power Pages token provider with the shell context', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ value: [] }))
+  test('caches the Power Pages token across mutation requests', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(tokenResponse())
+      .mockResolvedValueOnce(jsonResponse({ value: ['first'] }))
+      .mockResolvedValueOnce(jsonResponse({ value: ['second'] }))
     vi.stubGlobal('fetch', fetchMock)
 
-    const shell = {
-      getTokenDeferred(this: unknown) {
-        if (this !== shell) throw new Error('Power Pages shell context was lost')
-        return resolvedDeferred('csrf-token')
-      },
-    }
-    Object.assign(window, { shell })
+    await powerPagesRequest('/_api/mss_meetingreports', { method: 'POST' })
+    await powerPagesRequest('/_api/mss_meetingreports(11111111-1111-1111-1111-111111111111)', {
+      method: 'PATCH',
+    })
 
-    await powerPagesFetch('/_api/contacts')
-
-    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(fetchMock).toHaveBeenNthCalledWith(1, '/_layout/tokenhtml', {
+      credentials: 'same-origin',
+      headers: { Accept: 'text/html' },
+    })
   })
 
   test('exposes a successful raw response so callers can inspect entity headers', async () => {
@@ -115,9 +108,10 @@ describe('powerPagesFetch', () => {
       status: 204,
       headers: { entityid: '11111111-1111-1111-1111-111111111111' },
     })
-    const fetchMock = vi.fn().mockResolvedValue(response)
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(tokenResponse())
+      .mockResolvedValueOnce(response)
     vi.stubGlobal('fetch', fetchMock)
-    setShellToken(resolvedDeferred('csrf-token'))
 
     const result = await powerPagesRequest('/_api/mss_meetingreports', {
       method: 'POST',
@@ -126,7 +120,7 @@ describe('powerPagesFetch', () => {
     })
 
     expect(result.headers.get('entityid')).toBe('11111111-1111-1111-1111-111111111111')
-    expect(fetchMock).toHaveBeenCalledWith('/_api/mss_meetingreports', {
+    expect(fetchMock).toHaveBeenNthCalledWith(2, '/_api/mss_meetingreports', {
       method: 'POST',
       body: '{"mss_subject":"Meeting"}',
       credentials: 'same-origin',
@@ -138,27 +132,26 @@ describe('powerPagesFetch', () => {
     })
   })
 
-  test('reports an unavailable Power Pages token provider without sending a request', async () => {
-    const fetchMock = vi.fn()
+  test('reports a failed Power Pages token response without sending a mutation', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(tokenResponse('', { ok: false, status: 500 }))
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(powerPagesFetch('/_api/contacts')).rejects.toMatchObject({
-      name: 'PowerPagesApiError',
-      message: 'The secure Power Pages session is unavailable. Refresh the page and try again.',
-    })
-    expect(fetchMock).not.toHaveBeenCalled()
-  })
-
-  test('reports a CSRF token failure without sending a request', async () => {
-    const fetchMock = vi.fn()
-    vi.stubGlobal('fetch', fetchMock)
-    setShellToken(rejectedDeferred(new Error('token endpoint detail')))
-
-    await expect(powerPagesFetch('/_api/contacts')).rejects.toMatchObject({
+    await expect(powerPagesRequest('/_api/mss_meetingreports', { method: 'POST' })).rejects.toMatchObject({
       name: 'PowerPagesApiError',
       message: 'The secure Power Pages session could not be verified. Refresh the page and try again.',
     })
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetchMock).toHaveBeenCalledOnce()
+  })
+
+  test('reports a CSRF token network failure without sending a mutation', async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new Error('token endpoint detail'))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(powerPagesRequest('/_api/mss_meetingreports', { method: 'POST' })).rejects.toMatchObject({
+      name: 'PowerPagesApiError',
+      message: 'The secure Power Pages session could not be verified. Refresh the page and try again.',
+    })
+    expect(fetchMock).toHaveBeenCalledOnce()
   })
 
   test('converts failed responses to a non-sensitive typed error', async () => {
@@ -166,7 +159,6 @@ describe('powerPagesFetch', () => {
       { error: { message: 'Sensitive Dataverse implementation detail' } },
       { ok: false, status: 403 },
     )))
-    setShellToken(resolvedDeferred('csrf-token'))
 
     const request = powerPagesFetch('/_api/contacts')
 
@@ -184,7 +176,6 @@ describe('powerPagesFetch', () => {
       json: vi.fn(),
       text: vi.fn(),
     } as unknown as Response))
-    setShellToken(resolvedDeferred('csrf-token'))
 
     await expect(powerPagesFetch<void>('/_api/contacts')).resolves.toBeUndefined()
   })

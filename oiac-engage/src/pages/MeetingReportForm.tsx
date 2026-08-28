@@ -152,7 +152,13 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
         }
         setLoadStatus('ready')
       })
-      .catch(() => {
+      .catch((error: unknown) => {
+        console.error('[MeetingReportForm] profile/report load failed', {
+          error,
+          contactId: user.contactId,
+          reportId: reportId ?? null,
+          signalAborted: controller.signal.aborted,
+        })
         if (controller.signal.aborted) return
         setLoadStatus('error')
         setFormError(reportId

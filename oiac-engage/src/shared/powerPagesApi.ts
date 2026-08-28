@@ -1,19 +1,9 @@
-type PowerPagesDeferred<T> = {
-  done(callback: (value: T) => void): PowerPagesDeferred<T>
-  fail(callback: (error?: unknown) => void): PowerPagesDeferred<T>
-}
-
-type PowerPagesShell = {
-  getTokenDeferred?: () => PowerPagesDeferred<string>
-}
-
-type PowerPagesWindow = Window & {
-  shell?: PowerPagesShell
-}
-
 export type PowerPagesRequestOptions = Omit<RequestInit, 'headers'> & {
   readonly headers?: HeadersInit
 }
+
+let cachedRequestVerificationToken: string | null = null
+let requestVerificationTokenPromise: Promise<string> | null = null
 
 export class PowerPagesApiError extends Error {
   readonly status?: number
@@ -43,38 +33,54 @@ function normalizeRequestVerificationToken(value: unknown): string {
     ?.value.trim() ?? ''
 }
 
-function getRequestVerificationToken(): Promise<string> {
-  const shell = (window as PowerPagesWindow).shell
-  const tokenProvider = shell?.getTokenDeferred
+export function clearPowerPagesRequestVerificationToken(): void {
+  cachedRequestVerificationToken = null
+  requestVerificationTokenPromise = null
+}
 
-  if (typeof tokenProvider !== 'function') {
-    return Promise.reject(new PowerPagesApiError(
-      'The secure Power Pages session is unavailable. Refresh the page and try again.',
-    ))
+function getRequestVerificationToken(): Promise<string> {
+  if (cachedRequestVerificationToken) {
+    console.debug('[PowerPagesApi] using cached verification token')
+    return Promise.resolve(cachedRequestVerificationToken)
+  }
+  if (requestVerificationTokenPromise) {
+    console.debug('[PowerPagesApi] joining active verification-token request')
+    return requestVerificationTokenPromise
   }
 
-  return new Promise((resolve, reject) => {
-    try {
-      tokenProvider.call(shell)
-        .done((token) => {
-          const normalizedToken = normalizeRequestVerificationToken(token)
-          if (normalizedToken) {
-            resolve(normalizedToken)
-            return
-          }
-          reject(new PowerPagesApiError(
-            'The secure Power Pages session could not be verified. Refresh the page and try again.',
-          ))
-        })
-        .fail(() => reject(new PowerPagesApiError(
-          'The secure Power Pages session could not be verified. Refresh the page and try again.',
-        )))
-    } catch {
-      reject(new PowerPagesApiError(
-        'The secure Power Pages session could not be verified. Refresh the page and try again.',
-      ))
-    }
+  console.debug('[PowerPagesApi] verification-token request starting', {
+    path: '/_layout/tokenhtml',
   })
+  requestVerificationTokenPromise = fetch('/_layout/tokenhtml', {
+    credentials: 'same-origin',
+    headers: { Accept: 'text/html' },
+  })
+    .then(async (response) => {
+      console.debug('[PowerPagesApi] verification-token response received', {
+        status: response.status,
+        contentType: response.headers?.get?.('content-type') ?? null,
+      })
+      if (!response.ok) throw new Error('Power Pages token endpoint failed.')
+      const token = normalizeRequestVerificationToken(await response.text())
+      if (!token) throw new Error('Power Pages token response was invalid.')
+      cachedRequestVerificationToken = token
+      console.debug('[PowerPagesApi] verification token parsed', { tokenPresent: true })
+      return token
+    })
+    .catch((error: unknown) => {
+      console.error('[PowerPagesApi] verification-token request failed', {
+        errorName: error instanceof Error ? error.name : 'UnknownError',
+        errorMessage: error instanceof Error ? error.message : String(error),
+      })
+      throw new PowerPagesApiError(
+        'The secure Power Pages session could not be verified. Refresh the page and try again.',
+      )
+    })
+    .finally(() => {
+      requestVerificationTokenPromise = null
+    })
+
+  return requestVerificationTokenPromise
 }
 
 export async function powerPagesFetch<T>(
@@ -91,11 +97,22 @@ export async function powerPagesRequest(
   path: string,
   options: PowerPagesRequestOptions = {},
 ): Promise<Response> {
-  const token = await getRequestVerificationToken()
+  const method = (options.method ?? 'GET').toUpperCase()
+  const requiresVerificationToken = method !== 'GET' && method !== 'HEAD'
   const { headers: suppliedHeaders, ...requestOptions } = options
   const headers: Record<string, string> = {
     Accept: 'application/json',
-    __RequestVerificationToken: token,
+  }
+
+  console.debug('[PowerPagesApi] request prepared', {
+    method,
+    path,
+    requiresVerificationToken,
+    signalAborted: options.signal?.aborted ?? false,
+  })
+
+  if (requiresVerificationToken) {
+    headers.__RequestVerificationToken = await getRequestVerificationToken()
   }
 
   if (suppliedHeaders) {
@@ -104,15 +121,38 @@ export async function powerPagesRequest(
     })
   }
 
-  const response = await fetch(path, {
-    ...requestOptions,
-    credentials: 'same-origin',
-    headers,
-  })
+  try {
+    console.debug('[PowerPagesApi] fetch starting', {
+      method,
+      path,
+      signalAborted: options.signal?.aborted ?? false,
+    })
+    const response = await fetch(path, {
+      ...requestOptions,
+      credentials: 'same-origin',
+      headers,
+    })
 
-  if (!response.ok) {
-    throw await PowerPagesApiError.fromResponse(response)
+    console.debug('[PowerPagesApi] response received', {
+      method,
+      path,
+      status: response.status,
+      contentType: response.headers?.get?.('content-type') ?? null,
+    })
+
+    if (!response.ok) {
+      throw await PowerPagesApiError.fromResponse(response)
+    }
+
+    return response
+  } catch (error) {
+    console.error('[PowerPagesApi] request failed', {
+      method,
+      path,
+      signalAborted: options.signal?.aborted ?? false,
+      errorName: error instanceof Error ? error.name : 'UnknownError',
+      errorMessage: error instanceof Error ? error.message : String(error),
+    })
+    throw error
   }
-
-  return response
 }

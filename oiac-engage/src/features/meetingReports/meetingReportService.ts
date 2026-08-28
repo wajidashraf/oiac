@@ -193,20 +193,31 @@ export async function getMeetingReportProfile(
   contactId: string,
   signal?: AbortSignal,
 ): Promise<MeetingReportProfile> {
+  console.debug('[MeetingReportProfile] loading profile', {
+    contactId,
+    signalAborted: signal?.aborted ?? false,
+  })
   const id = requiredGuid(contactId, 'Authenticated Contact')
+  const contactUrl = `/_api/contacts(${id})?$select=contactid,fullname,emailaddress1,address1_city,address1_stateorprovince,_mss_district_value`
+  console.debug('[MeetingReportProfile] requesting Contact', { normalizedContactId: id, contactUrl })
   const contact = await powerPagesFetch<ContactApiRecord>(
-    `/_api/contacts(${id})?$select=contactid,fullname,emailaddress1,address1_city,address1_stateorprovince,_mss_district_value`,
+    contactUrl,
     { signal },
   )
+  console.debug('[MeetingReportProfile] Contact received', { contact })
   const resolvedContactId = requiredGuid(contact.contactid, 'Authenticated Contact')
   const resolvedDistrictId = normalizeGuid(contact._mss_district_value)
+  console.debug('[MeetingReportProfile] district resolved', { resolvedDistrictId })
   let districtName = ''
 
   if (resolvedDistrictId) {
+    const districtUrl = `/_api/mss_districts(${resolvedDistrictId})?$select=mss_districtid,mss_number`
+    console.debug('[MeetingReportProfile] requesting District', { districtUrl })
     const district = await powerPagesFetch<DistrictApiRecord>(
-      `/_api/mss_districts(${resolvedDistrictId})?$select=mss_districtid,mss_number`,
+      districtUrl,
       { signal },
     )
+    console.debug('[MeetingReportProfile] District received', { district })
     districtName = text(district.mss_number)
   }
 

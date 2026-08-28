@@ -81,6 +81,12 @@ export function useDistrictContacts(contactId?: string): DistrictContactsState {
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted || requestId !== districtRequestId.current || isAbortError(error)) return
+        console.error('[DistrictContacts] district request failed', {
+          error,
+          contactId,
+          requestId,
+          signalAborted: controller.signal.aborted,
+        })
         setStatus('error')
         setErrorMessage('Your district could not be loaded. Try again.')
       })
@@ -108,6 +114,14 @@ export function useDistrictContacts(contactId?: string): DistrictContactsState {
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted || requestId !== contactsRequestId.current || isAbortError(error)) return
+        console.error('[DistrictContacts] Contacts request failed', {
+          error,
+          districtId,
+          page,
+          searchLength: debouncedSearch.length,
+          requestId,
+          signalAborted: controller.signal.aborted,
+        })
         setStatus('error')
         setErrorMessage('Contacts could not be loaded. Try again.')
       })
