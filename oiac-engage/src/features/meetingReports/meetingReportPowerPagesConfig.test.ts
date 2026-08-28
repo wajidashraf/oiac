@@ -55,7 +55,7 @@ test('grants all-district Contact lookup access without Contact write access', (
   expect(contactDirectory).toContain('delete: false')
 })
 
-test('grants authenticated users global read-only District lookup access', () => {
+test('allows Meeting Reports to associate with read-only District lookup records', () => {
   expectAuthenticatedOnly(districtDirectory)
   expect(districtDirectory).toContain('entitylogicalname: mss_district')
   expect(districtDirectory).toContain('scope: 756150000')
@@ -63,7 +63,7 @@ test('grants authenticated users global read-only District lookup access', () =>
   expect(districtDirectory).toContain('create: false')
   expect(districtDirectory).toContain('write: false')
   expect(districtDirectory).toContain('delete: false')
-  expect(districtDirectory).toContain('append: false')
+  expect(districtDirectory).toContain('append: true')
   expect(districtDirectory).toContain('appendto: true')
 })
 
