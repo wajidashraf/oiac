@@ -1867,26 +1867,63 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   line-height: 1.35;
 }
 
-.page--report-form .meeting-report-lookup__selection {
+.page--report-form .meeting-report-lookup__control {
   display: flex;
   min-height: 2.75rem;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
+  flex-wrap: wrap;
+  gap: 0.35rem;
   border: 1px solid #cfdbd9;
   border-radius: var(--radius-sm);
-  background: var(--color-primary-soft);
-  padding: 0.55rem 0.75rem;
+  background: #fff;
+  padding: 0.25rem 0.4rem;
 }
 
-.page--report-form .meeting-report-lookup__selection > span { display: grid; min-width: 0; gap: 0.1rem; }
+.page--report-form .meeting-report-lookup__control:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgb(60 92 87 / 12%);
+}
 
-.page--report-form .meeting-report-lookup__selection strong,
-.page--report-form .meeting-report-lookup__selection small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.page--report-form .meeting-report-lookup__control > input {
+  flex: 1 1 9rem;
+  min-width: 7rem;
+  min-height: 2.1rem;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0.3rem 0.35rem;
+}
 
-.page--report-form .meeting-report-lookup__selection strong { font-size: 0.82rem; }
+.page--report-form .meeting-report-lookup__control > input:focus {
+  border: 0;
+  box-shadow: none;
+  outline: 0;
+}
 
-.page--report-form .meeting-report-lookup__selection small { color: var(--color-text-muted); font-size: 0.7rem; }
+.page--report-form .meeting-report-lookup__selection {
+  display: inline-flex;
+  max-width: 100%;
+  min-height: 1.95rem;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid #cddad8;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
+  padding: 0.15rem 0.25rem 0.15rem 0.45rem;
+}
+
+.page--report-form .meeting-report-lookup__selection-icon { width: 0.9rem; height: 0.9rem; flex: 0 0 auto; }
+
+.page--report-form .meeting-report-lookup__selection strong {
+  overflow: hidden;
+  min-width: 0;
+  color: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .page--report-form .meeting-report-lookup__selection button,
 .page--report-form .meeting-report-lookup__message button,
@@ -1901,6 +1938,14 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   font-size: 0.72rem;
   font-weight: 700;
   padding: 0.25rem 0.45rem;
+}
+
+.page--report-form .meeting-report-lookup__selection button {
+  display: inline-grid;
+  width: 1.55rem;
+  min-height: 1.55rem;
+  place-items: center;
+  padding: 0;
 }
 
 .page--report-form .meeting-report-lookup__selection button:hover,

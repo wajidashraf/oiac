@@ -1,4 +1,5 @@
 import { useId, useState } from 'react'
+import { FiMapPin, FiUser, FiX } from 'react-icons/fi'
 import { searchContacts, searchDistricts } from './meetingReportService'
 import type { ContactLookupKind, ContactOption, DistrictOption } from './meetingReportTypes'
 import { useMeetingReportLookup } from './useMeetingReportLookup'
@@ -33,29 +34,32 @@ export function ContactLookup({
       <label htmlFor={id}>
         <span>{label}{required ? <span className="required-mark" aria-hidden="true"> *</span> : null}</span>
       </label>
-      {value ? (
-        <div className="meeting-report-lookup__selection">
-          <span><strong>{value.name}</strong>{value.email ? <small>{value.email}</small> : null}</span>
-          <button type="button" onClick={() => onChange(null)} disabled={disabled} aria-label={`Clear ${label}`}>Clear</button>
-        </div>
-      ) : null}
-      <input
-        id={id}
-        role="combobox"
-        aria-autocomplete="list"
-        aria-expanded={open}
-        aria-controls={`${id}-options`}
-        aria-required={required}
-        autoComplete="off"
-        disabled={disabled}
-        placeholder="Search and select..."
-        value={lookup.search}
-        onChange={(event) => {
-          lookup.setSearch(event.target.value)
-          setOpen(true)
-        }}
-        onFocus={() => setOpen(true)}
-      />
+      <div className="meeting-report-lookup__control">
+        {value ? (
+          <div className="meeting-report-lookup__selection" title={[value.name, value.email].filter(Boolean).join(' · ')}>
+            <FiUser className="meeting-report-lookup__selection-icon" aria-hidden="true" />
+            <strong>{value.name}</strong>
+            <button type="button" onClick={() => onChange(null)} disabled={disabled} aria-label={`Clear ${label}`}><FiX aria-hidden="true" /></button>
+          </div>
+        ) : null}
+        <input
+          id={id}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={open}
+          aria-controls={`${id}-options`}
+          aria-required={required}
+          autoComplete="off"
+          disabled={disabled}
+          placeholder={value ? 'Search to replace...' : 'Search and select...'}
+          value={lookup.search}
+          onChange={(event) => {
+            lookup.setSearch(event.target.value)
+            setOpen(true)
+          }}
+          onFocus={() => setOpen(true)}
+        />
+      </div>
       {open ? (
         <LookupResults
           id={`${id}-options`}
@@ -115,29 +119,32 @@ export function DistrictLookup({
       <label htmlFor={id}>
         <span>{label}{required ? <span className="required-mark" aria-hidden="true"> *</span> : null}</span>
       </label>
-      {value ? (
-        <div className="meeting-report-lookup__selection">
-          <span><strong>{value.name}</strong></span>
-          <button type="button" onClick={() => onChange(null)} disabled={disabled} aria-label={`Clear ${label}`}>Clear</button>
-        </div>
-      ) : null}
-      <input
-        id={id}
-        role="combobox"
-        aria-autocomplete="list"
-        aria-expanded={open}
-        aria-controls={`${id}-options`}
-        aria-required={required}
-        autoComplete="off"
-        disabled={disabled}
-        placeholder="Search and select..."
-        value={lookup.search}
-        onChange={(event) => {
-          lookup.setSearch(event.target.value)
-          setOpen(true)
-        }}
-        onFocus={() => setOpen(true)}
-      />
+      <div className="meeting-report-lookup__control">
+        {value ? (
+          <div className="meeting-report-lookup__selection" title={value.name}>
+            <FiMapPin className="meeting-report-lookup__selection-icon" aria-hidden="true" />
+            <strong>{value.name}</strong>
+            <button type="button" onClick={() => onChange(null)} disabled={disabled} aria-label={`Clear ${label}`}><FiX aria-hidden="true" /></button>
+          </div>
+        ) : null}
+        <input
+          id={id}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={open}
+          aria-controls={`${id}-options`}
+          aria-required={required}
+          autoComplete="off"
+          disabled={disabled}
+          placeholder={value ? 'Search to replace...' : 'Search and select...'}
+          value={lookup.search}
+          onChange={(event) => {
+            lookup.setSearch(event.target.value)
+            setOpen(true)
+          }}
+          onFocus={() => setOpen(true)}
+        />
+      </div>
       {open ? (
         <LookupResults
           id={`${id}-options`}

@@ -87,6 +87,26 @@ test('selects and clears a representative', async () => {
   expect(screen.getByRole('option', { name: /Sara Rahimi/ })).toBeInTheDocument()
 })
 
+test('keeps selected values inside every single lookup field', () => {
+  const district: DistrictOption = { id: '33333333-3333-3333-3333-333333333333', name: 'DC' }
+  render(
+    <>
+      <ContactLookup label="Representative / Office" value={sara} onChange={vi.fn()} loadOptions={async () => []} />
+      <DistrictLookup label="State / District" value={district} onChange={vi.fn()} loadOptions={async () => []} />
+    </>,
+  )
+
+  const representativeControl = screen.getByRole('combobox', { name: 'Representative / Office' }).parentElement
+  const districtControl = screen.getByRole('combobox', { name: 'State / District' }).parentElement
+
+  expect(representativeControl).toHaveClass('meeting-report-lookup__control')
+  expect(representativeControl).toContainElement(screen.getByText('Sara Rahimi'))
+  expect(representativeControl).toContainElement(screen.getByRole('button', { name: 'Clear Representative / Office' }))
+  expect(districtControl).toHaveClass('meeting-report-lookup__control')
+  expect(districtControl).toContainElement(screen.getByText('DC'))
+  expect(districtControl).toContainElement(screen.getByRole('button', { name: 'Clear State / District' }))
+})
+
 test('prevents duplicate multi-select Contacts and supports removal', async () => {
   const user = userEvent.setup()
   const onChange = vi.fn()
