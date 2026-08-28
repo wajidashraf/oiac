@@ -216,7 +216,7 @@ adx_sitesetting:
   IsDeleted: false
 - RecordId: 3bfc321d-aa33-4d7b-92d0-a0bd6d9dfbe2
   DisplayName: 3bfc321d-aa33-4d7b-92d0-a0bd6d9dfbe2
-  CheckSum: 411d68c397869327a20e267645c3fcfcd979f4f57924c2886d0c6d512a1b02d6
+  CheckSum: a30414822d565552ef1768e6b4a96d9ce0925aa9e89401cedf8f3619bf5c826f
   IsDeleted: false
 - RecordId: 3cab75dd-156c-44d2-a811-a9c528e85d79
   DisplayName: 3cab75dd-156c-44d2-a811-a9c528e85d79
@@ -434,14 +434,14 @@ adx_webfile:
 - RecordId: 667e7142-0092-441a-8a2f-7c498c2ed024
   DisplayName: 667e7142-0092-441a-8a2f-7c498c2ed024
   CheckSum: 79aa1cf2e77c5ddd268a6bb5fffbcfd587539f2aede65e05bdeb987308b7cc79
-  IsDeleted: false
+  IsDeleted: true
 - RecordId: 75ca6a4d-852e-4319-8312-c9f70301899e
   DisplayName: 75ca6a4d-852e-4319-8312-c9f70301899e
   CheckSum: dd38ca4fb5f04251aeb5b507346d3cd462e3c16bafac9c39da72c617719563fc
   IsDeleted: false
 - RecordId: 8f607af5-905b-48cb-aee8-e80e065dad40
   DisplayName: 8f607af5-905b-48cb-aee8-e80e065dad40
-  CheckSum: 8fa53e7ad4188e77740cb31d128559e746f94692eb82ec1774a498b73446a4f9
+  CheckSum: dce70693f9001e45ae0e134c7b9020b62345ef4be1575d93224295ed795e8b5f
   IsDeleted: false
 - RecordId: 98c794cf-8c42-4880-837a-648c750f26a4
   DisplayName: 98c794cf-8c42-4880-837a-648c750f26a4
@@ -500,7 +500,7 @@ adx_webpage:
   IsDeleted: false
 - RecordId: 71591c4f-0e93-46f1-b1c4-91008a9f143a
   DisplayName: 71591c4f-0e93-46f1-b1c4-91008a9f143a
-  CheckSum: 266bfdb019efa10ad2cbd4a857cafb5647c657a87425361e1a4a7a41317b565d
+  CheckSum: 56029a09b1c1cac66610ef8b80ae3798201a5baeabc806e1d521763b10089680
   IsDeleted: false
 - RecordId: 950db54f-769f-4242-88c4-2fc0329bb3e8
   DisplayName: 950db54f-769f-4242-88c4-2fc0329bb3e8
@@ -666,14 +666,14 @@ annotation:
 - RecordId: 667e7142-0092-441a-8a2f-7c498c2ed024
   DisplayName: index-Vc-tUEFz.css
   CheckSum: 0d190b85784b0f56aa888c89c6ac9efd9e57a55e5198dc5ff0aa2273d51fb0b1
-  IsDeleted: false
+  IsDeleted: true
 - RecordId: 75ca6a4d-852e-4319-8312-c9f70301899e
   DisplayName: bootstrap.min.css
   CheckSum: ddb7f6c751720d8189640f5d2582c97fd72d3f47bc824ac0f8210c5ec31bbdaf
   IsDeleted: false
 - RecordId: 8f607af5-905b-48cb-aee8-e80e065dad40
   DisplayName: index.html
-  CheckSum: 2424ab27d95b6fa2db5c57837825eecc3947950f2ca0ad58e466f601cf56f48a
+  CheckSum: 357ade6c91dc1163d200880dc665f70aeaa79698ad128e038cfe965ee91a8940
   IsDeleted: false
 - RecordId: 98c794cf-8c42-4880-837a-648c750f26a4
   DisplayName: logo.png
