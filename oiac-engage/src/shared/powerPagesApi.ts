@@ -30,6 +30,19 @@ export class PowerPagesApiError extends Error {
   }
 }
 
+function normalizeRequestVerificationToken(value: unknown): string {
+  if (typeof value !== 'string') return ''
+
+  const response = value.trim()
+  if (!response.includes('<')) return response
+
+  const template = document.createElement('template')
+  template.innerHTML = response
+  return template.content
+    .querySelector<HTMLInputElement>('input[name="__RequestVerificationToken"]')
+    ?.value.trim() ?? ''
+}
+
 function getRequestVerificationToken(): Promise<string> {
   const tokenProvider = (window as PowerPagesWindow).shell?.getTokenDeferred
 
@@ -43,7 +56,7 @@ function getRequestVerificationToken(): Promise<string> {
     try {
       tokenProvider()
         .done((token) => {
-          const normalizedToken = typeof token === 'string' ? token.trim() : ''
+          const normalizedToken = normalizeRequestVerificationToken(token)
           if (normalizedToken) {
             resolve(normalizedToken)
             return

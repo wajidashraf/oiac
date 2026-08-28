@@ -75,6 +75,24 @@ describe('powerPagesFetch', () => {
     })
   })
 
+  test('extracts the CSRF value when Power Pages returns hidden-input markup', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ value: 'district contacts' }))
+    vi.stubGlobal('fetch', fetchMock)
+    setShellToken(resolvedDeferred(
+      '<input name="__RequestVerificationToken" type="hidden" value="csrf_token-with-symbols" />',
+    ))
+
+    await powerPagesFetch('/_api/contacts')
+
+    expect(fetchMock).toHaveBeenCalledWith('/_api/contacts', {
+      credentials: 'same-origin',
+      headers: {
+        Accept: 'application/json',
+        __RequestVerificationToken: 'csrf_token-with-symbols',
+      },
+    })
+  })
+
   test('exposes a successful raw response so callers can inspect entity headers', async () => {
     const response = new Response(null, {
       status: 204,
