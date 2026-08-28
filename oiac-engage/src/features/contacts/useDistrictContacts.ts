@@ -45,9 +45,13 @@ export function useDistrictContacts(contactId?: string): DistrictContactsState {
   const [contactsRetry, setContactsRetry] = useState(0)
   const districtRequestId = useRef(0)
   const contactsRequestId = useRef(0)
+  const pageLinks = useRef<(string | null)[]>([null])
+  const [nextLink, setNextLink] = useState<string | null>(null)
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
+      pageLinks.current = [null]
+      setNextLink(null)
       setPage(1)
       setDebouncedSearch(search.trim())
     }, 350)
@@ -61,6 +65,8 @@ export function useDistrictContacts(contactId?: string): DistrictContactsState {
     setDistrictId(null)
     setContacts([])
     setHasNext(false)
+    setNextLink(null)
+    pageLinks.current = [null]
     setPage(1)
     setErrorMessage(null)
 
@@ -99,17 +105,19 @@ export function useDistrictContacts(contactId?: string): DistrictContactsState {
 
     const requestId = ++contactsRequestId.current
     const controller = new AbortController()
+    const currentNextLink = pageLinks.current[page - 1] ?? null
     setStatus('loading-contacts')
     setErrorMessage(null)
 
     getDistrictContacts(
-      { districtId, page, search: debouncedSearch },
+      { districtId, search: debouncedSearch, nextLink: currentNextLink },
       controller.signal,
     )
       .then((result) => {
         if (controller.signal.aborted || requestId !== contactsRequestId.current) return
         setContacts(result.contacts)
         setHasNext(result.hasNext)
+        setNextLink(result.nextLink)
         setStatus('ready')
       })
       .catch((error: unknown) => {
@@ -118,6 +126,7 @@ export function useDistrictContacts(contactId?: string): DistrictContactsState {
           error,
           districtId,
           page,
+          hasContinuation: Boolean(currentNextLink),
           searchLength: debouncedSearch.length,
           requestId,
           signalAborted: controller.signal.aborted,
@@ -129,7 +138,11 @@ export function useDistrictContacts(contactId?: string): DistrictContactsState {
     return () => controller.abort()
   }, [contactsRetry, debouncedSearch, districtId, page])
 
-  const nextPage = useCallback(() => setPage((currentPage) => currentPage + 1), [])
+  const nextPage = useCallback(() => {
+    if (!nextLink) return
+    pageLinks.current[page] = nextLink
+    setPage((currentPage) => currentPage + 1)
+  }, [nextLink, page])
   const previousPage = useCallback(() => setPage((currentPage) => Math.max(1, currentPage - 1)), [])
   const retry = useCallback(() => {
     if (districtId) {

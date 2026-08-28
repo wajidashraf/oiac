@@ -21,10 +21,11 @@ export type DistrictContact = {
 export type ContactPage = {
   readonly contacts: readonly DistrictContact[]
   readonly hasNext: boolean
+  readonly nextLink: string | null
 }
 
 export type ContactQuery = {
   readonly districtId: string
-  readonly page: number
   readonly search: string
+  readonly nextLink?: string | null
 }

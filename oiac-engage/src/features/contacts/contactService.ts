@@ -53,10 +53,9 @@ function mapContact(record: ContactRecord, districtId: string): DistrictContact 
   }
 }
 
-export function buildContactsQuery({ districtId, page, search }: ContactQuery): string {
+export function buildContactsQuery({ districtId, search }: ContactQuery): string {
   const normalizedDistrictId = normalizeGuid(districtId)
   if (!normalizedDistrictId) throw new Error('A valid district identifier is required.')
-  if (!Number.isInteger(page) || page < 1) throw new Error('The Contacts page number must be at least 1.')
 
   const districtFilter = `_mss_district_value eq ${normalizedDistrictId}`
   const normalizedSearch = search.trim()
@@ -70,9 +69,17 @@ export function buildContactsQuery({ districtId, page, search }: ContactQuery): 
   params.set('$select', CONTACT_SELECT.join(','))
   params.set('$filter', filter)
   params.set('$orderby', 'fullname asc,contactid asc')
-  params.set('$skip', String((page - 1) * CONTACT_PAGE_SIZE))
-  params.set('$top', String(CONTACT_PAGE_SIZE + 1))
+  params.set('$count', 'true')
   return `?${params.toString()}`
+}
+
+function normalizeContactsNextLink(nextLink: string): string {
+  const baseOrigin = typeof window === 'undefined' ? 'https://powerpages.local' : window.location.origin
+  const parsed = new URL(nextLink, baseOrigin)
+  if (parsed.origin !== baseOrigin || parsed.pathname.toLowerCase() !== '/_api/contacts') {
+    throw new Error('Dataverse returned an invalid Contacts continuation link.')
+  }
+  return `${parsed.pathname}${parsed.search}`
 }
 
 export async function getLoggedInUserDistrict(
@@ -103,16 +110,28 @@ export async function getDistrictContacts(
   const normalizedDistrictId = normalizeGuid(query.districtId)
   if (!normalizedDistrictId) throw new Error('A valid district identifier is required.')
 
-  const response = await powerPagesFetch<{ readonly value: readonly ContactRecord[] }>(
-    `/_api/contacts${buildContactsQuery({ ...query, districtId: normalizedDistrictId })}`,
-    { signal },
+  const requestPath = query.nextLink
+    ? normalizeContactsNextLink(query.nextLink)
+    : `/_api/contacts${buildContactsQuery({ ...query, districtId: normalizedDistrictId })}`
+  const response = await powerPagesFetch<{
+    readonly value: readonly ContactRecord[]
+    readonly '@odata.nextLink'?: string
+  }>(
+    requestPath,
+    {
+      signal,
+      headers: { Prefer: `odata.maxpagesize=${CONTACT_PAGE_SIZE}` },
+    },
   )
   if (!Array.isArray(response.value)) throw new Error('Dataverse returned an invalid Contacts response.')
 
+  const nextLink = typeof response['@odata.nextLink'] === 'string'
+    ? response['@odata.nextLink']
+    : null
+
   return {
-    contacts: response.value
-      .slice(0, CONTACT_PAGE_SIZE)
-      .map((record) => mapContact(record, normalizedDistrictId)),
-    hasNext: response.value.length > CONTACT_PAGE_SIZE,
+    contacts: response.value.map((record) => mapContact(record, normalizedDistrictId)),
+    hasNext: Boolean(nextLink),
+    nextLink,
   }
 }

@@ -25,6 +25,7 @@ const firstPage: ContactPage = {
     districtId: DISTRICT_ID,
   }],
   hasNext: true,
+  nextLink: '/_api/contacts?%24skiptoken=opaque-page-2',
 }
 
 function deferred<T>() {
@@ -58,7 +59,7 @@ describe('useDistrictContacts', () => {
 
     await waitFor(() => expect(result.current.status).toBe('ready'))
     expect(getDistrictContactsMock).toHaveBeenCalledWith(
-      { districtId: DISTRICT_ID, page: 1, search: '' },
+      { districtId: DISTRICT_ID, search: '', nextLink: null },
       expect.any(AbortSignal),
     )
   })
@@ -100,12 +101,12 @@ describe('useDistrictContacts', () => {
 
     expect(result.current.page).toBe(1)
     expect(getDistrictContactsMock).toHaveBeenLastCalledWith(
-      { districtId: DISTRICT_ID, page: 1, search: 'Sara' },
+      { districtId: DISTRICT_ID, search: 'Sara', nextLink: null },
       expect.any(AbortSignal),
     )
   })
 
-  test('uses server pages and never navigates below page one', async () => {
+  test('uses server continuation cursors and never navigates below page one', async () => {
     const { result } = renderHook(() => useDistrictContacts(CONTACT_ID))
     await waitFor(() => expect(result.current.status).toBe('ready'))
 
@@ -115,7 +116,7 @@ describe('useDistrictContacts', () => {
     act(() => result.current.nextPage())
     await waitFor(() => expect(result.current.page).toBe(2))
     expect(getDistrictContactsMock).toHaveBeenLastCalledWith(
-      { districtId: DISTRICT_ID, page: 2, search: '' },
+      { districtId: DISTRICT_ID, search: '', nextLink: firstPage.nextLink },
       expect.any(AbortSignal),
     )
 
@@ -133,13 +134,14 @@ describe('useDistrictContacts', () => {
 
     await waitFor(() => expect(getDistrictContactsMock).toHaveBeenCalledTimes(1))
     const firstSignal = getDistrictContactsMock.mock.calls[0][1]
-    act(() => result.current.nextPage())
+    act(() => result.current.retry())
     await waitFor(() => expect(getDistrictContactsMock).toHaveBeenCalledTimes(2))
     expect(firstSignal?.aborted).toBe(true)
 
     await act(async () => pageTwo.resolve({
       contacts: [{ ...firstPage.contacts[0], fullName: 'Newest result' }],
       hasNext: false,
+      nextLink: null,
     }))
     await waitFor(() => expect(result.current.contacts[0]?.fullName).toBe('Newest result'))
 

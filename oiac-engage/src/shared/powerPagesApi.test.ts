@@ -156,7 +156,7 @@ describe('powerPagesFetch', () => {
 
   test('converts failed responses to a non-sensitive typed error', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(
-      { error: { message: 'Sensitive Dataverse implementation detail' } },
+      { error: { code: '90040120', message: 'TablePermissionCreateIsMissing' } },
       { ok: false, status: 403 },
     )))
 
@@ -165,6 +165,8 @@ describe('powerPagesFetch', () => {
     await expect(request).rejects.toBeInstanceOf(PowerPagesApiError)
     await expect(request).rejects.toMatchObject({
       status: 403,
+      code: '90040120',
+      diagnosticMessage: 'TablePermissionCreateIsMissing',
       message: 'The Power Pages request could not be completed.',
     })
   })

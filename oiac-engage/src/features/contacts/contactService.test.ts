@@ -33,8 +33,8 @@ describe('Contact Web API service', () => {
     powerPagesFetchMock.mockReset()
   })
 
-  test('builds an exact district-scoped second-page query', () => {
-    const query = buildContactsQuery({ districtId: DISTRICT_ID, page: 2, search: '' })
+  test('builds a district-scoped cursor query without unsupported offset pagination', () => {
+    const query = buildContactsQuery({ districtId: DISTRICT_ID, search: '' })
     const params = new URLSearchParams(query.slice(1))
 
     expect(params.get('$select')).toBe(
@@ -42,12 +42,13 @@ describe('Contact Web API service', () => {
     )
     expect(params.get('$filter')).toBe(`_mss_district_value eq ${DISTRICT_ID}`)
     expect(params.get('$orderby')).toBe('fullname asc,contactid asc')
-    expect(params.get('$skip')).toBe('15')
-    expect(params.get('$top')).toBe('16')
+    expect(params.get('$count')).toBe('true')
+    expect(params.has('$skip')).toBe(false)
+    expect(params.has('$top')).toBe(false)
   })
 
   test('escapes apostrophes and searches all required fields inside the district boundary', () => {
-    const query = buildContactsQuery({ districtId: DISTRICT_ID, page: 1, search: "  O'Connor & Sons  " })
+    const query = buildContactsQuery({ districtId: DISTRICT_ID, search: "  O'Connor & Sons  " })
     const filter = new URLSearchParams(query.slice(1)).get('$filter')
 
     expect(filter).toBe(
@@ -60,11 +61,9 @@ describe('Contact Web API service', () => {
     )
   })
 
-  test('rejects invalid identifiers and page numbers before a request can be built', () => {
-    expect(() => buildContactsQuery({ districtId: 'not-a-guid', page: 1, search: '' }))
+  test('rejects an invalid district identifier before a request can be built', () => {
+    expect(() => buildContactsQuery({ districtId: 'not-a-guid', search: '' }))
       .toThrow('A valid district identifier is required.')
-    expect(() => buildContactsQuery({ districtId: DISTRICT_ID, page: 0, search: '' }))
-      .toThrow('The Contacts page number must be at least 1.')
   })
 
   test('retrieves only the district lookup from the signed-in Contact', async () => {
@@ -94,27 +93,48 @@ describe('Contact Web API service', () => {
     expect(powerPagesFetchMock).not.toHaveBeenCalled()
   })
 
-  test('displays fifteen records and uses the sixteenth only to enable Next', async () => {
-    powerPagesFetchMock.mockResolvedValue({ value: Array.from({ length: 16 }, (_, index) => makeContact(index + 1)) })
+  test('requests a fifteen-record server page and exposes its continuation cursor', async () => {
+    const nextLink = `https://oiac-engage.powerappsportals.com/_api/contacts?%24skiptoken=opaque-page-2`
+    powerPagesFetchMock.mockResolvedValue({
+      value: Array.from({ length: 15 }, (_, index) => makeContact(index + 1)),
+      '@odata.nextLink': nextLink,
+    })
 
-    const result = await getDistrictContacts({ districtId: DISTRICT_ID, page: 1, search: '' })
+    const result = await getDistrictContacts({ districtId: DISTRICT_ID, search: '' })
 
     expect(result.contacts).toHaveLength(CONTACT_PAGE_SIZE)
     expect(result.contacts[CONTACT_PAGE_SIZE - 1]?.fullName).toBe('Contact 15')
     expect(result.hasNext).toBe(true)
+    expect(result.nextLink).toBe(nextLink)
     expect(powerPagesFetchMock).toHaveBeenCalledWith(
       expect.stringMatching(/^\/_api\/contacts\?/),
-      { signal: undefined },
+      {
+        signal: undefined,
+        headers: { Prefer: `odata.maxpagesize=${CONTACT_PAGE_SIZE}` },
+      },
     )
   })
 
-  test('disables Next when the server returns no look-ahead record', async () => {
+  test('uses the server continuation link directly for the next page', async () => {
+    const nextLink = '/_api/contacts?%24skiptoken=opaque-page-2'
+    powerPagesFetchMock.mockResolvedValue({ value: [makeContact(16)] })
+
+    await getDistrictContacts({ districtId: DISTRICT_ID, search: '', nextLink })
+
+    expect(powerPagesFetchMock).toHaveBeenCalledWith(nextLink, {
+      signal: undefined,
+      headers: { Prefer: `odata.maxpagesize=${CONTACT_PAGE_SIZE}` },
+    })
+  })
+
+  test('disables Next when the server returns no continuation link', async () => {
     powerPagesFetchMock.mockResolvedValue({ value: Array.from({ length: 15 }, (_, index) => makeContact(index + 1)) })
 
-    const result = await getDistrictContacts({ districtId: DISTRICT_ID, page: 1, search: '' })
+    const result = await getDistrictContacts({ districtId: DISTRICT_ID, search: '' })
 
     expect(result.contacts).toHaveLength(15)
     expect(result.hasNext).toBe(false)
+    expect(result.nextLink).toBeNull()
   })
 
   test('maps missing Dataverse values to null display values', async () => {
@@ -122,7 +142,7 @@ describe('Contact Web API service', () => {
       value: [{ contactid: CONTACT_ID, _mss_district_value: DISTRICT_ID } satisfies ContactRecord],
     })
 
-    const result = await getDistrictContacts({ districtId: DISTRICT_ID, page: 1, search: '' })
+    const result = await getDistrictContacts({ districtId: DISTRICT_ID, search: '' })
 
     expect(result.contacts[0]).toEqual({
       id: CONTACT_ID,

@@ -7,16 +7,41 @@ let requestVerificationTokenPromise: Promise<string> | null = null
 
 export class PowerPagesApiError extends Error {
   readonly status?: number
+  readonly code?: string
+  readonly diagnosticMessage?: string
 
-  constructor(message: string, status?: number) {
+  constructor(
+    message: string,
+    status?: number,
+    details: { readonly code?: string; readonly diagnosticMessage?: string } = {},
+  ) {
     super(message)
     this.name = 'PowerPagesApiError'
     this.status = status
+    this.code = details.code
+    this.diagnosticMessage = details.diagnosticMessage
   }
 
   static async fromResponse(response: Response): Promise<PowerPagesApiError> {
-    await response.text().catch(() => undefined)
-    return new PowerPagesApiError('The Power Pages request could not be completed.', response.status)
+    const responseText = await response.text().catch(() => '')
+    let code: string | undefined
+    let diagnosticMessage: string | undefined
+
+    try {
+      const body = JSON.parse(responseText) as {
+        readonly error?: { readonly code?: unknown; readonly message?: unknown }
+      }
+      if (typeof body.error?.code === 'string') code = body.error.code
+      if (typeof body.error?.message === 'string') diagnosticMessage = body.error.message.slice(0, 1000)
+    } catch {
+      // Power Pages can return HTML error pages. Do not echo them into application logs.
+    }
+
+    return new PowerPagesApiError(
+      'The Power Pages request could not be completed.',
+      response.status,
+      { code, diagnosticMessage },
+    )
   }
 }
 
@@ -152,6 +177,9 @@ export async function powerPagesRequest(
       signalAborted: options.signal?.aborted ?? false,
       errorName: error instanceof Error ? error.name : 'UnknownError',
       errorMessage: error instanceof Error ? error.message : String(error),
+      errorStatus: error instanceof PowerPagesApiError ? error.status : undefined,
+      errorCode: error instanceof PowerPagesApiError ? error.code : undefined,
+      diagnosticMessage: error instanceof PowerPagesApiError ? error.diagnosticMessage : undefined,
     })
     throw error
   }
