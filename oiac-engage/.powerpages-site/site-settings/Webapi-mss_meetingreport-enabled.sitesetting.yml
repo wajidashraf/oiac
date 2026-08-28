@@ -1,0 +1,4 @@
+description: Enable authenticated Meeting Report Web API access
+id: 96fce9a9-a261-483c-936d-9b3d8d8cffcf
+name: Webapi/mss_meetingreport/enabled
+value: true

@@ -27,7 +27,7 @@ test('enables only the required Contact Web API fields and secured filtering', (
   expect(contactEnabled).toContain('name: Webapi/contact/enabled')
   expect(contactEnabled).toContain('value: true')
   expect(contactFields).toContain('name: Webapi/contact/fields')
-  expect(contactFields).toContain('value: "contactid,fullname,emailaddress1,mobilephone,address1_city,address1_stateorprovince,mss_district,_mss_district_value"')
+  expect(contactFields).toContain('value: "contactid,fullname,emailaddress1,mobilephone,address1_city,address1_stateorprovince,jobtitle,mss_district,_mss_district_value"')
   expect(disableODataFilter).toContain('name: Webapi/contact/disableodatafilter')
   expect(disableODataFilter).toContain('value: false')
   expect(innerError).toContain('name: Webapi/error/innererror')

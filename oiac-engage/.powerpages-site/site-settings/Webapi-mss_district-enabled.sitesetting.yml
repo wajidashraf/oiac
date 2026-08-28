@@ -1,0 +1,4 @@
+description: Enable authenticated District lookup access
+id: 2c15a5c6-75fb-4dc5-9686-c95dcb21efe8
+name: Webapi/mss_district/enabled
+value: true

@@ -1,0 +1,13 @@
+adx_entitypermission_webrole:
+- 0353acdd-7b95-4c07-8997-ae95dafd978d
+append: true
+appendto: true
+contactrelationship: mss_meetingreport_Reportedby_contact
+create: true
+delete: false
+entitylogicalname: mss_meetingreport
+entityname: Authenticated Owned Meeting Report Manage
+id: 9fa264f2-84d6-4a68-98ca-b4b4b663dd60
+read: true
+scope: 756150001
+write: true

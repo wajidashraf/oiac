@@ -1,0 +1,4 @@
+description: Allow secured OData filters for owned Meeting Reports
+id: 5940eb0a-bfaf-4038-8173-12ed5ee06243
+name: Webapi/mss_meetingreport/disableodatafilter
+value: false

@@ -1,0 +1,12 @@
+adx_entitypermission_webrole:
+- 0353acdd-7b95-4c07-8997-ae95dafd978d
+append: false
+appendto: false
+create: false
+delete: false
+entitylogicalname: mss_district
+entityname: Authenticated District Global Read
+id: c209641a-73ce-42a2-a1e7-8f70a22fe752
+read: true
+scope: 756150000
+write: false

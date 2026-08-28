@@ -1,0 +1,4 @@
+description: Allow secured OData filters for District lookup search
+id: d7884269-1171-4bc2-bd19-a95aa78f540b
+name: Webapi/mss_district/disableodatafilter
+value: false

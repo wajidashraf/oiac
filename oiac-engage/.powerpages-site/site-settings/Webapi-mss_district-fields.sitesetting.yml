@@ -1,0 +1,4 @@
+description: Allow only District lookup fields through the Web API
+id: 20cf5538-9039-4ff1-b627-72d89b879f69
+name: Webapi/mss_district/fields
+value: "mss_districtid,mss_number"

@@ -1,0 +1,4 @@
+description: Allow only Meeting Report fields required by the SPA workflow
+id: 03d2f139-42cd-4713-88d1-595b3733795c
+name: Webapi/mss_meetingreport/fields
+value: "mss_meetingreportid,mss_subject,mss_dateofmeeting,mss_representative,_mss_representative_value,mss_district,_mss_district_value,mss_meetingformat,mss_writedownwhatthestaffsaidnotwhatyousaid,mss_followupnoteoncethemeetingended,mss_overallsentiment,mss_reportedby,_mss_reportedby_value"
