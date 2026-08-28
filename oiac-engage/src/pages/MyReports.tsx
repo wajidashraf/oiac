@@ -15,7 +15,7 @@ export default function MyReports({ items = reports }: MyReportsProps) {
   const availableCount = items.filter((report) => report.status === 'Available').length
 
   return (
-    <div className="page">
+    <div className="page page--my-reports">
       <PageHeader
         eyebrow="Your records"
         title="My Reports"

@@ -12,6 +12,10 @@ test('uses the supplied branding and footer-only resource link', () => {
 
   expect(screen.getByRole('img', { name: 'Organization of Iranian American Communities' }))
     .toHaveAttribute('src', '/logo.png')
+  expect(screen.getByRole('img', { name: 'Organization of Iranian American Communities' }))
+    .toHaveAttribute('width', '392')
+  expect(screen.getByRole('img', { name: 'Organization of Iranian American Communities' }))
+    .toHaveAttribute('height', '154')
   expect(screen.getByRole('link', { name: 'Sign In' }))
     .toHaveAttribute('href', '/SignIn?returnUrl=%2F')
   expect(screen.getByRole('link', { name: 'Resources' })).toHaveAttribute('href', '/resources')

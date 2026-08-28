@@ -1,10 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { LuChevronDown, LuMenu } from 'react-icons/lu'
 import { NavLink, useLocation } from 'react-router-dom'
+import { getPrimaryRole } from '../auth/authorization'
+import type { PortalUser } from '../auth/powerPagesSession'
 
 const topLevelLinks = [
   { label: 'Home', to: '/' },
-  { label: 'My Reports', to: '/my-reports' },
+  { label: 'Meeting Report', to: '/report' },
   { label: 'My Calendar', to: '/my-calendar' },
+  { label: 'Contact', to: '/contact' },
 ]
 
 const activityLinks = [
@@ -15,25 +19,40 @@ const activityLinks = [
 
 const secondaryLinks = [
   { label: 'Press Coverage', to: '/press-coverage' },
-  { label: 'Contact', to: '/contact' },
 ]
 
 function navClassName({ isActive }: { isActive: boolean }) {
   return isActive ? 'portal-nav__link portal-nav__link--active' : 'portal-nav__link'
 }
 
-export default function PortalNav() {
+export default function PortalNav({ user }: { user: PortalUser }) {
   const location = useLocation()
+  const activityActive = location.pathname.startsWith('/activity')
+  const roleLabel = getPrimaryRole({ status: 'authenticated', user }) ?? 'Authenticated User'
   const [menuOpen, setMenuOpen] = useState(false)
-  const [activityOpen, setActivityOpen] = useState(location.pathname.startsWith('/activity'))
+  const [activityOpen, setActivityOpen] = useState(false)
+  const activityGroup = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setMenuOpen(false)
-    setActivityOpen(location.pathname.startsWith('/activity'))
+    setActivityOpen(false)
   }, [location.pathname])
 
+  useEffect(() => {
+    if (!activityOpen) return
+
+    function closeActivityOnOutsideClick(event: PointerEvent) {
+      if (!activityGroup.current?.contains(event.target as Node)) {
+        setActivityOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', closeActivityOnOutsideClick)
+    return () => document.removeEventListener('pointerdown', closeActivityOnOutsideClick)
+  }, [activityOpen])
+
   return (
-    <nav className="portal-nav" aria-label="Primary navigation">
+    <div className="portal-nav">
       <button
         className="portal-nav__menu-toggle"
         type="button"
@@ -41,46 +60,66 @@ export default function PortalNav() {
         aria-controls="portal-navigation-list"
         onClick={() => setMenuOpen((open) => !open)}
       >
-        Menu
+        <LuMenu aria-hidden="true" />
+        <span>Menu</span>
       </button>
 
       <div className={menuOpen ? 'portal-nav__items portal-nav__items--open' : 'portal-nav__items'} id="portal-navigation-list">
-        {topLevelLinks.map((link) => (
-          <NavLink key={link.to} className={navClassName} to={link.to} end={link.to === '/'}>
-            {link.label}
-          </NavLink>
-        ))}
+        <nav className="portal-nav__links" aria-label="Primary navigation">
+          {topLevelLinks.map((link) => (
+            <NavLink key={link.to} className={navClassName} to={link.to} end={link.to === '/'}>
+              {link.label}
+            </NavLink>
+          ))}
 
-        <div className="portal-nav__group">
-          <button
-            className="portal-nav__link portal-nav__activity-toggle"
-            type="button"
-            aria-expanded={activityOpen}
-            aria-controls="activity-navigation-list"
-            onClick={() => setActivityOpen((open) => !open)}
-          >
-            <span>Activity</span>
-            <span aria-hidden="true">⌄</span>
-          </button>
-          {activityOpen ? (
-            <div className="portal-nav__submenu" id="activity-navigation-list">
-              {activityLinks.map((link) => (
-                <NavLink key={link.to} className={navClassName} to={link.to}>
-                  {link.label}
-                </NavLink>
-              ))}
-            </div>
-          ) : null}
+          <div className="portal-nav__group" ref={activityGroup}>
+            <button
+              className={activityActive ? 'portal-nav__link portal-nav__link--active portal-nav__activity-toggle' : 'portal-nav__link portal-nav__activity-toggle'}
+              type="button"
+              aria-expanded={activityOpen}
+              aria-controls="activity-navigation-list"
+              onClick={() => setActivityOpen((open) => !open)}
+            >
+              <span>Activity</span>
+              <LuChevronDown className="portal-nav__chevron" aria-hidden="true" />
+            </button>
+            {activityOpen ? (
+              <div className="portal-nav__submenu" id="activity-navigation-list">
+                {activityLinks.map((link) => (
+                  <NavLink
+                    key={link.to}
+                    className={navClassName}
+                    to={link.to}
+                    onClick={() => {
+                      setActivityOpen(false)
+                      setMenuOpen(false)
+                    }}
+                  >
+                    {link.label}
+                  </NavLink>
+                ))}
+              </div>
+            ) : null}
+          </div>
+
+          {secondaryLinks.map((link) => (
+            <NavLink key={link.to} className={navClassName} to={link.to}>
+              {link.label}
+            </NavLink>
+          ))}
+        </nav>
+
+        <div className="portal-nav__account" role="group" aria-label="Account">
+          <span className="portal-nav__user">
+            <span className="portal-nav__avatar" aria-hidden="true">{roleLabel.charAt(0).toLocaleUpperCase()}</span>
+            <span>{roleLabel}</span>
+          </span>
+
+          <a className="portal-nav__signin" href="/Account/Login/LogOff?returnUrl=%2F">
+            <span>Sign out</span>
+          </a>
         </div>
-
-        {secondaryLinks.map((link) => (
-          <NavLink key={link.to} className={navClassName} to={link.to}>
-            {link.label}
-          </NavLink>
-        ))}
-
-        <a className="portal-nav__signin" href="/Account/Login/LogOff?returnUrl=%2F">Sign out</a>
       </div>
-    </nav>
+    </div>
   )
 }

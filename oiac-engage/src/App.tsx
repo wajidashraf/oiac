@@ -2,7 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { readPowerPagesSession, type AuthSession } from './auth/powerPagesSession'
 import AnonymousShell from './components/AnonymousShell'
 import AppShell from './components/AppShell'
-import SignInRedirect, { type ExternalNavigate } from './components/SignInRedirect'
+import type { ExternalNavigate } from './components/SignInRedirect'
 import ActivityLog from './pages/ActivityLog'
 import AnonymousHome from './pages/AnonymousHome'
 import Appointments from './pages/Appointments'
@@ -11,6 +11,7 @@ import Events from './pages/Events'
 import Home from './pages/Home'
 import MyCalendar from './pages/MyCalendar'
 import MyReports from './pages/MyReports'
+import MeetingReportForm from './pages/MeetingReportForm'
 import NotFound from './pages/NotFound'
 import PressCoverage from './pages/PressCoverage'
 import Report from './pages/Report'
@@ -21,25 +22,21 @@ type AppProps = {
   navigate?: ExternalNavigate
 }
 
-const browserNavigate: ExternalNavigate = (href) => window.location.assign(href)
+export default function App({ session: suppliedSession }: AppProps) {
+  const session = suppliedSession ?? readPowerPagesSession()
 
-export default function App({
-  session = readPowerPagesSession(),
-  navigate = browserNavigate,
-}: AppProps) {
   if (session.status === 'anonymous') {
     return (
       <AnonymousShell>
         <Routes>
-          <Route path="/" element={<AnonymousHome />} />
-          <Route path="*" element={<SignInRedirect navigate={navigate} />} />
+          <Route path="*" element={<AnonymousHome />} />
         </Routes>
       </AnonymousShell>
     )
   }
 
   return (
-    <AppShell>
+    <AppShell user={session.user}>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/my-reports" element={<MyReports />} />
@@ -51,6 +48,8 @@ export default function App({
         <Route path="/activity/appointments" element={<Appointments />} />
         <Route path="/press-coverage" element={<PressCoverage />} />
         <Route path="/report" element={<Report />} />
+        <Route path="/report/new" element={<MeetingReportForm />} />
+        <Route path="/report/:reportId/edit" element={<MeetingReportForm />} />
         <Route path="/resources" element={<Resources />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

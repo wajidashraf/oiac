@@ -3,6 +3,7 @@ export type PortalUser = {
   readonly firstName?: string
   readonly lastName?: string
   readonly contactId?: string
+  readonly userRoles: readonly string[]
 }
 
 export type AuthSession =
@@ -34,6 +35,12 @@ export function readPowerPagesSession(source: unknown = window): AuthSession {
       firstName: user.firstName,
       lastName: user.lastName,
       contactId: user.contactId,
+      userRoles: Array.isArray(user.userRoles)
+        ? user.userRoles
+          .filter((role): role is string => typeof role === 'string')
+          .map((role) => role.trim())
+          .filter((role) => role.length > 0)
+        : [],
     },
   }
 }

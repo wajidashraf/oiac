@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { LuArrowRight } from 'react-icons/lu'
 import { buildSignInUrl } from '../auth/signInUrl'
 
 export default function AnonymousHome() {
@@ -14,7 +15,7 @@ export default function AnonymousHome() {
         <p>The Organization of Iranian American Communities' secure portal for volunteers, members, and advocates.</p>
       </div>
       <a className="anonymous-hero__action" href={buildSignInUrl('/')}>
-        Sign In to Get Started <span aria-hidden="true">→</span>
+        <span>Sign In to Get Started</span><LuArrowRight aria-hidden="true" />
       </a>
     </section>
   )

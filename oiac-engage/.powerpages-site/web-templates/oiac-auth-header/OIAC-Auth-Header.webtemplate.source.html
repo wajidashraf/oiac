@@ -1,14 +1,1 @@
-{% assign auth_path = request.path | downcase %}
-{% if auth_path == '/signin' or auth_path == '/register' or auth_path contains '/account/login' %}
-  <header class="auth-site-header">
-    <div class="auth-site-header__inner">
-      <a class="auth-site-brand" href="/" aria-label="OIAC Engage home">
-        <img src="/logo.png" alt="Organization of Iranian American Communities">
-        <span>OIAC Engage</span>
-      </a>
-      {% unless user %}
-        <a class="auth-site-button" href="/SignIn?returnUrl=%2F">Sign In</a>
-      {% endunless %}
-    </div>
-  </header>
-{% endif %}
+<link rel="stylesheet" href="/auth.css?v=1">

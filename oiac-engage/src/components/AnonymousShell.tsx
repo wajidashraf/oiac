@@ -21,19 +21,19 @@ export default function AnonymousShell({ children }: PropsWithChildren) {
     <div className="portal-shell portal-shell--anonymous">
       <a className="skip-link" href="#main-content">Skip to main content</a>
       <header className="anonymous-header">
-        <div className="anonymous-header__inner">
+        <div className="anonymous-header__inner site-container">
           <Link className="anonymous-brand" to="/" aria-label="OIAC Engage home">
-            <img src="/logo.png" alt="Organization of Iranian American Communities" />
+            <img src="/logo.png" alt="Organization of Iranian American Communities" width="392" height="154" />
             <span>OIAC Engage</span>
           </Link>
           <a className="button button--primary" href={buildSignInUrl('/')}>Sign In</a>
         </div>
       </header>
-      <main className="anonymous-main" id="main-content" tabIndex={-1}>{children}</main>
+      <main className="anonymous-main site-container" id="main-content" tabIndex={-1}>{children}</main>
       <footer className="anonymous-footer">
-        <div className="anonymous-footer__inner">
+        <div className="anonymous-footer__inner site-container">
           <div className="anonymous-footer__identity">
-            <img src="/logo.png" alt="" />
+            <img src="/logo.png" alt="" width="392" height="154" />
             <span>Organization of Iranian American Communities – U.S.</span>
           </div>
           <nav aria-label="Footer navigation">

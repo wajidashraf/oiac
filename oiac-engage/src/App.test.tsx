@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { expect, test, vi } from 'vitest'
@@ -7,7 +7,12 @@ import type { AuthSession } from './auth/powerPagesSession'
 
 const authenticatedSession: AuthSession = {
   status: 'authenticated',
-  user: { userName: 'member@oiac.org', firstName: 'OIAC', lastName: 'Member' },
+  user: {
+    userName: 'member@oiac.org',
+    firstName: 'OIAC',
+    lastName: 'Member',
+    userRoles: ['Authenticated Users', 'Volunteer'],
+  },
 }
 
 function renderApp(
@@ -24,15 +29,17 @@ function renderApp(
 
 test.each([
   ['/', 'Volunteer'],
-  ['/report', 'Report'],
+  ['/report', 'Meeting Reports'],
+  ['/report/new', 'Meeting Reports'],
+  ['/report/advocacy-briefing-chen/edit', 'Meeting Reports'],
   ['/my-reports', 'My Reports'],
   ['/my-calendar', 'My Calendar'],
-  ['/contact', 'Contact'],
-  ['/activity/activity-log', 'Activity Log'],
+  ['/contact', 'Contacts'],
+  ['/activity/activity-log', 'Activity'],
   ['/activity/events', 'Events'],
   ['/activity/appointments', 'Appointments'],
   ['/press-coverage', 'Press Coverage'],
-  ['/activity', 'Activity Log'],
+  ['/activity', 'Activity'],
   ['/unknown', 'Page not found'],
 ])('renders %s as %s', (route, heading) => {
   renderApp(route)
@@ -44,7 +51,7 @@ test('moves keyboard focus to the page heading after client-side navigation', as
   renderApp('/')
 
   await user.click(screen.getByRole('link', { name: '+ Submit Report' }))
-  expect(screen.getByRole('heading', { name: 'Report', level: 1 })).toHaveFocus()
+  expect(screen.getByRole('heading', { name: 'Meeting Reports', level: 1 })).toHaveFocus()
 })
 
 test('keeps the skip link as the first tab stop on initial load', async () => {
@@ -56,47 +63,50 @@ test('keeps the skip link as the first tab stop on initial load', async () => {
   expect(screen.getByRole('link', { name: 'Skip to main content' })).toHaveFocus()
 })
 
-test('shows only the public experience to anonymous visitors', () => {
-  renderApp('/', { status: 'anonymous' })
+test('renders the authenticated footer links from the portal reference', () => {
+  renderApp('/contact')
 
-  expect(screen.getByRole('heading', { name: 'OIAC Engage', level: 1 })).toBeInTheDocument()
-  expect(screen.getAllByRole('link', { name: /sign in/i })).toHaveLength(2)
-  expect(screen.queryByRole('navigation', { name: 'Primary navigation' })).not.toBeInTheDocument()
-  expect(screen.queryByText('My Reports')).not.toBeInTheDocument()
+  const footer = screen.getByRole('contentinfo')
+  expect(within(footer).getByText('Organization of Iranian American Communities — U.S.')).toBeInTheDocument()
+  expect(within(footer).getByRole('link', { name: 'oiac.org' })).toHaveAttribute('href', 'https://oiac.org')
+  expect(within(footer).getByRole('link', { name: 'Resources' })).toHaveAttribute('href', '/resources')
+  expect(within(footer).getByRole('link', { name: 'Contact' })).toHaveAttribute('href', '/contact')
 })
 
-test('redirects an anonymous protected route with its return URL', async () => {
-  const navigate = vi.fn()
-  renderApp('/my-reports', { status: 'anonymous' }, navigate)
+test('aligns the header, page content, and footer inside the shared site container', () => {
+  renderApp('/contact')
 
-  await waitFor(() => {
-    expect(navigate).toHaveBeenCalledWith('/SignIn?returnUrl=%2Fmy-reports')
-  })
+  expect(document.querySelector('.site-header')?.firstElementChild).toHaveClass('site-container')
+  expect(screen.getByRole('main').firstElementChild).toHaveClass('site-container')
+  expect(screen.getByRole('contentinfo').firstElementChild).toHaveClass('site-container')
+})
+
+test.each([
+  '/',
+  '/my-reports',
+  '/resources',
+  '/report',
+  '/press-coverage',
+  '/activity/appointments',
+])('shows only the anonymous welcome experience at %s without a session', (route) => {
+  const navigate = vi.fn()
+  renderApp(route, { status: 'anonymous' }, navigate)
+
+  expect(screen.getByRole('heading', { name: 'OIAC Engage', level: 1 })).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Sign In to Get Started' })).toHaveAttribute(
+    'href',
+    '/SignIn?returnUrl=%2F',
+  )
+  expect(screen.queryByRole('navigation', { name: 'Primary navigation' })).not.toBeInTheDocument()
   expect(screen.queryByRole('heading', { name: 'My Reports' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Meeting Reports' })).not.toBeInTheDocument()
+  expect(navigate).not.toHaveBeenCalled()
 })
 
 test('renders Resources only for an authenticated session', () => {
   renderApp('/resources')
 
   expect(screen.getByRole('heading', { name: 'Resources', level: 1 })).toBeInTheDocument()
-  expect(screen.queryByRole('link', { name: 'Resources' })).not.toBeInTheDocument()
-})
-
-test('redirects anonymous Resources access to sign in', async () => {
-  const navigate = vi.fn()
-  renderApp('/resources', { status: 'anonymous' }, navigate)
-
-  await waitFor(() => {
-    expect(navigate).toHaveBeenCalledWith('/SignIn?returnUrl=%2Fresources')
-  })
-})
-
-test('redirects anonymous Report access to sign in with its return URL', async () => {
-  const navigate = vi.fn()
-  renderApp('/report', { status: 'anonymous' }, navigate)
-
-  await waitFor(() => {
-    expect(navigate).toHaveBeenCalledWith('/SignIn?returnUrl=%2Freport')
-  })
-  expect(screen.queryByRole('heading', { name: 'Report' })).not.toBeInTheDocument()
+  const primaryNavigation = screen.getByRole('navigation', { name: 'Primary navigation' })
+  expect(within(primaryNavigation).queryByRole('link', { name: 'Resources' })).not.toBeInTheDocument()
 })

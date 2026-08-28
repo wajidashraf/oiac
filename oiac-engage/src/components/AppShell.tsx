@@ -1,8 +1,11 @@
 import { useEffect, useRef, type PropsWithChildren } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import type { PortalUser } from '../auth/powerPagesSession'
 import PortalNav from './PortalNav'
 
-export default function AppShell({ children }: PropsWithChildren) {
+type AppShellProps = PropsWithChildren<{ user: PortalUser }>
+
+export default function AppShell({ children, user }: AppShellProps) {
   const location = useLocation()
   const previousPath = useRef(location.pathname)
 
@@ -21,19 +24,31 @@ export default function AppShell({ children }: PropsWithChildren) {
     <div className="portal-shell">
       <a className="skip-link" href="#main-content">Skip to main content</a>
       <header className="site-header">
-        <div className="site-header__inner">
+        <div className="site-header__inner site-container">
           <Link className="site-brand" to="/" aria-label="OIAC Engage home">
-            <img className="site-brand__logo" src="/logo.png" alt="" />
+            <img className="site-brand__logo" src="/logo.png" alt="" width="392" height="154" />
             <span className="site-brand__wordmark" aria-hidden="true">
               <strong>OIAC Engage</strong>
             </span>
           </Link>
-          <PortalNav />
+          <PortalNav user={user} />
         </div>
       </header>
-      <main className="site-main" id="main-content" tabIndex={-1}>{children}</main>
+      <main className="site-main" id="main-content" tabIndex={-1}>
+        <div className="site-container">{children}</div>
+      </main>
       <footer className="site-footer">
-        <p>OIAC Engage · Organization of Iranian American Communities — U.S.</p>
+        <div className="site-footer__inner site-container">
+          <div className="site-footer__identity">
+            <img src="/logo.png" alt="" width="392" height="154" />
+            <span>Organization of Iranian American Communities — U.S.</span>
+          </div>
+          <nav aria-label="Footer navigation">
+            <a href="https://oiac.org">oiac.org</a>
+            <Link to="/resources">Resources</Link>
+            <Link to="/contact">Contact</Link>
+          </nav>
+        </div>
       </footer>
     </div>
   )

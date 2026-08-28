@@ -14,6 +14,8 @@ const scenarios = [
   { name: 'press-coverage', route: '/press-coverage', authenticated: true },
   { name: 'resources', route: '/resources', authenticated: true },
   { name: 'report', route: '/report', authenticated: true },
+  { name: 'report-new', route: '/report/new', authenticated: true },
+  { name: 'report-edit', route: '/report/advocacy-briefing-chen/edit', authenticated: true },
 ]
 
 async function launchBrowser() {

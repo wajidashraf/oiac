@@ -1,4 +1,14 @@
 import { useEffect, type PropsWithChildren } from 'react'
+import {
+  LuArrowRight,
+  LuBookOpen,
+  LuCalendarDays,
+  LuClipboardList,
+  LuFileText,
+  LuGraduationCap,
+  LuHandshake,
+  LuHash,
+} from 'react-icons/lu'
 import { Link } from 'react-router-dom'
 import ContentCard from '../components/ContentCard'
 import StatusBadge from '../components/StatusBadge'
@@ -20,20 +30,11 @@ const dashboardShortcuts = [
   { label: 'Resources', href: '/resources' },
 ] as const
 
-function HandshakeIcon() {
-  return (
-    <span className="dashboard-identity__icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" focusable="false">
-        <path d="M8.7 8.8 11 6.5a3 3 0 0 1 4.2 0l1.2 1.2" />
-        <path d="m3.2 6.7 3.3-3.3 3.2 3.2-3.3 3.3zM14.3 6.6l3.2-3.2 3.3 3.3-3.2 3.2z" />
-        <path d="m6.6 9.8 6.4 6.4a1.4 1.4 0 0 1-2 2l-1-1" />
-        <path d="m8.2 15.4 1.8 1.8a1.4 1.4 0 0 1-2 2l-4.2-4.1a3.1 3.1 0 0 1 0-4.4l2.1-2.1" />
-        <path d="m17.6 9.8 2.6 2.6a1.4 1.4 0 0 1-2 2l-3.4-3.4" />
-        <path d="m14.8 11 3.4 3.4a1.4 1.4 0 0 1-2 2l-3.4-3.4" />
-      </svg>
-    </span>
-  )
-}
+const teamResourceIcons = {
+  'upcoming-meetings': LuCalendarDays,
+  'important-channels': LuHash,
+  'recent-documents': LuFileText,
+} as const
 
 function DashboardTable({ label, children }: PropsWithChildren<{ label: string }>) {
   return (
@@ -67,7 +68,9 @@ export default function Home() {
     <div className="page page--dashboard">
       <header className="dashboard-identity">
         <div className="dashboard-identity__profile">
-          <HandshakeIcon />
+          <span className="dashboard-identity__icon" aria-hidden="true">
+            <LuHandshake />
+          </span>
           <div>
             <p className="dashboard-identity__eyebrow">Dashboard</p>
             <h1>Volunteer</h1>
@@ -92,7 +95,7 @@ export default function Home() {
       <section className="dashboard-section" aria-labelledby="meeting-reports-title">
         <div className="dashboard-section__heading">
           <h2 id="meeting-reports-title">Meeting Reports</h2>
-          <Link className="button button--primary dashboard-submit-report" to="/report">+ Submit Report</Link>
+          <Link className="button button--primary dashboard-submit-report" to="/report/new">+ Submit Report</Link>
         </div>
         <DashboardTable label="Meeting Reports">
           <thead>
@@ -111,7 +114,7 @@ export default function Home() {
                 <td>{report.representative}</td>
                 <td><time dateTime={report.dateTime}>{report.date}</time></td>
                 <td>{report.outcome}</td>
-                <td><Link aria-label={`Edit ${report.meeting}`} to="/report">Edit</Link></td>
+                <td><Link aria-label={`Edit ${report.meeting}`} to={`/report/${report.id}/edit`}>Edit</Link></td>
               </tr>
             ))}
           </tbody>
@@ -131,7 +134,9 @@ export default function Home() {
               </li>
             ))}
           </ul>
-          <Link className="dashboard-panel__footer-link" to="/my-calendar">See all → My Calendar</Link>
+          <Link className="dashboard-panel__footer-link" to="/my-calendar">
+            <span>See all</span><LuArrowRight aria-hidden="true" /><span>My Calendar</span>
+          </Link>
         </ContentCard>
 
         <ContentCard title="Meeting Invites" headingLevel="h2" className="dashboard-panel">
@@ -167,7 +172,11 @@ export default function Home() {
             <ul className="dashboard-training-list">
               {trainingResources.map((resource) => (
                 <li key={resource.id}>
-                  <span className="dashboard-training-list__marker" aria-hidden="true" />
+                  <span className="dashboard-list-icon" aria-hidden="true">
+                    {resource.id === 'onboarding-guide' ? <LuGraduationCap /> : null}
+                    {resource.id === 'teams-quick-start' ? <LuBookOpen /> : null}
+                    {resource.id === 'report-instructions' ? <LuClipboardList /> : null}
+                  </span>
                   <Link to={resource.href}>{resource.title}</Link>
                 </li>
               ))}
@@ -182,29 +191,32 @@ export default function Home() {
           <span className="dashboard-admin-label">Managed by Admin</span>
         </div>
         <div className="dashboard-resource-grid">
-          {teamResourceGroups.map((group) => (
-            <ContentCard
-              key={group.id}
-              title={group.title}
-              headingLevel="h3"
-              className="dashboard-panel dashboard-team-card"
-              meta={<span className="dashboard-team-card__marker" aria-hidden="true">{group.marker}</span>}
-            >
-              <ul className="dashboard-team-list">
-                {group.items.map((item) => (
-                  <li key={item.id}>
-                    <div>
-                      <strong>{item.title}</strong>
-                      <span>{item.detail}</span>
-                    </div>
-                    <Link to={item.href} aria-label={`${item.action} ${item.title}`}>
-                      {item.action} <span aria-hidden="true">→</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </ContentCard>
-          ))}
+          {teamResourceGroups.map((group) => {
+            const GroupIcon = teamResourceIcons[group.id as keyof typeof teamResourceIcons]
+            return (
+              <ContentCard
+                key={group.id}
+                title={group.title}
+                headingLevel="h3"
+                className="dashboard-panel dashboard-team-card"
+                meta={<span className="dashboard-team-card__marker" aria-hidden="true"><GroupIcon /></span>}
+              >
+                <ul className="dashboard-team-list">
+                  {group.items.map((item) => (
+                    <li key={item.id}>
+                      <div>
+                        <strong>{item.title}</strong>
+                        <span>{item.detail}</span>
+                      </div>
+                      <Link to={item.href} aria-label={`${item.action} ${item.title}`}>
+                        <span>{item.action}</span><LuArrowRight aria-hidden="true" />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </ContentCard>
+            )
+          })}
         </div>
       </section>
 

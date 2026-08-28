@@ -1856,6 +1856,7 @@ a:not(.btn):hover {
 /* OIAC native authentication ------------------------------------------------ */
 .auth-site-header,
 .auth-site-footer {
+  --auth-content-width: 31.25rem;
   background: #fff;
   color: #49605c;
   font-family: Inter, "Segoe UI", Arial, sans-serif;
@@ -1880,11 +1881,11 @@ a:not(.btn):hover {
 }
 
 .auth-site-header__inner {
-  min-height: 6.5rem;
+  min-height: 5rem;
 }
 
 .auth-site-footer__inner {
-  min-height: 9rem;
+  min-height: 7.25rem;
   padding: 1.5rem 0;
 }
 
@@ -1967,29 +1968,64 @@ a:not(.btn):hover {
 .auth-site-footer nav a:hover,
 .auth-site-footer nav a:focus {
   color: #273633;
-  text-decoration: underline !important;
+  text-decoration: none !important;
 }
 
 :is(body:has(.nav-account), body:has(.forgot-password)) {
+  --auth-content-width: 31.25rem;
   background: #f9fafa;
   color: #263532;
   font-family: Inter, "Segoe UI", Arial, sans-serif;
 }
 
 :is(body:has(.nav-account), body:has(.forgot-password)) .wrapper-body {
-  min-height: 46rem;
-  padding: clamp(3rem, 7vw, 6rem) 1rem;
+  min-height: calc(100vh - 12.25rem);
+  padding: 3.75rem 1rem 6rem;
   background: #f9fafa;
 }
 
+:is(body:has(.nav-account), body:has(.forgot-password)) #content-container.container.wrapper-body,
+:is(body:has(.nav-account), body:has(.forgot-password)) .wrapper-body > .container,
+:is(body:has(.nav-account), body:has(.forgot-password)) .wrapper-body > .container-fluid,
 :is(body:has(.nav-account), body:has(.forgot-password)) .page-copy {
-  width: min(50rem, 100%);
-  margin: 0 auto;
-  border: 1px solid #dde3e2;
-  border-radius: 0.75rem;
-  padding: clamp(1.5rem, 4vw, 3rem);
-  background: #fff;
-  box-shadow: 0 1.25rem 3rem rgba(39, 54, 51, 0.08);
+  max-width: var(--auth-content-width) !important;
+  margin: 0 auto !important;
+  float: none !important;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) #content-container.container.wrapper-body {
+  width: min(var(--auth-content-width), calc(100% - 2rem)) !important;
+  padding: 3.75rem 0 6rem !important;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .wrapper-body > .container,
+:is(body:has(.nav-account), body:has(.forgot-password)) .wrapper-body > .container-fluid,
+:is(body:has(.nav-account), body:has(.forgot-password)) .page-copy {
+  width: min(var(--auth-content-width), 100%) !important;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .page-copy:empty { display: none; }
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .wrapper-body .page-content > .row,
+:is(body:has(.nav-account), body:has(.forgot-password)) .wrapper-body > .container > .row,
+:is(body:has(.nav-account), body:has(.forgot-password)) .wrapper-body > .container-fluid > .row {
+  display: block !important;
+  margin-inline: 0 !important;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .wrapper-body .page-content > .row > [class*="col-"],
+:is(body:has(.nav-account), body:has(.forgot-password)) .wrapper-body > .container > .row > [class*="col-"],
+:is(body:has(.nav-account), body:has(.forgot-password)) .wrapper-body > .container-fluid > .row > [class*="col-"] {
+  width: 100% !important;
+  max-width: none !important;
+  flex: 0 0 100% !important;
+  float: none !important;
+  padding-inline: 0 !important;
 }
 
 :is(body:has(.nav-account), body:has(.forgot-password)) h1,
@@ -2007,29 +2043,100 @@ a:not(.btn):hover {
 }
 
 body:has(.nav-account) .nav-account {
-  display: flex;
+  display: flex !important;
   overflow-x: auto;
-  margin-bottom: 2rem;
+  margin-bottom: 2rem !important;
   border-bottom: 1px solid #dde3e2;
 }
 
-body:has(.nav-account) .nav-account > li > a {
-  border: 0;
-  border-bottom: 3px solid transparent;
+:is(body:has(.nav-account), body:has(.forgot-password)) .form-horizontal {
+  width: 100% !important;
+  max-width: var(--auth-content-width) !important;
+  margin-inline: auto !important;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .form-horizontal .form-group {
+  display: grid !important;
+  grid-template-columns: 8rem minmax(0, 1fr) !important;
+  align-items: center;
+  gap: 1rem;
+  margin: 0 0 1rem;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .form-horizontal .form-group > [class*="col-"] {
+  width: auto !important;
+  max-width: none !important;
+  float: none !important;
+  padding: 0 !important;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .form-horizontal .form-group > [class*="col-sm-offset-"] {
+  grid-column: 2;
+  margin-left: 0;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .form-horizontal .control-label {
+  width: auto;
+  padding-top: 0;
+  text-align: right;
+}
+
+body:has(.nav-account) .nav-account > li > a,
+body:has(.nav-account) .nav-account > .nav-item > .nav-link {
+  border: 0 !important;
+  border-bottom: 3px solid transparent !important;
+  border-radius: 0 !important;
   padding: 0.85rem 1rem;
+  background: transparent !important;
   color: #627572;
   font-weight: 700;
-  text-decoration: none;
+  text-decoration: none !important;
   white-space: nowrap;
 }
 
 body:has(.nav-account) .nav-account > li.active > a,
 body:has(.nav-account) .nav-account > li.active > a:hover,
-body:has(.nav-account) .nav-account > li.active > a:focus {
-  border: 0;
-  border-bottom: 3px solid #c78528;
-  background: transparent;
+body:has(.nav-account) .nav-account > li.active > a:focus,
+body:has(.nav-account) .nav-account > .nav-item > .nav-link.active,
+body:has(.nav-account) .nav-account > .nav-item > .nav-link.active:hover,
+body:has(.nav-account) .nav-account > .nav-item > .nav-link.active:focus {
+  border: 0 !important;
+  border-bottom: 3px solid #c78528 !important;
+  background: transparent !important;
   color: #273633;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .portal-form {
+  width: 100% !important;
+  max-width: var(--auth-content-width) !important;
+  margin-inline: auto !important;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .portal-form > .row {
+  display: grid !important;
+  grid-template-columns: 8rem minmax(0, 1fr) !important;
+  align-items: center;
+  gap: 1rem;
+  margin: 0 0 1rem !important;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .portal-form > .row > [class*="col-"] {
+  width: auto !important;
+  max-width: none !important;
+  flex: none !important;
+  float: none !important;
+  padding: 0 !important;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .portal-form > .row > [class*="offset-"] {
+  grid-column: 2;
+  margin-left: 0 !important;
+}
+
+:is(body:has(.nav-account), body:has(.forgot-password)) .portal-form .col-form-label {
+  width: auto !important;
+  padding: 0 !important;
+  text-align: right;
 }
 
 :is(body:has(.nav-account), body:has(.forgot-password)) .form-control {
@@ -2139,11 +2246,38 @@ body:has(.nav-account) .nav-account > li.active > a:focus {
     padding: 2rem 0.75rem;
   }
 
+  :is(body:has(.nav-account), body:has(.forgot-password)) #content-container.container.wrapper-body {
+    width: calc(100% - 1.5rem) !important;
+    padding: 2rem 0 !important;
+  }
+
   :is(body:has(.nav-account), body:has(.forgot-password)) .page-copy {
     padding: 1.25rem;
   }
 
   body:has(.nav-account) .form-horizontal .control-label {
+    text-align: left;
+  }
+
+  :is(body:has(.nav-account), body:has(.forgot-password)) .form-horizontal .form-group {
+    grid-template-columns: 1fr !important;
+    gap: 0.5rem;
+  }
+
+  :is(body:has(.nav-account), body:has(.forgot-password)) .portal-form > .row {
+    grid-template-columns: 1fr !important;
+    gap: 0.5rem;
+  }
+
+  :is(body:has(.nav-account), body:has(.forgot-password)) .form-horizontal .form-group > [class*="col-sm-offset-"] {
+    grid-column: 1;
+  }
+
+  :is(body:has(.nav-account), body:has(.forgot-password)) .portal-form > .row > [class*="offset-"] {
+    grid-column: 1;
+  }
+
+  :is(body:has(.nav-account), body:has(.forgot-password)) .portal-form .col-form-label {
     text-align: left;
   }
 
