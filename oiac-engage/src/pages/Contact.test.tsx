@@ -1,72 +1,168 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { expect, test } from 'vitest'
+import { beforeEach, expect, test, vi } from 'vitest'
+import type { PortalUser } from '../auth/powerPagesSession'
+import type { DistrictContactsState } from '../features/contacts/useDistrictContacts'
+import { useDistrictContacts } from '../features/contacts/useDistrictContacts'
 import Contact from './Contact'
 
-function renderContact() {
-  return render(<MemoryRouter><Contact /></MemoryRouter>)
+vi.mock('../features/contacts/useDistrictContacts', () => ({
+  useDistrictContacts: vi.fn(),
+}))
+
+const useDistrictContactsMock = vi.mocked(useDistrictContacts)
+const setSearch = vi.fn()
+const nextPage = vi.fn()
+const previousPage = vi.fn()
+const retry = vi.fn()
+const user: PortalUser = {
+  userName: 'member@oiac.org',
+  contactId: '20f9c936-6740-451e-9470-28a3c83c9909',
+  userRoles: ['Authenticated Users'],
 }
 
-test('renders the district contact directory from the reference design', () => {
-  renderContact()
+const readyState: DistrictContactsState = {
+  contacts: [{
+    id: '10000000-0000-0000-0000-000000000001',
+    fullName: 'Sara Rahimi',
+    email: 'sara.rahimi@oiac.org',
+    mobilePhone: '+1 (202) 555-0142',
+    city: 'Washington',
+    stateOrProvince: 'DC',
+    districtId: '367d7420-d8a2-f111-b8da-7ced8d70f293',
+  }],
+  search: '',
+  setSearch,
+  page: 1,
+  hasNext: true,
+  isLoading: false,
+  status: 'ready',
+  errorMessage: null,
+  nextPage,
+  previousPage,
+  retry,
+}
 
-  expect(screen.getByRole('heading', { name: 'Contacts', level: 1 })).toBeInTheDocument()
-  expect(screen.getByText('Showing contacts in your district — Washington, DC & Virginia.')).toBeInTheDocument()
-  expect(screen.getByRole('link', { name: 'Back' })).toHaveAttribute('href', '/')
-  expect(screen.getByRole('searchbox', { name: 'Search contacts' })).toHaveAttribute(
-    'placeholder',
-    'Search by name, state, or city...',
-  )
+function renderContact() {
+  return render(<MemoryRouter><Contact user={user} /></MemoryRouter>)
+}
 
-  const table = screen.getByRole('table', { name: 'District contacts' })
-  expect(within(table).getAllByRole('row')).toHaveLength(3)
-  expect(within(table).getByRole('rowheader', { name: 'Sara Rahimi' })).toBeInTheDocument()
-  expect(within(table).getByText('+1 (202) 555-0142')).toBeInTheDocument()
-  expect(within(table).getByText('sara.rahimi@oiac.org')).toBeInTheDocument()
-  expect(within(table).getByText('Washington')).toBeInTheDocument()
-  expect(document.title).toBe('Contacts — OIAC Engage')
+beforeEach(() => {
+  vi.clearAllMocks()
+  useDistrictContactsMock.mockReturnValue(readyState)
 })
 
-test('filters contacts by name, state, or city and explains an empty result', async () => {
-  const user = userEvent.setup()
+test('renders a district Contact table without record actions or record links', () => {
+  renderContact()
+
+  expect(useDistrictContactsMock).toHaveBeenCalledWith(user.contactId)
+  expect(screen.getByRole('heading', { name: 'Contacts', level: 1 })).toBeInTheDocument()
+  expect(screen.getByText('Contacts assigned to your district.')).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Back' })).toHaveAttribute('href', '/')
+
+  const table = screen.getByRole('table', { name: 'District contacts' })
+  expect(within(table).getAllByRole('columnheader').map((header) => header.textContent)).toEqual([
+    'Full Name',
+    'Mobile Phone',
+    'Email',
+    'State / Province',
+    'City',
+  ])
+  expect(within(table).getByRole('rowheader', { name: 'Sara Rahimi' })).toBeInTheDocument()
+  expect(within(table).queryByRole('button', { name: /View/i })).not.toBeInTheDocument()
+  expect(within(table).queryByRole('link')).not.toBeInTheDocument()
+  expect(screen.queryByRole('form', { name: /Contact details/i })).not.toBeInTheDocument()
+})
+
+test('shows missing values as em dashes without failing the row', () => {
+  useDistrictContactsMock.mockReturnValue({
+    ...readyState,
+    contacts: [{
+      id: '10000000-0000-0000-0000-000000000002',
+      fullName: null,
+      email: null,
+      mobilePhone: null,
+      city: null,
+      stateOrProvince: null,
+      districtId: '367d7420-d8a2-f111-b8da-7ced8d70f293',
+    }],
+  })
+  renderContact()
+
+  const table = screen.getByRole('table', { name: 'District contacts' })
+  expect(within(table).getAllByText('—')).toHaveLength(5)
+})
+
+test('passes search text to the debounced directory state', async () => {
   renderContact()
 
   const search = screen.getByRole('searchbox', { name: 'Search contacts' })
-  await user.type(search, 'Arlington')
-  expect(screen.queryByText('Sara Rahimi')).not.toBeInTheDocument()
-  expect(screen.getByText('Reza Ahmadi')).toBeInTheDocument()
+  expect(search).toHaveAttribute('placeholder', 'Search by name, email, phone, city, or state...')
+  fireEvent.change(search, { target: { value: 'Sara' } })
 
-  await user.clear(search)
-  await user.type(search, 'Maryland')
-  expect(screen.getByRole('status')).toHaveTextContent('No contacts found')
+  expect(setSearch).toHaveBeenCalledWith('Sara')
 })
 
-test('provides direct phone and email actions for each contact', () => {
-  renderContact()
+test('renders page controls and respects first, last, and loading boundaries', async () => {
+  const interaction = userEvent.setup()
+  const { rerender } = renderContact()
 
-  expect(screen.getByRole('link', { name: 'Call Sara Rahimi' })).toHaveAttribute('href', 'tel:+12025550142')
-  expect(screen.getByRole('link', { name: 'Email Sara Rahimi' })).toHaveAttribute('href', 'mailto:sara.rahimi@oiac.org')
+  expect(screen.getByText('Page 1')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Previous page' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Next page' })).toBeEnabled()
+  await interaction.click(screen.getByRole('button', { name: 'Next page' }))
+  expect(nextPage).toHaveBeenCalledTimes(1)
+
+  useDistrictContactsMock.mockReturnValue({ ...readyState, page: 2, hasNext: false, isLoading: true, status: 'loading-contacts' })
+  rerender(<MemoryRouter><Contact user={user} /></MemoryRouter>)
+  expect(screen.getByText('Page 2')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Previous page' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Next page' })).toBeDisabled()
 })
 
-test('opens read-only contact details above the list and closes them', async () => {
-  const user = userEvent.setup()
+test.each([
+  ['loading-district', 'Loading your district…'],
+  ['loading-contacts', 'Loading contacts…'],
+  ['missing-session', 'Your Power Pages session could not identify your Contact. Sign in again to continue.'],
+  ['missing-district', 'No district is assigned to your profile. Contact an administrator to update your district.'],
+] as const)('renders the %s state', (status, message) => {
+  useDistrictContactsMock.mockReturnValue({
+    ...readyState,
+    contacts: [],
+    hasNext: false,
+    isLoading: status.startsWith('loading'),
+    status,
+  })
+
   renderContact()
 
-  await user.click(screen.getByRole('button', { name: 'View Sara Rahimi contact' }))
+  expect(screen.getByRole('status')).toHaveTextContent(message)
+  expect(screen.queryByRole('table', { name: 'District contacts' })).not.toBeInTheDocument()
+})
 
-  const details = screen.getByRole('form', { name: 'Contact details for Sara Rahimi' })
-  const table = screen.getByRole('table', { name: 'District contacts' })
-  expect(details.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  expect(within(details).getByLabelText('Full Name')).toHaveValue('Sara Rahimi')
-  expect(within(details).getByLabelText('Mobile Phone')).toHaveValue('+1 (202) 555-0142')
-  expect(within(details).getByLabelText('Email')).toHaveValue('sara.rahimi@oiac.org')
-  expect(within(details).getByLabelText('State')).toHaveValue('DC')
-  expect(within(details).getByLabelText('City')).toHaveValue('Washington')
-  expect(within(details).getAllByRole('textbox').every((field) => field.hasAttribute('readonly'))).toBe(true)
-  expect(screen.queryByRole('link', { name: 'Call Sara Rahimi from contact details' })).not.toBeInTheDocument()
-  expect(screen.queryByRole('link', { name: 'Email Sara Rahimi from contact details' })).not.toBeInTheDocument()
+test('distinguishes an empty district from a search with no matches', () => {
+  useDistrictContactsMock.mockReturnValue({ ...readyState, contacts: [], hasNext: false })
+  const { rerender } = renderContact()
+  expect(screen.getByRole('status')).toHaveTextContent('No contacts are available in your district.')
 
-  await user.click(within(details).getByRole('button', { name: 'Close' }))
-  expect(screen.queryByRole('form', { name: 'Contact details for Sara Rahimi' })).not.toBeInTheDocument()
+  useDistrictContactsMock.mockReturnValue({ ...readyState, contacts: [], search: 'Nobody', hasNext: false })
+  rerender(<MemoryRouter><Contact user={user} /></MemoryRouter>)
+  expect(screen.getByRole('status')).toHaveTextContent('No contacts match “Nobody”.')
+})
+
+test('renders a non-sensitive error and retries the current request', async () => {
+  const interaction = userEvent.setup()
+  useDistrictContactsMock.mockReturnValue({
+    ...readyState,
+    contacts: [],
+    hasNext: false,
+    status: 'error',
+    errorMessage: 'Contacts could not be loaded. Try again.',
+  })
+  renderContact()
+
+  expect(screen.getByRole('alert')).toHaveTextContent('Contacts could not be loaded. Try again.')
+  await interaction.click(screen.getByRole('button', { name: 'Retry' }))
+  expect(retry).toHaveBeenCalledTimes(1)
 })

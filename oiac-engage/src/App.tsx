@@ -41,7 +41,7 @@ export default function App({ session: suppliedSession }: AppProps) {
         <Route path="/" element={<Home />} />
         <Route path="/my-reports" element={<MyReports />} />
         <Route path="/my-calendar" element={<MyCalendar />} />
-        <Route path="/contact" element={<Contact />} />
+        <Route path="/contact" element={<Contact user={session.user} />} />
         <Route path="/activity" element={<Navigate to="/activity/activity-log" replace />} />
         <Route path="/activity/activity-log" element={<ActivityLog />} />
         <Route path="/activity/events" element={<Events />} />

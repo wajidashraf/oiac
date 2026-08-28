@@ -1,20 +1,26 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { LuChevronLeft } from 'react-icons/lu'
 import { Link } from 'react-router-dom'
-import { districtContacts } from '../data/contacts'
+import type { PortalUser } from '../auth/powerPagesSession'
+import { useDistrictContacts } from '../features/contacts/useDistrictContacts'
 
-export default function Contact() {
-  const [query, setQuery] = useState('')
-  const [selectedContactId, setSelectedContactId] = useState<string | null>(null)
-  const selectedContact = districtContacts.find((contact) => contact.id === selectedContactId)
-  const normalizedQuery = query.trim().toLocaleLowerCase()
-  const visibleContacts = normalizedQuery
-    ? districtContacts.filter((contact) => (
-      contact.fullName.toLocaleLowerCase().includes(normalizedQuery)
-      || contact.state.toLocaleLowerCase().includes(normalizedQuery)
-      || contact.city.toLocaleLowerCase().includes(normalizedQuery)
-    ))
-    : districtContacts
+type ContactProps = {
+  readonly user: PortalUser
+}
+
+function displayValue(value: string | null): string {
+  return value?.trim() || '—'
+}
+
+export default function Contact({ user }: ContactProps) {
+  const directory = useDistrictContacts(user.contactId)
+  const hasContacts = directory.contacts.length > 0
+  const canSearch = ![
+    'loading-district',
+    'missing-session',
+    'missing-district',
+  ].includes(directory.status)
+  const showPagination = hasContacts || directory.page > 1
 
   useEffect(() => {
     document.title = 'Contacts — OIAC Engage'
@@ -29,108 +35,113 @@ export default function Contact() {
 
       <header className="contact-directory__header">
         <h1>Contacts</h1>
-        <p>Showing contacts in your district — Washington, DC &amp; Virginia.</p>
+        <p>Contacts assigned to your district.</p>
       </header>
 
-      <div className="contact-directory__search">
-        <label className="sr-only" htmlFor="contact-search">Search contacts</label>
-        <input
-          id="contact-search"
-          type="search"
-          value={query}
-          placeholder="Search by name, state, or city..."
-          autoComplete="off"
-          onChange={(event) => setQuery(event.target.value)}
-        />
-      </div>
-
-      {selectedContact ? (
-        <form
-          aria-label={`Contact details for ${selectedContact.fullName}`}
-          className="contact-directory__viewer"
-        >
-          <div className="contact-directory__viewer-heading">
-            <div>
-              <h2>Contact Details</h2>
-              <p>View the contact information for {selectedContact.fullName}.</p>
-            </div>
-            <button className="button button--quiet" onClick={() => setSelectedContactId(null)} type="button">Close</button>
-          </div>
-          <div className="contact-directory__viewer-grid">
-            <label className="field">
-              <span>Full Name</span>
-              <input aria-label="Full Name" readOnly value={selectedContact.fullName} />
-            </label>
-            <label className="field">
-              <span>Mobile Phone</span>
-              <input aria-label="Mobile Phone" readOnly type="tel" value={selectedContact.mobilePhone} />
-            </label>
-            <label className="field">
-              <span>Email</span>
-              <input aria-label="Email" readOnly type="email" value={selectedContact.email} />
-            </label>
-            <label className="field">
-              <span>State</span>
-              <input aria-label="State" readOnly value={selectedContact.state} />
-            </label>
-            <label className="field">
-              <span>City</span>
-              <input aria-label="City" readOnly value={selectedContact.city} />
-            </label>
-          </div>
-        </form>
+      {canSearch ? (
+        <div className="contact-directory__search">
+          <label className="sr-only" htmlFor="contact-search">Search contacts</label>
+          <input
+            id="contact-search"
+            type="search"
+            value={directory.search}
+            placeholder="Search by name, email, phone, city, or state..."
+            autoComplete="off"
+            onChange={(event) => directory.setSearch(event.target.value)}
+          />
+        </div>
       ) : null}
 
-      {visibleContacts.length > 0 ? (
-        <div
-          className="contact-directory__table-scroll"
-          role="region"
-          aria-label="District contacts table, scroll horizontally"
-          tabIndex={0}
-        >
-          <table className="contact-directory__table" aria-label="District contacts">
-            <thead>
-              <tr>
-                <th scope="col">Full Name</th>
-                <th scope="col">Mobile Phone</th>
-                <th scope="col">Email</th>
-                <th scope="col">State</th>
-                <th scope="col">City</th>
-                <th scope="col" aria-label="Actions" />
-              </tr>
-            </thead>
-            <tbody>
-              {visibleContacts.map((contact) => (
-                <tr key={contact.id}>
-                  <th scope="row">{contact.fullName}</th>
-                  <td>
-                    <a href={contact.phoneHref} aria-label={`Call ${contact.fullName}`}>{contact.mobilePhone}</a>
-                  </td>
-                  <td>
-                    <a href={`mailto:${contact.email}`} aria-label={`Email ${contact.fullName}`}>{contact.email}</a>
-                  </td>
-                  <td><span className="contact-directory__state">{contact.state}</span></td>
-                  <td>{contact.city}</td>
-                  <td>
-                    <button
-                      aria-label={`View ${contact.fullName} contact`}
-                      className="contact-directory__view"
-                      onClick={() => setSelectedContactId(contact.id)}
-                      type="button"
-                    >
-                      View
-                    </button>
-                  </td>
+      <div className="contact-directory__results" aria-busy={directory.isLoading}>
+        {directory.status === 'loading-district' ? (
+          <p className="contact-directory__state-panel" role="status">Loading your district…</p>
+        ) : null}
+
+        {directory.status === 'missing-session' ? (
+          <p className="contact-directory__state-panel" role="status">
+            Your Power Pages session could not identify your Contact. Sign in again to continue.
+          </p>
+        ) : null}
+
+        {directory.status === 'missing-district' ? (
+          <p className="contact-directory__state-panel" role="status">
+            No district is assigned to your profile. Contact an administrator to update your district.
+          </p>
+        ) : null}
+
+        {directory.status === 'error' ? (
+          <div className="contact-directory__error" role="alert">
+            <p>{directory.errorMessage ?? 'Contacts could not be loaded. Try again.'}</p>
+            <button className="contact-directory__retry" type="button" onClick={directory.retry}>Retry</button>
+          </div>
+        ) : null}
+
+        {directory.status === 'loading-contacts' ? (
+          <p className="contact-directory__loading" role="status">Loading contacts…</p>
+        ) : null}
+
+        {hasContacts ? (
+          <div
+            className="contact-directory__table-scroll"
+            role="region"
+            aria-label="District contacts table, scroll horizontally"
+            tabIndex={0}
+          >
+            <table className="contact-directory__table" aria-label="District contacts">
+              <thead>
+                <tr>
+                  <th scope="col">Full Name</th>
+                  <th scope="col">Mobile Phone</th>
+                  <th scope="col">Email</th>
+                  <th scope="col">State / Province</th>
+                  <th scope="col">City</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <p className="contact-directory__empty" role="status">
-          <strong>No contacts found.</strong> Try another name, state, or city.
-        </p>
-      )}
+              </thead>
+              <tbody>
+                {directory.contacts.map((contact) => (
+                  <tr key={contact.id}>
+                    <th scope="row">{displayValue(contact.fullName)}</th>
+                    <td>{displayValue(contact.mobilePhone)}</td>
+                    <td>{displayValue(contact.email)}</td>
+                    <td>{displayValue(contact.stateOrProvince)}</td>
+                    <td>{displayValue(contact.city)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+
+        {directory.status === 'ready' && !hasContacts ? (
+          <p className="contact-directory__empty" role="status">
+            {directory.search
+              ? <>No contacts match “{directory.search}”.</>
+              : <>No contacts are available in your district.</>}
+          </p>
+        ) : null}
+
+        {showPagination ? (
+          <nav className="contact-directory__pagination" aria-label="Contacts pagination">
+            <button
+              type="button"
+              aria-label="Previous page"
+              disabled={directory.page === 1 || directory.isLoading}
+              onClick={directory.previousPage}
+            >
+              Previous
+            </button>
+            <span className="contact-directory__page-indicator" aria-live="polite">Page {directory.page}</span>
+            <button
+              type="button"
+              aria-label="Next page"
+              disabled={!directory.hasNext || directory.isLoading}
+              onClick={directory.nextPage}
+            >
+              Next
+            </button>
+          </nav>
+        ) : null}
+      </div>
     </div>
   )
 }

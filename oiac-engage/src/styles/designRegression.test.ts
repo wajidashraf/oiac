@@ -61,6 +61,20 @@ test('keeps neutral press sentiment text at WCAG AA contrast', () => {
   expect(contrastRatio(color!, '#ffffff')).toBeGreaterThanOrEqual(4.5)
 })
 
+test('isolates Contacts controls from Power Pages and Bootstrap defaults', () => {
+  const searchControl = css.match(/\.page--contacts \.contact-directory__search input\s*\{([^}]*)\}/s)?.[1]
+  const paginationControl = css.match(/\.page--contacts \.contact-directory__pagination button\s*\{([^}]*)\}/s)?.[1]
+
+  expect(searchControl).toContain('appearance: none')
+  expect(searchControl).toContain('font-family: var(--font-body)')
+  expect(searchControl).toContain('border:')
+  expect(paginationControl).toContain('appearance: none')
+  expect(paginationControl).toContain('font-family: var(--font-body)')
+  expect(paginationControl).toContain('border:')
+  expect(css).not.toContain('.contact-directory__view')
+  expect(css).not.toContain('.contact-directory__viewer')
+})
+
 test('reduces only My Reports rows by approximately ten percent', () => {
   expect(css).toContain('--my-reports-row-height: 3.15rem')
   expect(css).toMatch(/\.page--my-reports \.record-list__item\s*\{[^}]*min-height:\s*var\(--my-reports-row-height\)[^}]*padding:\s*0\.5625rem 0/s)
