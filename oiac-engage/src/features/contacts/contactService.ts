@@ -1,0 +1,118 @@
+import { powerPagesFetch } from '../../shared/powerPagesApi'
+import type { ContactPage, ContactQuery, ContactRecord, DistrictContact } from './contactTypes'
+
+export const CONTACT_PAGE_SIZE = 15
+
+const CONTACT_SELECT = [
+  'contactid',
+  'fullname',
+  'emailaddress1',
+  'mobilephone',
+  'address1_city',
+  'address1_stateorprovince',
+  '_mss_district_value',
+] as const
+
+const SEARCH_FIELDS = [
+  'fullname',
+  'emailaddress1',
+  'mobilephone',
+  'address1_city',
+  'address1_stateorprovince',
+] as const
+
+const GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function normalizeGuid(value: string | null | undefined): string | null {
+  const normalized = value?.trim().replace(/^\{(.+)\}$/, '$1').toLowerCase() ?? ''
+  return GUID_PATTERN.test(normalized) ? normalized : null
+}
+
+function escapeODataString(value: string): string {
+  return value.replace(/'/g, "''")
+}
+
+function textOrNull(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const normalized = value.trim()
+  return normalized || null
+}
+
+function mapContact(record: ContactRecord, districtId: string): DistrictContact {
+  const contactId = normalizeGuid(record.contactid)
+  if (!contactId) throw new Error('Dataverse returned a Contact without a valid identifier.')
+
+  return {
+    id: contactId,
+    fullName: textOrNull(record.fullname),
+    email: textOrNull(record.emailaddress1),
+    mobilePhone: textOrNull(record.mobilephone),
+    city: textOrNull(record.address1_city),
+    stateOrProvince: textOrNull(record.address1_stateorprovince),
+    districtId: normalizeGuid(record._mss_district_value) ?? districtId,
+  }
+}
+
+export function buildContactsQuery({ districtId, page, search }: ContactQuery): string {
+  const normalizedDistrictId = normalizeGuid(districtId)
+  if (!normalizedDistrictId) throw new Error('A valid district identifier is required.')
+  if (!Number.isInteger(page) || page < 1) throw new Error('The Contacts page number must be at least 1.')
+
+  const districtFilter = `_mss_district_value eq ${normalizedDistrictId}`
+  const normalizedSearch = search.trim()
+  const filter = normalizedSearch
+    ? `${districtFilter} and (${SEARCH_FIELDS
+      .map((field) => `contains(${field},'${escapeODataString(normalizedSearch)}')`)
+      .join(' or ')})`
+    : districtFilter
+
+  const params = new URLSearchParams()
+  params.set('$select', CONTACT_SELECT.join(','))
+  params.set('$filter', filter)
+  params.set('$orderby', 'fullname asc,contactid asc')
+  params.set('$skip', String((page - 1) * CONTACT_PAGE_SIZE))
+  params.set('$top', String(CONTACT_PAGE_SIZE + 1))
+  return `?${params.toString()}`
+}
+
+export async function getLoggedInUserDistrict(
+  contactId: string,
+  signal?: AbortSignal,
+): Promise<string | null> {
+  const normalizedContactId = normalizeGuid(contactId)
+  if (!normalizedContactId) {
+    throw new Error('The Power Pages session did not provide a valid Contact identifier.')
+  }
+
+  const record = await powerPagesFetch<Pick<ContactRecord, '_mss_district_value'>>(
+    `/_api/contacts(${normalizedContactId})?$select=_mss_district_value`,
+    { signal },
+  )
+  const districtValue = record._mss_district_value
+  if (districtValue == null || districtValue.trim() === '') return null
+
+  const districtId = normalizeGuid(districtValue)
+  if (!districtId) throw new Error('Dataverse returned an invalid district identifier.')
+  return districtId
+}
+
+export async function getDistrictContacts(
+  query: ContactQuery,
+  signal?: AbortSignal,
+): Promise<ContactPage> {
+  const normalizedDistrictId = normalizeGuid(query.districtId)
+  if (!normalizedDistrictId) throw new Error('A valid district identifier is required.')
+
+  const response = await powerPagesFetch<{ readonly value: readonly ContactRecord[] }>(
+    `/_api/contacts${buildContactsQuery({ ...query, districtId: normalizedDistrictId })}`,
+    { signal },
+  )
+  if (!Array.isArray(response.value)) throw new Error('Dataverse returned an invalid Contacts response.')
+
+  return {
+    contacts: response.value
+      .slice(0, CONTACT_PAGE_SIZE)
+      .map((record) => mapContact(record, normalizedDistrictId)),
+    hasNext: response.value.length > CONTACT_PAGE_SIZE,
+  }
+}
