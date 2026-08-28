@@ -6,6 +6,7 @@ import { meetingReports } from '../data/dashboardData'
 export default function Report() {
   const location = useLocation()
   const saved = Boolean((location.state as { reportSaved?: boolean } | null)?.reportSaved)
+  const updated = Boolean((location.state as { reportUpdated?: boolean } | null)?.reportUpdated)
 
   useEffect(() => {
     document.title = 'Meeting Reports — OIAC Engage'
@@ -27,6 +28,7 @@ export default function Report() {
       </header>
 
       {saved ? <p className="form-success report-page__success" role="status">Report saved.</p> : null}
+      {updated ? <p className="form-success report-page__success" role="status">Report updated.</p> : null}
 
       <div
         className="dashboard-table-scroll report-page__table"

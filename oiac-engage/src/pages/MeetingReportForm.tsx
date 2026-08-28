@@ -7,10 +7,33 @@ import {
   LuChevronLeft,
   LuFileText,
   LuInfo,
+  LuLoaderCircle,
   LuUserRound,
 } from 'react-icons/lu'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { meetingReports } from '../data/dashboardData'
+import type { PortalUser } from '../auth/powerPagesSession'
+import { ContactLookup, DistrictLookup } from '../features/meetingReports/ContactLookup'
+import { MultiContactLookup } from '../features/meetingReports/MultiContactLookup'
+import {
+  buildRelationshipOperations,
+  createMeetingReport,
+  getMeetingReport,
+  getMeetingReportProfile,
+  runRelationshipOperations,
+  searchContacts,
+  searchDistricts,
+  updateMeetingReport,
+} from '../features/meetingReports/meetingReportService'
+import type {
+  ContactOption,
+  DistrictOption,
+  MeetingFormat,
+  MeetingReportDraft,
+  MeetingReportProfile,
+  MeetingSentiment,
+  RelationshipOperation,
+  RelationshipSelection,
+} from '../features/meetingReports/meetingReportTypes'
 
 const steps = [
   { label: 'Your Info', icon: LuUserRound },
@@ -18,264 +41,357 @@ const steps = [
   { label: 'Report', icon: LuFileText },
 ] as const
 
-type ReportFormData = {
-  fullName: string
-  email: string
-  state: string
-  city: string
-  meeting: string
-  representative: string
-  date: string
-  district: string
-  relatedEvent: string
-  meetingFormat: string
-  staffMembers: string
-  volunteers: string
-  issuesDiscussed: string
-  outcomesNextSteps: string
-  followUpActions: string
-  sentiment: string
+const meetingFormats: readonly { value: MeetingFormat; label: string; icon: string; detail: string }[] = [
+  { value: 1, label: 'In-person', icon: '🏛️', detail: 'Capitol Hill' },
+  { value: 2, label: 'Teams', icon: '💻', detail: 'Microsoft Teams' },
+  { value: 3, label: 'Phone', icon: '📞', detail: 'Phone Call' },
+  { value: 4, label: 'District', icon: '🏢', detail: 'District Office' },
+  { value: 5, label: 'Other', icon: '📋', detail: 'Other format' },
+]
+
+const sentiments: readonly { value: MeetingSentiment; label: string; symbol: string }[] = [
+  { value: 1, label: 'Very Supportive', symbol: '★★★' },
+  { value: 2, label: 'Supportive', symbol: '★★☆' },
+  { value: 3, label: 'Neutral', symbol: '★☆☆' },
+  { value: 4, label: 'Non-committal', symbol: '◐○○' },
+  { value: 5, label: 'Opposed', symbol: '✕✕✕' },
+]
+
+const emptyDraft: MeetingReportDraft = {
+  subject: '',
+  date: '',
+  representativeId: '',
+  districtId: '',
+  meetingFormat: null,
+  staffIds: [],
+  volunteerIds: [],
+  issuesDiscussed: '',
+  outcomesNextSteps: '',
+  followUpActions: '',
+  sentiment: null,
 }
 
-function createInitialForm(reportId?: string): ReportFormData {
-  const report = meetingReports.find((item) => item.id === reportId)
-
-  return {
-    fullName: 'Sara Rahimi',
-    email: 'sara.rahimi@email.com',
-    state: 'DC',
-    city: 'Washington',
-    meeting: report?.meeting ?? '',
-    representative: report?.representative ?? '',
-    date: report?.dateTime ?? '',
-    district: '',
-    relatedEvent: '',
-    meetingFormat: '',
-    staffMembers: '',
-    volunteers: '',
-    issuesDiscussed: '',
-    outcomesNextSteps: '',
-    followUpActions: '',
-    sentiment: report?.outcome ?? '',
-  }
+type MeetingReportFormProps = {
+  readonly user: PortalUser
 }
 
-const meetingFormats = [
-  { value: 'In-person', icon: '🏛️', detail: 'Capitol Hill' },
-  { value: 'Teams', icon: '💻', detail: 'Microsoft Teams' },
-  { value: 'Phone', icon: '📞', detail: 'Phone Call' },
-  { value: 'District', icon: '🏢', detail: 'District Office' },
-  { value: 'Other', icon: '📋', detail: 'Other format' },
-] as const
-
-const sentiments = [
-  { value: 'Very Supportive', symbol: '★★★' },
-  { value: 'Supportive', symbol: '★★☆' },
-  { value: 'Neutral', symbol: '★☆☆' },
-  { value: 'Non-committal', symbol: '◐○○' },
-  { value: 'Opposed', symbol: '✕✕✕' },
-] as const
-
-export default function MeetingReportForm() {
+export default function MeetingReportForm({ user }: MeetingReportFormProps) {
   const { reportId } = useParams()
   const navigate = useNavigate()
+  const isEdit = Boolean(reportId)
   const [step, setStep] = useState(0)
-  const [form, setForm] = useState<ReportFormData>(() => createInitialForm(reportId))
+  const [profile, setProfile] = useState<MeetingReportProfile | null>(null)
+  const [draft, setDraft] = useState<MeetingReportDraft>(emptyDraft)
+  const [representative, setRepresentative] = useState<ContactOption | null>(null)
+  const [district, setDistrict] = useState<DistrictOption | null>(null)
+  const [staff, setStaff] = useState<readonly ContactOption[]>([])
+  const [volunteers, setVolunteers] = useState<readonly ContactOption[]>([])
+  const [loadStatus, setLoadStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [loadRetry, setLoadRetry] = useState(0)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [pendingOperations, setPendingOperations] = useState<readonly RelationshipOperation[]>([])
+  const [persistedReportId, setPersistedReportId] = useState<string | null>(reportId ?? null)
   const sectionHeading = useRef<HTMLHeadingElement>(null)
+  const originalRelationships = useRef<RelationshipSelection>({ staffIds: [], volunteerIds: [] })
+  const submitLock = useRef(false)
 
   useEffect(() => {
-    document.title = `${reportId ? 'Edit' : 'New'} Meeting Report — OIAC Engage`
-  }, [reportId])
+    document.title = `${isEdit ? 'Edit' : 'New'} Meeting Report — OIAC Engage`
+  }, [isEdit])
 
   useEffect(() => {
     if (step > 0) sectionHeading.current?.focus()
   }, [step])
 
-  function updateField(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
+  useEffect(() => {
+    const controller = new AbortController()
+    setLoadStatus('loading')
+    setFormError(null)
+
+    if (!user.contactId) {
+      setLoadStatus('error')
+      setFormError('Your authenticated Contact could not be identified. Sign out and sign in again.')
+      return () => controller.abort()
+    }
+
+    const profileRequest = getMeetingReportProfile(user.contactId, controller.signal)
+    const reportRequest = reportId ? getMeetingReport(reportId, controller.signal) : Promise.resolve(null)
+    Promise.all([profileRequest, reportRequest])
+      .then(([loadedProfile, loadedReport]) => {
+        if (controller.signal.aborted) return
+        setProfile(loadedProfile)
+        if (loadedReport) {
+          setDraft({
+            subject: loadedReport.subject,
+            date: loadedReport.date,
+            representativeId: loadedReport.representativeId,
+            districtId: loadedReport.districtId,
+            meetingFormat: loadedReport.meetingFormat,
+            staffIds: loadedReport.staffIds,
+            volunteerIds: loadedReport.volunteerIds,
+            issuesDiscussed: loadedReport.issuesDiscussed,
+            outcomesNextSteps: loadedReport.outcomesNextSteps,
+            followUpActions: loadedReport.followUpActions,
+            sentiment: loadedReport.sentiment,
+          })
+          setRepresentative(loadedReport.representative)
+          setDistrict(loadedReport.district)
+          setStaff(loadedReport.staff)
+          setVolunteers(loadedReport.volunteers)
+          originalRelationships.current = {
+            staffIds: loadedReport.staffIds,
+            volunteerIds: loadedReport.volunteerIds,
+          }
+          setPersistedReportId(loadedReport.id)
+        } else if (loadedProfile.districtId && loadedProfile.districtName) {
+          setDistrict({ id: loadedProfile.districtId, name: loadedProfile.districtName })
+          setDraft((current) => ({ ...current, districtId: loadedProfile.districtId ?? '' }))
+        }
+        setLoadStatus('ready')
+      })
+      .catch(() => {
+        if (controller.signal.aborted) return
+        setLoadStatus('error')
+        setFormError(reportId
+          ? 'This report could not be loaded. It may not exist or you may not have permission to update it.'
+          : 'Your profile could not be loaded. Try again.')
+      })
+
+    return () => controller.abort()
+  }, [loadRetry, reportId, user.contactId])
+
+  function updateTextField(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     const { name, value } = event.target
-    setForm((current) => ({ ...current, [name]: value }))
+    setDraft((current) => ({ ...current, [name]: value }))
+    setFormError(null)
   }
 
-  function continueForm(event: FormEvent<HTMLFormElement>) {
+  function chooseRepresentative(value: ContactOption | null) {
+    setRepresentative(value)
+    setDraft((current) => ({ ...current, representativeId: value?.id ?? '' }))
+    setFormError(null)
+  }
+
+  function chooseDistrict(value: DistrictOption | null) {
+    setDistrict(value)
+    setDraft((current) => ({ ...current, districtId: value?.id ?? '' }))
+    setFormError(null)
+  }
+
+  function chooseStaff(values: readonly ContactOption[]) {
+    setStaff(values)
+    setDraft((current) => ({ ...current, staffIds: values.map((value) => value.id) }))
+  }
+
+  function chooseVolunteers(values: readonly ContactOption[]) {
+    setVolunteers(values)
+    setDraft((current) => ({ ...current, volunteerIds: values.map((value) => value.id) }))
+  }
+
+  function validateMeetingStep(): string | null {
+    if (!draft.subject.trim()) return 'Enter a Meeting Title.'
+    if (!draft.date) return 'Select the Date of Meeting.'
+    if (!draft.representativeId) return 'Select a Representative / Office.'
+    if (!draft.districtId) return 'Select a State / District.'
+    if (!draft.meetingFormat) return 'Select a Meeting Format.'
+    return null
+  }
+
+  async function continueForm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (step < steps.length - 1) {
-      setStep((current) => current + 1)
+    setFormError(null)
+    if (step === 0) {
+      setStep(1)
       return
     }
-    navigate('/report', { state: { reportSaved: true } })
+    if (step === 1) {
+      const validationMessage = validateMeetingStep()
+      if (validationMessage) {
+        setFormError(validationMessage)
+        return
+      }
+      setStep(2)
+      return
+    }
+    if (!draft.issuesDiscussed.trim()) {
+      setFormError('Describe the Issues Discussed before submitting the report.')
+      return
+    }
+    await saveReport()
+  }
+
+  async function saveReport() {
+    if (submitLock.current || !user.contactId) return
+    submitLock.current = true
+    setIsSubmitting(true)
+    setFormError(null)
+    try {
+      let id = persistedReportId
+      let operations: readonly RelationshipOperation[]
+      if (isEdit) {
+        if (!id) throw new Error('The report identifier is unavailable.')
+        await updateMeetingReport(id, draft)
+        operations = buildRelationshipOperations(originalRelationships.current, {
+          staffIds: draft.staffIds,
+          volunteerIds: draft.volunteerIds,
+        })
+      } else {
+        id = await createMeetingReport(draft, user.contactId)
+        setPersistedReportId(id)
+        operations = buildRelationshipOperations(
+          { staffIds: [], volunteerIds: [] },
+          { staffIds: draft.staffIds, volunteerIds: draft.volunteerIds },
+        )
+      }
+
+      const failures = await runRelationshipOperations(id, operations)
+      if (failures.length > 0) {
+        setPendingOperations(failures)
+        setFormError('The report was saved, but some contact links could not be completed. Retry the contact links without creating another report.')
+        return
+      }
+      finishSave()
+    } catch {
+      setFormError(`The report could not be ${isEdit ? 'updated' : 'saved'}. Check the required fields and try again.`)
+    } finally {
+      submitLock.current = false
+      setIsSubmitting(false)
+    }
+  }
+
+  async function retryContactLinks() {
+    if (submitLock.current || !persistedReportId || pendingOperations.length === 0) return
+    submitLock.current = true
+    setIsSubmitting(true)
+    setFormError(null)
+    try {
+      const failures = await runRelationshipOperations(persistedReportId, pendingOperations)
+      if (failures.length > 0) {
+        setPendingOperations(failures)
+        setFormError('Some contact links still could not be completed. You can retry again.')
+        return
+      }
+      setPendingOperations([])
+      finishSave()
+    } catch {
+      setFormError('The contact links could not be completed. Try again.')
+    } finally {
+      submitLock.current = false
+      setIsSubmitting(false)
+    }
+  }
+
+  function finishSave() {
+    navigate('/report', { state: isEdit ? { reportUpdated: true } : { reportSaved: true } })
   }
 
   return (
     <div className="page page--meeting-report page--report-form">
-      <Link className="report-page__back" to="/report">
-        <LuChevronLeft aria-hidden="true" />
-        <span>Back</span>
-      </Link>
-
+      <Link className="report-page__back" to="/report"><LuChevronLeft aria-hidden="true" /><span>Back</span></Link>
       <header className="report-page__header">
-        <div>
-          <h1>Meeting Reports</h1>
-          <p>Submit and track your congressional and organizational meeting reports.</p>
-        </div>
+        <div><h1>Meeting Reports</h1><p>Submit and track your congressional and organizational meeting reports.</p></div>
       </header>
 
-      <section className="report-form-card" aria-label={reportId ? 'Edit meeting report' : 'New meeting report'}>
-        <ol className="report-stepper" aria-label="Report progress">
-          {steps.map(({ label, icon: Icon }, index) => (
-            <li
-              className={index <= step ? 'report-stepper__step report-stepper__step--reached' : 'report-stepper__step'}
-              key={label}
-              aria-current={index === step ? 'step' : undefined}
-            >
-              <span className="report-stepper__icon" aria-hidden="true">
-                {index < step ? <LuCheck /> : <Icon />}
-              </span>
-              <span>{label}</span>
-            </li>
-          ))}
-        </ol>
-
-        <form className="report-form" onSubmit={continueForm}>
-          {step === 0 ? (
-            <div className="report-form__step">
-              <header className="report-form__section-heading">
-                <span aria-hidden="true"><LuUserRound /></span>
-                <div>
-                  <h2 ref={sectionHeading} tabIndex={-1}>Volunteer Information</h2>
-                  <p>Confirm your details — pre-filled from your profile</p>
-                </div>
-              </header>
-              <div className="form-grid report-form__grid">
-                <label className="field">
-                  <span>Full Name <span className="required-mark" aria-hidden="true">*</span></span>
-                  <input aria-label="Full Name" name="fullName" value={form.fullName} onChange={updateField} required />
-                </label>
-                <label className="field">
-                  <span>Email <span className="required-mark" aria-hidden="true">*</span></span>
-                  <input aria-label="Email" name="email" type="email" value={form.email} onChange={updateField} required />
-                </label>
-                <label className="field">
-                  <span>State</span>
-                  <input name="state" value={form.state} onChange={updateField} />
-                </label>
-                <label className="field">
-                  <span>City</span>
-                  <input name="city" value={form.city} onChange={updateField} />
-                </label>
-              </div>
-            </div>
-          ) : null}
-
-          {step === 1 ? (
-            <div className="report-form__step">
-              <header className="report-form__section-heading">
-                <span aria-hidden="true"><LuCalendarDays /></span>
-                <div>
-                  <h2 ref={sectionHeading} tabIndex={-1}>Meeting Details</h2>
-                  <p>Who did you meet with and how?</p>
-                </div>
-              </header>
-              <div className="form-grid report-form__grid">
-                <label className="field field--full">
-                  <span>Meeting Title <span className="required-mark" aria-hidden="true">*</span></span>
-                  <input aria-label="Meeting Title" name="meeting" placeholder="e.g. Advocacy meeting with Sen. Miller's office" value={form.meeting} onChange={updateField} required />
-                </label>
-                <label className="field">
-                  <span>Date of Meeting <span className="required-mark" aria-hidden="true">*</span></span>
-                  <input aria-label="Date of Meeting" name="date" type="date" value={form.date} onChange={updateField} required />
-                </label>
-                <label className="field">
-                  <span>Representative / Office <span className="required-mark" aria-hidden="true">*</span></span>
-                  <input aria-label="Representative / Office" name="representative" placeholder="Name of senator, representative, or staff" value={form.representative} onChange={updateField} required />
-                </label>
-                <label className="field">
-                  <span>State / District</span>
-                  <input aria-label="State / District" name="district" placeholder="e.g. DC / Virginia" value={form.district} onChange={updateField} />
-                </label>
-                <label className="field">
-                  <span>Related Event</span>
-                  <input aria-label="Related Event" name="relatedEvent" placeholder="Search or link an event..." value={form.relatedEvent} onChange={updateField} />
-                </label>
-                <fieldset className="report-choice-field field--full">
-                  <legend>Meeting Format</legend>
-                  <div className="report-choice-grid report-choice-grid--formats">
-                    {meetingFormats.map((format) => (
-                      <label className="report-choice" key={format.value}>
-                        <input type="radio" name="meetingFormat" value={format.value} checked={form.meetingFormat === format.value} onChange={updateField} />
-                        <span className="report-choice__symbol" aria-hidden="true">{format.icon}</span>
-                        <strong>{format.value}</strong>
-                        <small>{format.detail}</small>
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
-                <label className="field field--full">
-                  <span>Tag OIAC Staff Members</span>
-                  <input aria-label="Tag OIAC Staff Members" name="staffMembers" placeholder="Search and select..." value={form.staffMembers} onChange={updateField} />
-                </label>
-                <label className="field field--full">
-                  <span>Tag Volunteers</span>
-                  <input aria-label="Tag Volunteers" name="volunteers" placeholder="Search and select..." value={form.volunteers} onChange={updateField} />
-                </label>
-              </div>
-            </div>
-          ) : null}
-
-          {step === 2 ? (
-            <div className="report-form__step">
-              <header className="report-form__section-heading">
-                <span aria-hidden="true"><LuFileText /></span>
-                <div>
-                  <h2 ref={sectionHeading} tabIndex={-1}>Report Content</h2>
-                  <p>Summarize what was discussed and what happens next</p>
-                </div>
-              </header>
-              <div className="form-grid report-form__grid">
-                <label className="field field--full">
-                  <span>Issues Discussed <span className="required-mark" aria-hidden="true">*</span></span>
-                  <textarea aria-label="Issues Discussed" name="issuesDiscussed" rows={5} placeholder="Describe the main topics and issues discussed..." value={form.issuesDiscussed} onChange={updateField} required />
-                </label>
-                <label className="field field--full">
-                  <span>Outcomes &amp; Next Steps</span>
-                  <textarea aria-label="Outcomes & Next Steps" name="outcomesNextSteps" rows={4} placeholder="What was the response? What are the agreed next steps?" value={form.outcomesNextSteps} onChange={updateField} />
-                </label>
-                <label className="field field--full">
-                  <span>Follow-up Actions</span>
-                  <textarea aria-label="Follow-up Actions" name="followUpActions" rows={3} placeholder="Materials to send, follow-up calls, commitments made..." value={form.followUpActions} onChange={updateField} />
-                </label>
-                <fieldset className="report-choice-field field--full">
-                  <legend>Overall Sentiment</legend>
-                  <div className="report-choice-grid report-choice-grid--sentiments">
-                    {sentiments.map((sentiment) => (
-                      <label className={`report-choice report-choice--sentiment report-choice--${sentiment.value.toLowerCase().replace(/[^a-z]+/g, '-')}`} key={sentiment.value}>
-                        <input type="radio" name="sentiment" value={sentiment.value} checked={form.sentiment === sentiment.value} onChange={updateField} />
-                        <span className="report-choice__rating" aria-hidden="true">{sentiment.symbol}</span>
-                        <strong>{sentiment.value}</strong>
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
-                <p className="report-form__notice field--full"><LuInfo aria-hidden="true" /> This report syncs to Power Pages and confirmed appointments will also appear in your Outlook calendar.</p>
-              </div>
-            </div>
-          ) : null}
-
-          <div className="report-form__actions">
-            {step > 0 ? (
-              <button className="button button--quiet" type="button" onClick={() => setStep((current) => current - 1)}>
-                <LuArrowLeft aria-hidden="true" />
-                Back
-              </button>
-            ) : <span />}
-            {step === 2 ? <Link className="button button--quiet report-form__cancel" to="/report">Cancel</Link> : null}
-            <button className="button button--primary" type="submit">
-              {step === 0 ? 'Next: Meeting Details' : null}
-              {step === 1 ? 'Next: Report Content' : null}
-              {step === 2 ? 'Submit Report' : <LuArrowRight aria-hidden="true" />}
-            </button>
+      <section className="report-form-card" aria-label={isEdit ? 'Edit meeting report' : 'New meeting report'}>
+        {loadStatus === 'loading' ? (
+          <p className="report-form__loading" role="status"><LuLoaderCircle aria-hidden="true" /> Loading report details…</p>
+        ) : null}
+        {loadStatus === 'error' ? (
+          <div className="form-alert report-form__load-error" role="alert">
+            <p>{formError}</p>
+            {user.contactId ? <button className="button button--quiet" type="button" onClick={() => setLoadRetry((value) => value + 1)}>Try again</button> : null}
           </div>
-        </form>
+        ) : null}
+        {loadStatus === 'ready' && profile ? (
+          <>
+            <ol className="report-stepper" aria-label="Report progress">
+              {steps.map(({ label, icon: Icon }, index) => (
+                <li className={index <= step ? 'report-stepper__step report-stepper__step--reached' : 'report-stepper__step'} key={label} aria-current={index === step ? 'step' : undefined}>
+                  <span className="report-stepper__icon" aria-hidden="true">{index < step ? <LuCheck /> : <Icon />}</span>
+                  <span>{label}</span>
+                </li>
+              ))}
+            </ol>
+
+            <form className="report-form" onSubmit={continueForm}>
+              {formError ? (
+                <div className="form-alert report-form__error" role="alert">
+                  <span>{formError}</span>
+                  {pendingOperations.length > 0 ? (
+                    <button type="button" className="button button--quiet" onClick={retryContactLinks} disabled={isSubmitting}>Retry contact links</button>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {step === 0 ? (
+                <div className="report-form__step">
+                  <SectionHeading icon={<LuUserRound />} title="Volunteer Information" detail="Confirmed details from your Power Pages profile" headingRef={sectionHeading} />
+                  <div className="form-grid report-form__grid">
+                    <ReadOnlyField label="Full Name" value={profile.fullName} required />
+                    <ReadOnlyField label="Email" value={profile.email} required type="email" />
+                    <ReadOnlyField label="State / District" value={profile.districtName || profile.stateOrProvince} />
+                    <ReadOnlyField label="City" value={profile.city} />
+                  </div>
+                </div>
+              ) : null}
+
+              {step === 1 ? (
+                <div className="report-form__step">
+                  <SectionHeading icon={<LuCalendarDays />} title="Meeting Details" detail="Who did you meet with and how?" headingRef={sectionHeading} />
+                  <div className="form-grid report-form__grid">
+                    <label className="field field--full"><span>Meeting Title <Required /></span><input aria-label="Meeting Title" name="subject" placeholder="e.g. Advocacy meeting with Sen. Miller's office" value={draft.subject} onChange={updateTextField} required disabled={isSubmitting} /></label>
+                    <label className="field"><span>Date of Meeting <Required /></span><input aria-label="Date of Meeting" name="date" type="date" value={draft.date} onChange={updateTextField} required disabled={isSubmitting} /></label>
+                    <ContactLookup label="Representative / Office" value={representative} onChange={chooseRepresentative} required disabled={isSubmitting} loadOptions={(search, signal) => searchContacts('representative', search, signal)} />
+                    <DistrictLookup label="State / District" value={district} onChange={chooseDistrict} required disabled={isSubmitting} loadOptions={searchDistricts} />
+                    <fieldset className="report-choice-field field--full"><legend>Meeting Format <Required /></legend><div className="report-choice-grid report-choice-grid--formats">
+                      {meetingFormats.map((format) => <label className="report-choice" key={format.value}><input type="radio" name="meetingFormat" value={format.value} checked={draft.meetingFormat === format.value} onChange={() => setDraft((current) => ({ ...current, meetingFormat: format.value }))} disabled={isSubmitting} /><span className="report-choice__symbol" aria-hidden="true">{format.icon}</span><strong>{format.label}</strong><small>{format.detail}</small></label>)}
+                    </div></fieldset>
+                    <MultiContactLookup label="Tag OIAC Staff Members" kind="staff" values={staff} onChange={chooseStaff} disabled={isSubmitting} loadOptions={(search, signal) => searchContacts('staff', search, signal)} />
+                    <MultiContactLookup label="Tag Volunteers" kind="volunteer" values={volunteers} onChange={chooseVolunteers} disabled={isSubmitting} loadOptions={(search, signal) => searchContacts('volunteer', search, signal)} />
+                  </div>
+                </div>
+              ) : null}
+
+              {step === 2 ? (
+                <div className="report-form__step">
+                  <SectionHeading icon={<LuFileText />} title="Report Content" detail="Summarize what was discussed and what happens next" headingRef={sectionHeading} />
+                  <div className="form-grid report-form__grid">
+                    <label className="field field--full"><span>Issues Discussed <Required /></span><textarea aria-label="Issues Discussed" name="issuesDiscussed" rows={5} placeholder="Describe the main topics and issues discussed..." value={draft.issuesDiscussed} onChange={updateTextField} required disabled={isSubmitting} /></label>
+                    <label className="field field--full"><span>Outcomes &amp; Next Steps</span><textarea aria-label="Outcomes & Next Steps" name="outcomesNextSteps" rows={4} placeholder="What was the response? What are the agreed next steps?" value={draft.outcomesNextSteps} onChange={updateTextField} disabled={isSubmitting} /></label>
+                    <label className="field field--full"><span>Follow-up Actions</span><textarea aria-label="Follow-up Actions" name="followUpActions" rows={3} placeholder="Materials to send, follow-up calls, commitments made..." value={draft.followUpActions} onChange={updateTextField} disabled={isSubmitting} /></label>
+                    <fieldset className="report-choice-field field--full"><legend>Overall Sentiment</legend><div className="report-choice-grid report-choice-grid--sentiments">
+                      {sentiments.map((sentiment) => <label className={`report-choice report-choice--sentiment report-choice--${sentiment.label.toLowerCase().replace(/[^a-z]+/g, '-')}`} key={sentiment.value}><input type="radio" name="sentiment" value={sentiment.value} checked={draft.sentiment === sentiment.value} onChange={() => setDraft((current) => ({ ...current, sentiment: sentiment.value }))} disabled={isSubmitting} /><span className="report-choice__rating" aria-hidden="true">{sentiment.symbol}</span><strong>{sentiment.label}</strong></label>)}
+                    </div></fieldset>
+                    <p className="report-form__notice field--full"><LuInfo aria-hidden="true" /> This report is securely saved to Power Pages and Dataverse.</p>
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="report-form__actions">
+                {step > 0 ? <button className="button button--quiet" type="button" onClick={() => { setFormError(null); setStep((current) => current - 1) }} disabled={isSubmitting}><LuArrowLeft aria-hidden="true" />Back</button> : <span />}
+                {step === 2 ? <Link className="button button--quiet report-form__cancel" to="/report" aria-disabled={isSubmitting}>Cancel</Link> : null}
+                <button className="button button--primary" type="submit" disabled={isSubmitting || pendingOperations.length > 0}>
+                  {isSubmitting ? 'Saving…' : step === 0 ? 'Next: Meeting Details' : step === 1 ? 'Next: Report Content' : isEdit ? 'Update Report' : 'Submit Report'}
+                  {!isSubmitting && step < 2 ? <LuArrowRight aria-hidden="true" /> : null}
+                </button>
+              </div>
+            </form>
+          </>
+        ) : null}
       </section>
     </div>
   )
+}
+
+function Required() {
+  return <span className="required-mark" aria-hidden="true">*</span>
+}
+
+function ReadOnlyField({ label, value, required = false, type = 'text' }: { readonly label: string; readonly value: string; readonly required?: boolean; readonly type?: string }) {
+  return <label className="field"><span>{label} {required ? <Required /> : null}</span><input aria-label={label} type={type} value={value} readOnly /></label>
+}
+
+function SectionHeading({ icon, title, detail, headingRef }: { readonly icon: React.ReactNode; readonly title: string; readonly detail: string; readonly headingRef: React.RefObject<HTMLHeadingElement | null> }) {
+  return <header className="report-form__section-heading"><span aria-hidden="true">{icon}</span><div><h2 ref={headingRef} tabIndex={-1}>{title}</h2><p>{detail}</p></div></header>
 }

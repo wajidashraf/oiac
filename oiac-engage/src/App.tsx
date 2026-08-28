@@ -48,8 +48,8 @@ export default function App({ session: suppliedSession }: AppProps) {
         <Route path="/activity/appointments" element={<Appointments />} />
         <Route path="/press-coverage" element={<PressCoverage />} />
         <Route path="/report" element={<Report />} />
-        <Route path="/report/new" element={<MeetingReportForm />} />
-        <Route path="/report/:reportId/edit" element={<MeetingReportForm />} />
+        <Route path="/report/new" element={<MeetingReportForm user={session.user} />} />
+        <Route path="/report/:reportId/edit" element={<MeetingReportForm user={session.user} />} />
         <Route path="/resources" element={<Resources />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
