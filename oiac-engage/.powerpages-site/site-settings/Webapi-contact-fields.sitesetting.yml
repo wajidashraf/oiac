@@ -1,0 +1,4 @@
+description: Allow only Contact directory fields through the Web API
+id: 6dcbad52-ea17-47a3-ae96-d2854e9d30d8
+name: Webapi/contact/fields
+value: "contactid,fullname,emailaddress1,mobilephone,address1_city,address1_stateorprovince,mss_district,_mss_district_value"

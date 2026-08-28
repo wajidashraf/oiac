@@ -1,0 +1,13 @@
+adx_entitypermission_webrole:
+- 0353acdd-7b95-4c07-8997-ae95dafd978d
+append: false
+appendto: false
+contactrelationship: mss_contact_District_mss_district
+create: false
+delete: false
+entitylogicalname: mss_district
+entityname: Authenticated User District Read
+id: 45928b08-5995-480b-8ff6-d9b65985013b
+read: true
+scope: 756150001
+write: false

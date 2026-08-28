@@ -1,0 +1,4 @@
+description: Enable read-only Contact Web API access
+id: 1ce5a39e-48c6-43b8-90a1-86915b1443ea
+name: Webapi/contact/enabled
+value: true

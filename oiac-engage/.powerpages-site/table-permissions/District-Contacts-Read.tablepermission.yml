@@ -1,0 +1,14 @@
+adx_entitypermission_webrole:
+- 0353acdd-7b95-4c07-8997-ae95dafd978d
+append: false
+appendto: false
+create: false
+delete: false
+entitylogicalname: contact
+entityname: District Contacts Read
+id: 8e0a9b90-0a04-47f0-ab23-d3049e688985
+parententitypermission: 45928b08-5995-480b-8ff6-d9b65985013b
+parentrelationship: mss_contact_District_mss_district
+read: true
+scope: 756150003
+write: false

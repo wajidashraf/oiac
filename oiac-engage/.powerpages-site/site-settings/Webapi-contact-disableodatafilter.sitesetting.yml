@@ -1,0 +1,4 @@
+description: Allow secured OData filters for the Contact directory
+id: 229c9401-cc18-4342-afa7-4456c3486d4d
+name: Webapi/contact/disableodatafilter
+value: false

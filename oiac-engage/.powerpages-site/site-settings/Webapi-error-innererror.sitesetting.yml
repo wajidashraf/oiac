@@ -1,0 +1,4 @@
+description: Keep detailed Web API errors disabled
+id: 74a422e4-fadc-4ad5-aec9-194e07f60732
+name: Webapi/error/innererror
+value: false
