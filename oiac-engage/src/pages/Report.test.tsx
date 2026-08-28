@@ -6,6 +6,7 @@ import {
   createMeetingReport,
   getMeetingReport,
   getMeetingReportProfile,
+  getMeetingReports,
   runRelationshipOperations,
   searchContacts,
   searchDistricts,
@@ -23,6 +24,7 @@ vi.mock('../features/meetingReports/meetingReportService', async (importOriginal
     createMeetingReport: vi.fn(),
     getMeetingReport: vi.fn(),
     getMeetingReportProfile: vi.fn(),
+    getMeetingReports: vi.fn(),
     runRelationshipOperations: vi.fn(),
     searchContacts: vi.fn(),
     searchDistricts: vi.fn(),
@@ -101,6 +103,13 @@ beforeEach(() => {
   vi.resetAllMocks()
   vi.mocked(getMeetingReportProfile).mockResolvedValue(profile)
   vi.mocked(getMeetingReport).mockResolvedValue(existingReport)
+  vi.mocked(getMeetingReports).mockResolvedValue([{
+    id: reportId,
+    subject: existingReport.subject,
+    representativeName: representative.name,
+    date: existingReport.date,
+    sentimentLabel: 'Supportive',
+  }])
   vi.mocked(searchContacts).mockImplementation(async (kind) => {
     if (kind === 'staff') return [staff]
     if (kind === 'volunteer') return [volunteer]
@@ -112,11 +121,14 @@ beforeEach(() => {
   vi.mocked(runRelationshipOperations).mockResolvedValue([])
 })
 
-test('lists meeting reports with a create action and record-specific edit actions', () => {
+test('lists Dataverse meeting reports with real record-specific edit actions', async () => {
   renderReportRoute('/report')
   expect(screen.getByRole('heading', { name: 'Meeting Reports', level: 1 })).toBeInTheDocument()
   expect(screen.getByRole('link', { name: '+ Submit Report' })).toHaveAttribute('href', '/report/new')
-  expect(within(screen.getByRole('table', { name: 'Meeting Reports' })).getAllByRole('row')).toHaveLength(4)
+  const table = await screen.findByRole('table', { name: 'Meeting Reports' })
+  expect(within(table).getAllByRole('row')).toHaveLength(2)
+  expect(within(table).getByRole('link', { name: `Edit ${existingReport.subject}` }))
+    .toHaveAttribute('href', `/report/${reportId}/edit`)
 })
 
 test('loads the authenticated profile as read-only volunteer information', async () => {

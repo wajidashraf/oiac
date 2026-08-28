@@ -7,6 +7,7 @@ import {
   buildRelationshipOperations,
   createMeetingReport,
   getMeetingReport,
+  getMeetingReports,
   getMeetingReportProfile,
   runRelationshipOperations,
   searchContacts,
@@ -176,6 +177,30 @@ describe('meeting report mutations', () => {
     expect(result.representative).toEqual({ id: representativeId, name: 'Rep. Carter', email: null, jobTitle: null })
     expect(result.staff).toEqual([{ id: staffId, name: 'Staff Person', email: null, jobTitle: null }])
     expect(result.volunteers).toEqual([{ id: volunteerId, name: 'Volunteer Person', email: null, jobTitle: null }])
+  })
+
+  test('retrieves permitted reports for real record-specific edit links', async () => {
+    fetchMock.mockResolvedValue({
+      value: [{
+        mss_meetingreportid: reportId,
+        mss_subject: 'Existing meeting',
+        mss_dateofmeeting: '2026-08-18T12:00:00Z',
+        '_mss_representative_value@OData.Community.Display.V1.FormattedValue': 'Rep. Carter',
+        mss_overallsentiment: 2,
+      }],
+    })
+
+    await expect(getMeetingReports()).resolves.toEqual([{
+      id: reportId,
+      subject: 'Existing meeting',
+      representativeName: 'Rep. Carter',
+      date: '2026-08-18',
+      sentimentLabel: 'Supportive',
+    }])
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringMatching(/^\/_api\/mss_meetingreports\?/), {
+      signal: undefined,
+      headers: expect.objectContaining({ Prefer: expect.stringContaining('FormattedValue') }),
+    })
   })
 
   test('builds only the relationship changes required for an update', () => {

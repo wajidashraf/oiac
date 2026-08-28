@@ -7,6 +7,7 @@ import type {
   MeetingReportDetails,
   MeetingReportDraft,
   MeetingReportProfile,
+  MeetingReportSummary,
   MeetingSentiment,
   RelationshipOperation,
   RelationshipSelection,
@@ -32,6 +33,14 @@ const RELATIONSHIP_SCHEMAS = {
   staff: 'mss_MeetingReport_Contact_Staff',
   volunteer: 'mss_MeetingReport_Contact_Volunteers',
 } as const
+
+const SENTIMENT_LABELS: Record<MeetingSentiment, string> = {
+  1: 'Very Supportive',
+  2: 'Supportive',
+  3: 'Neutral',
+  4: 'Non-committal',
+  5: 'Opposed',
+}
 
 type ContactApiRecord = {
   readonly contactid?: unknown
@@ -313,6 +322,39 @@ export async function getMeetingReport(
     staff,
     volunteers,
   }
+}
+
+export async function getMeetingReports(signal?: AbortSignal): Promise<readonly MeetingReportSummary[]> {
+  const params = new URLSearchParams()
+  params.set('$select', [
+    'mss_meetingreportid',
+    'mss_subject',
+    'mss_dateofmeeting',
+    '_mss_representative_value',
+    'mss_overallsentiment',
+  ].join(','))
+  params.set('$orderby', 'mss_dateofmeeting desc,mss_meetingreportid asc')
+  params.set('$top', '100')
+
+  const response = await powerPagesFetch<{ readonly value?: readonly ReportApiRecord[] }>(
+    `/_api/mss_meetingreports?${params.toString()}`,
+    {
+      signal,
+      headers: { Prefer: 'odata.include-annotations="OData.Community.Display.V1.FormattedValue"' },
+    },
+  )
+  if (!Array.isArray(response.value)) throw new Error('Dataverse returned an invalid Meeting Reports response.')
+
+  return response.value.map((record) => {
+    const sentiment = asSentiment(record.mss_overallsentiment)
+    return {
+      id: requiredGuid(record.mss_meetingreportid, 'Meeting Report'),
+      subject: text(record.mss_subject) || 'Untitled meeting report',
+      representativeName: text(record['_mss_representative_value@OData.Community.Display.V1.FormattedValue']) || 'Not available',
+      date: text(record.mss_dateofmeeting).slice(0, 10),
+      sentimentLabel: sentiment ? SENTIMENT_LABELS[sentiment] : 'Not provided',
+    }
+  })
 }
 
 export function buildRelationshipOperations(

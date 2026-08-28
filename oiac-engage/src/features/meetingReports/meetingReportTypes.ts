@@ -47,6 +47,14 @@ export type MeetingReportDetails = MeetingReportDraft & {
   readonly volunteers: readonly ContactOption[]
 }
 
+export type MeetingReportSummary = {
+  readonly id: string
+  readonly subject: string
+  readonly representativeName: string
+  readonly date: string
+  readonly sentimentLabel: string
+}
+
 export type RelationshipKind = 'staff' | 'volunteer'
 export type RelationshipAction = 'add' | 'remove'
 
