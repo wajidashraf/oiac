@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { PowerPagesApiError, powerPagesFetch } from './powerPagesApi'
+import { PowerPagesApiError, powerPagesFetch, powerPagesRequest } from './powerPagesApi'
 
 type Deferred<T> = {
   done(callback: (value: T) => void): Deferred<T>
@@ -72,6 +72,34 @@ describe('powerPagesFetch', () => {
         __RequestVerificationToken: 'csrf-token',
       },
       signal: controller.signal,
+    })
+  })
+
+  test('exposes a successful raw response so callers can inspect entity headers', async () => {
+    const response = new Response(null, {
+      status: 204,
+      headers: { entityid: '11111111-1111-1111-1111-111111111111' },
+    })
+    const fetchMock = vi.fn().mockResolvedValue(response)
+    vi.stubGlobal('fetch', fetchMock)
+    setShellToken(resolvedDeferred('csrf-token'))
+
+    const result = await powerPagesRequest('/_api/mss_meetingreports', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{"mss_subject":"Meeting"}',
+    })
+
+    expect(result.headers.get('entityid')).toBe('11111111-1111-1111-1111-111111111111')
+    expect(fetchMock).toHaveBeenCalledWith('/_api/mss_meetingreports', {
+      method: 'POST',
+      body: '{"mss_subject":"Meeting"}',
+      credentials: 'same-origin',
+      headers: {
+        Accept: 'application/json',
+        'content-type': 'application/json',
+        __RequestVerificationToken: 'csrf-token',
+      },
     })
   })
 

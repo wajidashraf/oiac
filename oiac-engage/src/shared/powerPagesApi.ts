@@ -67,6 +67,16 @@ export async function powerPagesFetch<T>(
   path: string,
   options: PowerPagesRequestOptions = {},
 ): Promise<T> {
+  const response = await powerPagesRequest(path, options)
+
+  if (response.status === 204) return undefined as T
+  return response.json() as Promise<T>
+}
+
+export async function powerPagesRequest(
+  path: string,
+  options: PowerPagesRequestOptions = {},
+): Promise<Response> {
   const token = await getRequestVerificationToken()
   const { headers: suppliedHeaders, ...requestOptions } = options
   const headers: Record<string, string> = {
@@ -90,6 +100,5 @@ export async function powerPagesFetch<T>(
     throw await PowerPagesApiError.fromResponse(response)
   }
 
-  if (response.status === 204) return undefined as T
-  return response.json() as Promise<T>
+  return response
 }
