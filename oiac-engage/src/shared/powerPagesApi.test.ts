@@ -93,6 +93,23 @@ describe('powerPagesFetch', () => {
     })
   })
 
+  test('invokes the Power Pages token provider with the shell context', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ value: [] }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const shell = {
+      getTokenDeferred(this: unknown) {
+        if (this !== shell) throw new Error('Power Pages shell context was lost')
+        return resolvedDeferred('csrf-token')
+      },
+    }
+    Object.assign(window, { shell })
+
+    await powerPagesFetch('/_api/contacts')
+
+    expect(fetchMock).toHaveBeenCalledOnce()
+  })
+
   test('exposes a successful raw response so callers can inspect entity headers', async () => {
     const response = new Response(null, {
       status: 204,

@@ -44,7 +44,8 @@ function normalizeRequestVerificationToken(value: unknown): string {
 }
 
 function getRequestVerificationToken(): Promise<string> {
-  const tokenProvider = (window as PowerPagesWindow).shell?.getTokenDeferred
+  const shell = (window as PowerPagesWindow).shell
+  const tokenProvider = shell?.getTokenDeferred
 
   if (typeof tokenProvider !== 'function') {
     return Promise.reject(new PowerPagesApiError(
@@ -54,7 +55,7 @@ function getRequestVerificationToken(): Promise<string> {
 
   return new Promise((resolve, reject) => {
     try {
-      tokenProvider()
+      tokenProvider.call(shell)
         .done((token) => {
           const normalizedToken = normalizeRequestVerificationToken(token)
           if (normalizedToken) {
