@@ -138,7 +138,7 @@ describe('powerPagesFetch', () => {
     await expect(request).rejects.toBeInstanceOf(PowerPagesApiError)
     await expect(request).rejects.toMatchObject({
       status: 403,
-      message: 'The Contacts request could not be completed.',
+      message: 'The Power Pages request could not be completed.',
     })
   })
 

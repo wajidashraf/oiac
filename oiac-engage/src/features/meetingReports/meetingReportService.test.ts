@@ -12,13 +12,18 @@ import {
   runRelationshipOperations,
   searchContacts,
   updateMeetingReport,
+  MeetingReportCreateOutcomeUnknownError,
 } from './meetingReportService'
 import type { MeetingReportDraft } from './meetingReportTypes'
 
-vi.mock('../../shared/powerPagesApi', () => ({
-  powerPagesFetch: vi.fn(),
-  powerPagesRequest: vi.fn(),
-}))
+vi.mock('../../shared/powerPagesApi', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../shared/powerPagesApi')>()
+  return {
+    ...actual,
+    powerPagesFetch: vi.fn(),
+    powerPagesRequest: vi.fn(),
+  }
+})
 
 const fetchMock = vi.mocked(powerPagesFetch)
 const requestMock = vi.mocked(powerPagesRequest)
@@ -140,6 +145,20 @@ describe('meeting report mutations', () => {
     })
   })
 
+  test('marks a successful create without an entityid as an unknown outcome', async () => {
+    requestMock.mockResolvedValue(new Response(null, { status: 204 }))
+
+    await expect(createMeetingReport(draft, contactId))
+      .rejects.toBeInstanceOf(MeetingReportCreateOutcomeUnknownError)
+  })
+
+  test('marks an interrupted create request as an unknown outcome to prevent duplicate retry', async () => {
+    requestMock.mockRejectedValue(new TypeError('network interrupted'))
+
+    await expect(createMeetingReport(draft, contactId))
+      .rejects.toBeInstanceOf(MeetingReportCreateOutcomeUnknownError)
+  })
+
   test('patches an existing report without changing its owner', async () => {
     requestMock.mockResolvedValue(new Response(null, { status: 204 }))
 
@@ -232,7 +251,9 @@ describe('meeting report mutations', () => {
     )
     expect(requestMock).toHaveBeenNthCalledWith(
       2,
-      `/_api/mss_meetingreports(${reportId})/mss_MeetingReport_Contact_Volunteers(${volunteerId})/$ref`,
+      expect.stringMatching(
+        new RegExp(`^/_api/mss_meetingreports\\(${reportId}\\)/mss_MeetingReport_Contact_Volunteers/\\$ref\\?\\$id=`),
+      ),
       { method: 'DELETE' },
     )
     expect(failed).toEqual([

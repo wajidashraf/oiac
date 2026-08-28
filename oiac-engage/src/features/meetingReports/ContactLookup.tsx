@@ -70,10 +70,10 @@ export function ContactLookup({
                 type="button"
                 role="option"
                 aria-selected={value?.id === option.id}
-                onClick={() => {
-                  onChange(option)
-                  lookup.setSearch('')
-                  setOpen(false)
+                  onClick={() => {
+                    onChange(option)
+                    if (lookup.search) lookup.setSearch('')
+                    setOpen(false)
                 }}
               >
                 <strong>{option.name}</strong>
@@ -152,10 +152,10 @@ export function DistrictLookup({
                 type="button"
                 role="option"
                 aria-selected={value?.id === option.id}
-                onClick={() => {
-                  onChange(option)
-                  lookup.setSearch('')
-                  setOpen(false)
+                  onClick={() => {
+                    onChange(option)
+                    if (lookup.search) lookup.setSearch('')
+                    setOpen(false)
                 }}
               >{option.name}</button>
             </li>

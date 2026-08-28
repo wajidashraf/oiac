@@ -26,6 +26,7 @@ export function useMeetingReportLookup<T>(
   const [status, setStatus] = useState<LookupStatus>('idle')
   const [retryCount, setRetryCount] = useState(0)
   const requestId = useRef(0)
+  const activeController = useRef<AbortController | null>(null)
   const loaderRef = useRef(loader)
   loaderRef.current = loader
 
@@ -37,6 +38,7 @@ export function useMeetingReportLookup<T>(
   useEffect(() => {
     const currentRequest = ++requestId.current
     const controller = new AbortController()
+    activeController.current = controller
     setStatus('loading')
 
     loaderRef.current(debouncedSearch, controller.signal)
@@ -50,10 +52,22 @@ export function useMeetingReportLookup<T>(
         setStatus('error')
       })
 
-    return () => controller.abort()
+    return () => {
+      controller.abort()
+      if (activeController.current === controller) activeController.current = null
+    }
   }, [debouncedSearch, retryCount])
 
   const retry = useCallback(() => setRetryCount((value) => value + 1), [])
 
-  return { search, setSearch, options, status, retry }
+  const updateSearch = useCallback((value: string) => {
+    activeController.current?.abort()
+    activeController.current = null
+    requestId.current += 1
+    setStatus('loading')
+    setOptions([])
+    setSearch(value)
+  }, [])
+
+  return { search, setSearch: updateSearch, options, status, retry }
 }

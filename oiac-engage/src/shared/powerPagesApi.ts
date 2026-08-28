@@ -26,7 +26,7 @@ export class PowerPagesApiError extends Error {
 
   static async fromResponse(response: Response): Promise<PowerPagesApiError> {
     await response.text().catch(() => undefined)
-    return new PowerPagesApiError('The Contacts request could not be completed.', response.status)
+    return new PowerPagesApiError('The Power Pages request could not be completed.', response.status)
   }
 }
 

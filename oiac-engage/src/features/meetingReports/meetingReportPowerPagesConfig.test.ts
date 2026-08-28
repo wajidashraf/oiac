@@ -49,7 +49,7 @@ test('grants all-district Contact lookup access without Contact write access', (
   expect(contactDirectory).toContain('scope: 756150000')
   expect(contactDirectory).toContain('read: true')
   expect(contactDirectory).toContain('append: true')
-  expect(contactDirectory).toContain('appendto: false')
+  expect(contactDirectory).toContain('appendto: true')
   expect(contactDirectory).toContain('create: false')
   expect(contactDirectory).toContain('write: false')
   expect(contactDirectory).toContain('delete: false')
@@ -64,7 +64,7 @@ test('grants authenticated users global read-only District lookup access', () =>
   expect(districtDirectory).toContain('write: false')
   expect(districtDirectory).toContain('delete: false')
   expect(districtDirectory).toContain('append: false')
-  expect(districtDirectory).toContain('appendto: false')
+  expect(districtDirectory).toContain('appendto: true')
 })
 
 test('limits report management to reports related to the authenticated Contact', () => {

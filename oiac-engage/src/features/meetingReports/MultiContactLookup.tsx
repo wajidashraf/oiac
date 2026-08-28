@@ -84,7 +84,7 @@ export function MultiContactLookup({
                 aria-selected="false"
                 onClick={() => {
                   if (!selectedIds.has(option.id)) onChange([...values, option])
-                  lookup.setSearch('')
+                  if (lookup.search) lookup.setSearch('')
                   setOpen(false)
                 }}
               >

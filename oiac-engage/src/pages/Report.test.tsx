@@ -214,6 +214,10 @@ test('retries only failed relationships without creating a duplicate report', as
   await actor.click(screen.getByRole('button', { name: 'Submit Report' }))
 
   expect(await screen.findByRole('alert')).toHaveTextContent('report was saved')
+  expect(screen.getByLabelText('Issues Discussed')).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Submit Report' })).toBeDisabled()
   await actor.click(screen.getByRole('button', { name: 'Retry contact links' }))
   expect(createMeetingReport).toHaveBeenCalledTimes(1)
   expect(runRelationshipOperations).toHaveBeenCalledTimes(2)

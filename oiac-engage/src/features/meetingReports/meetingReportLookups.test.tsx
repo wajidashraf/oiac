@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { ContactLookup, DistrictLookup } from './ContactLookup'
@@ -44,6 +44,28 @@ test('debounces Contact search and ignores stale results', async () => {
   expect(screen.getByRole('option', { name: /Sara Rahimi/ })).toBeInTheDocument()
 })
 
+test('invalidates an in-flight lookup immediately when raw search text changes', async () => {
+  vi.useFakeTimers()
+  const pending: Array<(value: readonly ContactOption[]) => void> = []
+  const loadOptions = vi.fn((_search: string) => new Promise<readonly ContactOption[]>((resolve) => pending.push(resolve)))
+  render(<ContactLookup label="Representative / Office" value={null} onChange={vi.fn()} loadOptions={loadOptions} />)
+
+  const input = screen.getByRole('combobox', { name: 'Representative / Office' })
+  await act(async () => {
+    input.focus()
+    await vi.advanceTimersByTimeAsync(350)
+  })
+  expect(loadOptions).toHaveBeenCalledTimes(1)
+
+  await act(async () => {
+    fireEvent.change(input, { target: { value: 'new' } })
+    pending[0]([sara])
+    await Promise.resolve()
+  })
+
+  expect(screen.queryByRole('option', { name: /Sara Rahimi/ })).not.toBeInTheDocument()
+})
+
 test('selects and clears a representative', async () => {
   const user = userEvent.setup()
   const onChange = vi.fn()
@@ -60,6 +82,9 @@ test('selects and clears a representative', async () => {
   await user.click(screen.getByRole('combobox', { name: 'Representative / Office' }))
   await user.click(await screen.findByRole('option', { name: /Sara Rahimi/ }))
   expect(onChange).toHaveBeenCalledWith(sara)
+
+  await user.click(screen.getByRole('combobox', { name: 'Representative / Office' }))
+  expect(screen.getByRole('option', { name: /Sara Rahimi/ })).toBeInTheDocument()
 })
 
 test('prevents duplicate multi-select Contacts and supports removal', async () => {

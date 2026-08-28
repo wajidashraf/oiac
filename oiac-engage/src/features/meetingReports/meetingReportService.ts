@@ -1,4 +1,4 @@
-import { powerPagesFetch, powerPagesRequest } from '../../shared/powerPagesApi'
+import { PowerPagesApiError, powerPagesFetch, powerPagesRequest } from '../../shared/powerPagesApi'
 import type {
   ContactLookupKind,
   ContactOption,
@@ -40,6 +40,13 @@ const SENTIMENT_LABELS: Record<MeetingSentiment, string> = {
   3: 'Neutral',
   4: 'Non-committal',
   5: 'Opposed',
+}
+
+export class MeetingReportCreateOutcomeUnknownError extends Error {
+  constructor() {
+    super('Dataverse did not return the created Meeting Report identifier.')
+    this.name = 'MeetingReportCreateOutcomeUnknownError'
+  }
 }
 
 type ContactApiRecord = {
@@ -247,13 +254,19 @@ export async function createMeetingReport(
   ownerContactId: string,
 ): Promise<string> {
   const payload = buildMeetingReportPayload(draft, ownerContactId, true)
-  const response = await powerPagesRequest('/_api/mss_meetingreports', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
+  let response: Response
+  try {
+    response = await powerPagesRequest('/_api/mss_meetingreports', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+  } catch (error) {
+    if (error instanceof PowerPagesApiError && typeof error.status === 'number') throw error
+    throw new MeetingReportCreateOutcomeUnknownError()
+  }
   const id = normalizeGuid(response.headers.get('entityid'))
-  if (!id) throw new Error('The report was created but Dataverse did not return its identifier.')
+  if (!id) throw new MeetingReportCreateOutcomeUnknownError()
   return id
 }
 
@@ -402,14 +415,14 @@ export async function runRelationshipOperations(
   const operations = [...unique.values()]
   const results = await Promise.allSettled(operations.map((operation) => {
     const schema = RELATIONSHIP_SCHEMAS[operation.relationship]
+    const contactUrl = new URL(`/_api/contacts(${operation.contactId})`, window.location.origin).href
     if (operation.action === 'remove') {
       return powerPagesRequest(
-        `/_api/mss_meetingreports(${id})/${schema}(${operation.contactId})/$ref`,
+        `/_api/mss_meetingreports(${id})/${schema}/$ref?$id=${encodeURIComponent(contactUrl)}`,
         { method: 'DELETE' },
       )
     }
 
-    const contactUrl = new URL(`/_api/contacts(${operation.contactId})`, window.location.origin).href
     return powerPagesRequest(`/_api/mss_meetingreports(${id})/${schema}/$ref`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

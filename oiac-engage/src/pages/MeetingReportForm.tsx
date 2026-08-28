@@ -23,6 +23,7 @@ import {
   searchContacts,
   searchDistricts,
   updateMeetingReport,
+  MeetingReportCreateOutcomeUnknownError,
 } from '../features/meetingReports/meetingReportService'
 import type {
   ContactOption,
@@ -91,6 +92,7 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
   const [formError, setFormError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [pendingOperations, setPendingOperations] = useState<readonly RelationshipOperation[]>([])
+  const [creationOutcomeUnknown, setCreationOutcomeUnknown] = useState(false)
   const [persistedReportId, setPersistedReportId] = useState<string | null>(reportId ?? null)
   const sectionHeading = useRef<HTMLHeadingElement>(null)
   const originalRelationships = useRef<RelationshipSelection>({ staffIds: [], volunteerIds: [] })
@@ -252,8 +254,13 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
         return
       }
       finishSave()
-    } catch {
-      setFormError(`The report could not be ${isEdit ? 'updated' : 'saved'}. Check the required fields and try again.`)
+    } catch (error) {
+      if (error instanceof MeetingReportCreateOutcomeUnknownError) {
+        setCreationOutcomeUnknown(true)
+        setFormError('The save result could not be confirmed. Do not submit this report again because it may already exist. Return to Meeting Reports and check the list before taking further action.')
+      } else {
+        setFormError(`The report could not be ${isEdit ? 'updated' : 'saved'}. Check the required fields and try again.`)
+      }
     } finally {
       submitLock.current = false
       setIsSubmitting(false)
@@ -285,6 +292,8 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
   function finishSave() {
     navigate('/report', { state: isEdit ? { reportUpdated: true } : { reportSaved: true } })
   }
+
+  const formLocked = isSubmitting || pendingOperations.length > 0 || creationOutcomeUnknown
 
   return (
     <div className="page page--meeting-report page--report-form">
@@ -340,15 +349,15 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
                 <div className="report-form__step">
                   <SectionHeading icon={<LuCalendarDays />} title="Meeting Details" detail="Who did you meet with and how?" headingRef={sectionHeading} />
                   <div className="form-grid report-form__grid">
-                    <label className="field field--full"><span>Meeting Title <Required /></span><input aria-label="Meeting Title" name="subject" placeholder="e.g. Advocacy meeting with Sen. Miller's office" value={draft.subject} onChange={updateTextField} required disabled={isSubmitting} /></label>
-                    <label className="field"><span>Date of Meeting <Required /></span><input aria-label="Date of Meeting" name="date" type="date" value={draft.date} onChange={updateTextField} required disabled={isSubmitting} /></label>
-                    <ContactLookup label="Representative / Office" value={representative} onChange={chooseRepresentative} required disabled={isSubmitting} loadOptions={(search, signal) => searchContacts('representative', search, signal)} />
-                    <DistrictLookup label="State / District" value={district} onChange={chooseDistrict} required disabled={isSubmitting} loadOptions={searchDistricts} />
+                    <label className="field field--full"><span>Meeting Title <Required /></span><input aria-label="Meeting Title" name="subject" placeholder="e.g. Advocacy meeting with Sen. Miller's office" value={draft.subject} onChange={updateTextField} required disabled={formLocked} /></label>
+                    <label className="field"><span>Date of Meeting <Required /></span><input aria-label="Date of Meeting" name="date" type="date" value={draft.date} onChange={updateTextField} required disabled={formLocked} /></label>
+                    <ContactLookup label="Representative / Office" value={representative} onChange={chooseRepresentative} required disabled={formLocked} loadOptions={(search, signal) => searchContacts('representative', search, signal)} />
+                    <DistrictLookup label="State / District" value={district} onChange={chooseDistrict} required disabled={formLocked} loadOptions={searchDistricts} />
                     <fieldset className="report-choice-field field--full"><legend>Meeting Format <Required /></legend><div className="report-choice-grid report-choice-grid--formats">
-                      {meetingFormats.map((format) => <label className="report-choice" key={format.value}><input type="radio" name="meetingFormat" value={format.value} checked={draft.meetingFormat === format.value} onChange={() => setDraft((current) => ({ ...current, meetingFormat: format.value }))} disabled={isSubmitting} /><span className="report-choice__symbol" aria-hidden="true">{format.icon}</span><strong>{format.label}</strong><small>{format.detail}</small></label>)}
+                      {meetingFormats.map((format) => <label className="report-choice" key={format.value}><input type="radio" name="meetingFormat" value={format.value} checked={draft.meetingFormat === format.value} onChange={() => setDraft((current) => ({ ...current, meetingFormat: format.value }))} disabled={formLocked} /><span className="report-choice__symbol" aria-hidden="true">{format.icon}</span><strong>{format.label}</strong><small>{format.detail}</small></label>)}
                     </div></fieldset>
-                    <MultiContactLookup label="Tag OIAC Staff Members" kind="staff" values={staff} onChange={chooseStaff} disabled={isSubmitting} loadOptions={(search, signal) => searchContacts('staff', search, signal)} />
-                    <MultiContactLookup label="Tag Volunteers" kind="volunteer" values={volunteers} onChange={chooseVolunteers} disabled={isSubmitting} loadOptions={(search, signal) => searchContacts('volunteer', search, signal)} />
+                    <MultiContactLookup label="Tag OIAC Staff Members" kind="staff" values={staff} onChange={chooseStaff} disabled={formLocked} loadOptions={(search, signal) => searchContacts('staff', search, signal)} />
+                    <MultiContactLookup label="Tag Volunteers" kind="volunteer" values={volunteers} onChange={chooseVolunteers} disabled={formLocked} loadOptions={(search, signal) => searchContacts('volunteer', search, signal)} />
                   </div>
                 </div>
               ) : null}
@@ -357,11 +366,11 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
                 <div className="report-form__step">
                   <SectionHeading icon={<LuFileText />} title="Report Content" detail="Summarize what was discussed and what happens next" headingRef={sectionHeading} />
                   <div className="form-grid report-form__grid">
-                    <label className="field field--full"><span>Issues Discussed <Required /></span><textarea aria-label="Issues Discussed" name="issuesDiscussed" rows={5} placeholder="Describe the main topics and issues discussed..." value={draft.issuesDiscussed} onChange={updateTextField} required disabled={isSubmitting} /></label>
-                    <label className="field field--full"><span>Outcomes &amp; Next Steps</span><textarea aria-label="Outcomes & Next Steps" name="outcomesNextSteps" rows={4} placeholder="What was the response? What are the agreed next steps?" value={draft.outcomesNextSteps} onChange={updateTextField} disabled={isSubmitting} /></label>
-                    <label className="field field--full"><span>Follow-up Actions</span><textarea aria-label="Follow-up Actions" name="followUpActions" rows={3} placeholder="Materials to send, follow-up calls, commitments made..." value={draft.followUpActions} onChange={updateTextField} disabled={isSubmitting} /></label>
+                    <label className="field field--full"><span>Issues Discussed <Required /></span><textarea aria-label="Issues Discussed" name="issuesDiscussed" rows={5} placeholder="Describe the main topics and issues discussed..." value={draft.issuesDiscussed} onChange={updateTextField} required disabled={formLocked} /></label>
+                    <label className="field field--full"><span>Outcomes &amp; Next Steps</span><textarea aria-label="Outcomes & Next Steps" name="outcomesNextSteps" rows={4} placeholder="What was the response? What are the agreed next steps?" value={draft.outcomesNextSteps} onChange={updateTextField} disabled={formLocked} /></label>
+                    <label className="field field--full"><span>Follow-up Actions</span><textarea aria-label="Follow-up Actions" name="followUpActions" rows={3} placeholder="Materials to send, follow-up calls, commitments made..." value={draft.followUpActions} onChange={updateTextField} disabled={formLocked} /></label>
                     <fieldset className="report-choice-field field--full"><legend>Overall Sentiment</legend><div className="report-choice-grid report-choice-grid--sentiments">
-                      {sentiments.map((sentiment) => <label className={`report-choice report-choice--sentiment report-choice--${sentiment.label.toLowerCase().replace(/[^a-z]+/g, '-')}`} key={sentiment.value}><input type="radio" name="sentiment" value={sentiment.value} checked={draft.sentiment === sentiment.value} onChange={() => setDraft((current) => ({ ...current, sentiment: sentiment.value }))} disabled={isSubmitting} /><span className="report-choice__rating" aria-hidden="true">{sentiment.symbol}</span><strong>{sentiment.label}</strong></label>)}
+                      {sentiments.map((sentiment) => <label className={`report-choice report-choice--sentiment report-choice--${sentiment.label.toLowerCase().replace(/[^a-z]+/g, '-')}`} key={sentiment.value}><input type="radio" name="sentiment" value={sentiment.value} checked={draft.sentiment === sentiment.value} onChange={() => setDraft((current) => ({ ...current, sentiment: sentiment.value }))} disabled={formLocked} /><span className="report-choice__rating" aria-hidden="true">{sentiment.symbol}</span><strong>{sentiment.label}</strong></label>)}
                     </div></fieldset>
                     <p className="report-form__notice field--full"><LuInfo aria-hidden="true" /> This report is securely saved to Power Pages and Dataverse.</p>
                   </div>
@@ -369,9 +378,10 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
               ) : null}
 
               <div className="report-form__actions">
-                {step > 0 ? <button className="button button--quiet" type="button" onClick={() => { setFormError(null); setStep((current) => current - 1) }} disabled={isSubmitting}><LuArrowLeft aria-hidden="true" />Back</button> : <span />}
-                {step === 2 ? <Link className="button button--quiet report-form__cancel" to="/report" aria-disabled={isSubmitting}>Cancel</Link> : null}
-                <button className="button button--primary" type="submit" disabled={isSubmitting || pendingOperations.length > 0}>
+                {step > 0 ? <button className="button button--quiet" type="button" onClick={() => { setFormError(null); setStep((current) => current - 1) }} disabled={formLocked}><LuArrowLeft aria-hidden="true" />Back</button> : <span />}
+                {step === 2 && (isSubmitting || pendingOperations.length > 0) ? <button className="button button--quiet report-form__cancel" type="button" disabled>Cancel</button> : null}
+                {step === 2 && !isSubmitting && pendingOperations.length === 0 ? <Link className="button button--quiet report-form__cancel" to="/report">{creationOutcomeUnknown ? 'Return to Meeting Reports' : 'Cancel'}</Link> : null}
+                <button className="button button--primary" type="submit" disabled={formLocked}>
                   {isSubmitting ? 'Saving…' : step === 0 ? 'Next: Meeting Details' : step === 1 ? 'Next: Report Content' : isEdit ? 'Update Report' : 'Submit Report'}
                   {!isSubmitting && step < 2 ? <LuArrowRight aria-hidden="true" /> : null}
                 </button>
