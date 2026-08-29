@@ -12,7 +12,8 @@ The change covers the React form, Meeting Report domain types, Dataverse Web API
 
 ### Step 1: Volunteer Information
 
-- Keep Full Name, Email, and State / District as read-only profile information.
+- Keep Full Name, Email, and District as read-only profile information.
+- Rename the existing `State / District` profile label to `District`. Continue showing the Contact's district name when available, with State / Province as the existing fallback value.
 - Remove the City field from this step.
 - The profile may still contain a city value because other features or data mappings can use it; only this form presentation changes.
 
