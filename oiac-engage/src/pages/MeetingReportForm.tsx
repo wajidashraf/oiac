@@ -12,6 +12,7 @@ import {
 } from 'react-icons/lu'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import type { PortalUser } from '../auth/powerPagesSession'
+import { LoadingBackdrop } from '../components/LoadingBackdrop'
 import { ContactLookup, DistrictLookup } from '../features/meetingReports/ContactLookup'
 import { MultiContactLookup } from '../features/meetingReports/MultiContactLookup'
 import {
@@ -303,6 +304,7 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
 
   return (
     <div className="page page--meeting-report page--report-form">
+      {isSubmitting ? <LoadingBackdrop label={isEdit ? 'Updating report' : 'Saving report'} /> : null}
       <Link className="report-page__back" to="/report"><LuChevronLeft aria-hidden="true" /><span>Back</span></Link>
       <header className="report-page__header">
         <div><h1>Meeting Reports</h1><p>Submit and track your congressional and organizational meeting reports.</p></div>

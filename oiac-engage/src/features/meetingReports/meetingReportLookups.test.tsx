@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { useState } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 import { ContactLookup, DistrictLookup } from './ContactLookup'
 import { MultiContactLookup } from './MultiContactLookup'
@@ -16,6 +17,19 @@ const ali: ContactOption = {
   name: 'Ali Staff',
   email: 'ali@example.com',
   jobTitle: 'Staff',
+}
+
+function StatefulMultiContactLookup() {
+  const [values, setValues] = useState<readonly ContactOption[]>([ali])
+  return (
+    <MultiContactLookup
+      label="Tag OIAC Staff Members"
+      values={values}
+      onChange={setValues}
+      loadOptions={async () => [ali, sara]}
+      debounceMs={0}
+    />
+  )
 }
 
 afterEach(() => {
@@ -107,34 +121,30 @@ test('keeps selected values inside every single lookup field', () => {
   expect(districtControl).toContainElement(screen.getByRole('button', { name: 'Clear State / District' }))
 })
 
-test('prevents duplicate multi-select Contacts and supports removal', async () => {
+test('renders every multi-select as a checkbox dropdown with an in-field selection count', async () => {
   const user = userEvent.setup()
-  const onChange = vi.fn()
-  const { rerender } = render(
-    <MultiContactLookup
-      label="Tag OIAC Staff Members"
-      values={[ali]}
-      onChange={onChange}
-      loadOptions={async () => [ali, sara]}
-      debounceMs={0}
-    />,
-  )
+  render(<StatefulMultiContactLookup />)
 
-  await user.click(screen.getByRole('combobox', { name: 'Tag OIAC Staff Members' }))
-  await user.click(await screen.findByRole('option', { name: /Sara Rahimi/ }))
-  expect(onChange).toHaveBeenCalledWith([ali, sara])
+  const trigger = screen.getByRole('combobox', { name: 'Tag OIAC Staff Members' })
+  expect(trigger).toHaveTextContent('1 selected')
+  await user.click(trigger)
 
-  rerender(
-    <MultiContactLookup
-      label="Tag OIAC Staff Members"
-      values={[ali, sara]}
-      onChange={onChange}
-      loadOptions={async () => [ali, sara]}
-      debounceMs={0}
-    />,
-  )
-  await user.click(screen.getByRole('button', { name: 'Remove Ali Staff' }))
-  expect(onChange).toHaveBeenLastCalledWith([sara])
+  const aliCheckbox = await screen.findByRole('checkbox', { name: /Ali Staff/ })
+  const saraCheckbox = screen.getByRole('checkbox', { name: /Sara Rahimi/ })
+  expect(aliCheckbox).toBeChecked()
+  expect(saraCheckbox).not.toBeChecked()
+  expect(screen.getByRole('searchbox', { name: 'Search Tag OIAC Staff Members' })).toBeInTheDocument()
+
+  await user.click(saraCheckbox)
+  expect(trigger).toHaveTextContent('2 selected')
+  expect(trigger).toHaveAttribute('aria-expanded', 'true')
+
+  await user.click(aliCheckbox)
+  expect(trigger).toHaveTextContent('1 selected')
+  expect(aliCheckbox).not.toBeChecked()
+
+  await user.keyboard('{Escape}')
+  expect(trigger).toHaveAttribute('aria-expanded', 'false')
 })
 
 test('renders District loading errors and allows retry', async () => {

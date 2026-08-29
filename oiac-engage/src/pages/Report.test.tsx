@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import type { PortalUser } from '../auth/powerPagesSession'
@@ -144,6 +144,10 @@ test('loads the authenticated profile as read-only volunteer information', async
 
 test('creates a report and associates selected Staff and Volunteers', async () => {
   const actor = userEvent.setup()
+  let finishRelationships: (() => void) | undefined
+  vi.mocked(runRelationshipOperations).mockImplementationOnce(() => new Promise((resolve) => {
+    finishRelationships = () => resolve([])
+  }))
   renderReportRoute('/report/new')
   await screen.findByDisplayValue('Sara Rahimi')
   await actor.click(screen.getByRole('button', { name: 'Next: Meeting Details' }))
@@ -155,14 +159,15 @@ test('creates a report and associates selected Staff and Volunteers', async () =
   await actor.click(await screen.findByRole('option', { name: 'DC' }))
   await actor.click(screen.getByRole('radio', { name: /Teams/ }))
   await actor.click(screen.getByRole('combobox', { name: 'Tag OIAC Staff Members' }))
-  await actor.click(await screen.findByRole('option', { name: /Ali Staff/ }))
+  await actor.click(await screen.findByRole('checkbox', { name: /Ali Staff/ }))
   await actor.click(screen.getByRole('combobox', { name: 'Tag Volunteers' }))
-  await actor.click(await screen.findByRole('option', { name: /Neda Volunteer/ }))
+  await actor.click(await screen.findByRole('checkbox', { name: /Neda Volunteer/ }))
   await actor.click(screen.getByRole('button', { name: 'Next: Report Content' }))
   await actor.type(screen.getByLabelText('Issues Discussed'), 'Community priorities')
   await actor.click(screen.getByRole('radio', { name: 'Neutral' }))
   await actor.click(screen.getByRole('button', { name: 'Submit Report' }))
 
+  expect(await screen.findByRole('status', { name: 'Saving report' })).toHaveTextContent('Saving report')
   expect(createMeetingReport).toHaveBeenCalledWith(expect.objectContaining({
     subject: 'Community briefing', representativeId: representative.id, districtId: district.id,
     meetingFormat: 2, staffIds: [staff.id], volunteerIds: [volunteer.id], sentiment: 3,
@@ -171,6 +176,7 @@ test('creates a report and associates selected Staff and Volunteers', async () =
     { action: 'add', relationship: 'staff', contactId: staff.id },
     { action: 'add', relationship: 'volunteer', contactId: volunteer.id },
   ])
+  await act(async () => finishRelationships?.())
   expect(await screen.findByRole('status')).toHaveTextContent('Report saved.')
 })
 
@@ -180,7 +186,8 @@ test('hydrates and updates a report, removing deselected relationships', async (
   await screen.findByDisplayValue('Sara Rahimi')
   await actor.click(screen.getByRole('button', { name: 'Next: Meeting Details' }))
   expect(screen.getByLabelText('Meeting Title')).toHaveValue('Existing advocacy meeting')
-  await actor.click(screen.getByRole('button', { name: 'Remove Neda Volunteer' }))
+  await actor.click(screen.getByRole('combobox', { name: 'Tag Volunteers' }))
+  await actor.click(await screen.findByRole('checkbox', { name: /Neda Volunteer/ }))
   await actor.click(screen.getByRole('button', { name: 'Next: Report Content' }))
   expect(screen.getByLabelText('Issues Discussed')).toHaveValue('Existing issues')
   await actor.click(screen.getByRole('button', { name: 'Update Report' }))
@@ -208,7 +215,7 @@ test('retries only failed relationships without creating a duplicate report', as
   await actor.click(await screen.findByRole('option', { name: 'DC' }))
   await actor.click(screen.getByRole('radio', { name: /In-person/ }))
   await actor.click(screen.getByRole('combobox', { name: 'Tag OIAC Staff Members' }))
-  await actor.click(await screen.findByRole('option', { name: /Ali Staff/ }))
+  await actor.click(await screen.findByRole('checkbox', { name: /Ali Staff/ }))
   await actor.click(screen.getByRole('button', { name: 'Next: Report Content' }))
   await actor.type(screen.getByLabelText('Issues Discussed'), 'Retry associations')
   await actor.click(screen.getByRole('button', { name: 'Submit Report' }))

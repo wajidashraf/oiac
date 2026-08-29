@@ -39,7 +39,13 @@ test('exposes only the fields required by the meeting report workflow', () => {
     'mss_writedownwhatthestaffsaidnotwhatyousaid', 'mss_followupnoteoncethemeetingended',
     'mss_overallsentiment', 'mss_reportedby', '_mss_reportedby_value',
   ]) expect(reportFields).toContain(field)
-  for (const navigationProperty of ['mss_Representative', 'mss_District', 'mss_Reportedby']) {
+  for (const navigationProperty of [
+    'mss_Representative',
+    'mss_District',
+    'mss_Reportedby',
+    'mss_MeetingReport_Contact_Staff',
+    'mss_MeetingReport_Contact_Volunteers',
+  ]) {
     expect(reportFields).toContain(navigationProperty)
   }
   expect(reportFilter).toContain('name: Webapi/mss_meetingreport/disableodatafilter')
