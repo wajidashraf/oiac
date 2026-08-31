@@ -24,6 +24,15 @@ export function hasAllRoles(session: AuthSession, roleNames: readonly string[]):
 const implicitRoles = new Set(['authenticated users', 'anonymous users'])
 const functionalRolePriority = ['Administrators', 'Staff', 'Volunteer', 'Applicant'] as const
 
+export function requiresProfileApproval(session: AuthSession): boolean {
+  if (session.status === 'anonymous') return false
+
+  return !session.user.userRoles.some((role) => {
+    const normalizedRole = role.trim().toLowerCase()
+    return normalizedRole.length > 0 && !implicitRoles.has(normalizedRole)
+  })
+}
+
 export function getPrimaryRole(session: AuthSession): string | undefined {
   if (session.status === 'anonymous') return undefined
 
