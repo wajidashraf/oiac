@@ -406,7 +406,7 @@ adx_sitesetting:
   IsDeleted: false
 - RecordId: a819a91f-3b5e-4014-8691-63093aa9cc59
   DisplayName: a819a91f-3b5e-4014-8691-63093aa9cc59
-  CheckSum: a635857758fdc8196e2e9032f8323237759742321848ebaefa4d0f6fc579f964
+  CheckSum: 3c0c5ef8349c964fce920b8f4224e74e18f9e9e3d29dc63419f72b7bcf37689b
   IsDeleted: false
 - RecordId: ab721811-ecba-48ee-b81a-bdc7e8baa4d6
   DisplayName: ab721811-ecba-48ee-b81a-bdc7e8baa4d6
@@ -446,7 +446,7 @@ adx_sitesetting:
   IsDeleted: false
 - RecordId: d82c4fa6-d53f-4eaa-a37d-7babc1e20b6c
   DisplayName: d82c4fa6-d53f-4eaa-a37d-7babc1e20b6c
-  CheckSum: eb41799be64cd1439166c111c8f8dab1b2a965b70e0edcedafedd01dfaef9a81
+  CheckSum: aaef2a0f9f0db3a75d43ff4b84c87ed89e7381841eaa48f43f55b3e0dd41f37d
   IsDeleted: false
 - RecordId: ddc647a7-36fd-415c-81ed-75c9d4df2ae9
   DisplayName: ddc647a7-36fd-415c-81ed-75c9d4df2ae9
@@ -490,7 +490,7 @@ adx_sitesetting:
   IsDeleted: false
 - RecordId: f78f764f-ac9f-459c-8cb1-5cdfb3884b21
   DisplayName: f78f764f-ac9f-459c-8cb1-5cdfb3884b21
-  CheckSum: d09c97ce39a478d130392166ef4a04d1b011c78cfb9f3eef32b30143238f95dd
+  CheckSum: 4fd33c209ea1a6cdc4704f85c6e3f0f4a5ff387e5f3e0c8440fde591a52b83e9
   IsDeleted: false
 - RecordId: fb24561b-9020-4dac-8293-63bd0f7b21ae
   DisplayName: fb24561b-9020-4dac-8293-63bd0f7b21ae
@@ -527,7 +527,7 @@ adx_webfile:
   IsDeleted: false
 - RecordId: 8f607af5-905b-48cb-aee8-e80e065dad40
   DisplayName: 8f607af5-905b-48cb-aee8-e80e065dad40
-  CheckSum: 69e50fc700142ead82c18ebc8b3cbd98a5b6997f0bf0470ca0fcbc92c2e09708
+  CheckSum: 00ef051e5295544dcc50b6492623b7502598b8aa3ecc344c4f0e388bac6dfad6
   IsDeleted: false
 - RecordId: 98c794cf-8c42-4880-837a-648c750f26a4
   DisplayName: 98c794cf-8c42-4880-837a-648c750f26a4
@@ -586,7 +586,7 @@ adx_webpage:
   IsDeleted: false
 - RecordId: 71591c4f-0e93-46f1-b1c4-91008a9f143a
   DisplayName: 71591c4f-0e93-46f1-b1c4-91008a9f143a
-  CheckSum: fcc116fcfe71836dc13aaa1942a69d2ffea2ff84c15c5e9ccddc69e1a2301e74
+  CheckSum: 78a25e836d5d8a1c9c99df36dd36397107fe88eb9d5c9a86ffcbef759bc9891d
   IsDeleted: false
 - RecordId: 950db54f-769f-4242-88c4-2fc0329bb3e8
   DisplayName: 950db54f-769f-4242-88c4-2fc0329bb3e8
@@ -674,7 +674,7 @@ adx_websitelanguage:
 adx_webtemplate:
 - RecordId: 1a8d7f5c-7e6b-4a4f-b9d5-2f3c6a1e8b70
   DisplayName: 1a8d7f5c-7e6b-4a4f-b9d5-2f3c6a1e8b70
-  CheckSum: 9170fc8658d75d9bc95581787292c26513759d08b2ee8144298d4cd5e33591a1
+  CheckSum: a8563e13ad90b88d547e4b3e86fbf584c48d99805f28bf3db561df787bd14760
   IsDeleted: false
 - RecordId: 2a0ba60d-ee3a-4469-aeec-fc5a3b7c7b5c
   DisplayName: 2a0ba60d-ee3a-4469-aeec-fc5a3b7c7b5c
@@ -763,7 +763,7 @@ annotation:
   IsDeleted: false
 - RecordId: 8f607af5-905b-48cb-aee8-e80e065dad40
   DisplayName: index.html
-  CheckSum: bdb22fc3cf37516cd8e720809f72923c9f2685f006f3ac1a00a333c9c6ac578b
+  CheckSum: 7cf527502bb2b3209bc571b90aeef7e34dddcb33d47d85913865667b3f347c38
   IsDeleted: false
 - RecordId: 98c794cf-8c42-4880-837a-648c750f26a4
   DisplayName: logo.png
