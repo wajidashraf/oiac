@@ -32,11 +32,15 @@ export default function PortalNav({ user }: { user: PortalUser }) {
   const roleLabel = getPrimaryRole({ status: 'authenticated', user }) ?? 'Authenticated User'
   const [menuOpen, setMenuOpen] = useState(false)
   const [activityOpen, setActivityOpen] = useState(false)
+  const [accountOpen, setAccountOpen] = useState(false)
   const activityGroup = useRef<HTMLDivElement>(null)
+  const accountGroup = useRef<HTMLDivElement>(null)
+  const accountButton = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     setMenuOpen(false)
     setActivityOpen(false)
+    setAccountOpen(false)
   }, [location.pathname])
 
   useEffect(() => {
@@ -51,6 +55,27 @@ export default function PortalNav({ user }: { user: PortalUser }) {
     document.addEventListener('pointerdown', closeActivityOnOutsideClick)
     return () => document.removeEventListener('pointerdown', closeActivityOnOutsideClick)
   }, [activityOpen])
+
+  useEffect(() => {
+    if (!accountOpen) return
+
+    function closeAccountOnOutsideClick(event: PointerEvent) {
+      if (!accountGroup.current?.contains(event.target as Node)) setAccountOpen(false)
+    }
+
+    function closeAccountOnEscape(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return
+      setAccountOpen(false)
+      accountButton.current?.focus()
+    }
+
+    document.addEventListener('pointerdown', closeAccountOnOutsideClick)
+    document.addEventListener('keydown', closeAccountOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeAccountOnOutsideClick)
+      document.removeEventListener('keydown', closeAccountOnEscape)
+    }
+  }, [accountOpen])
 
   return (
     <div className="portal-nav">
@@ -133,14 +158,45 @@ export default function PortalNav({ user }: { user: PortalUser }) {
         </nav>
 
         <div className="portal-nav__account" role="group" aria-label="Account">
-          <span className="portal-nav__user">
-            <span className="portal-nav__avatar" aria-hidden="true">{roleLabel.charAt(0).toLocaleUpperCase()}</span>
-            <span>{roleLabel}</span>
-          </span>
+          <div className="portal-nav__account-menu" ref={accountGroup}>
+            <button
+              ref={accountButton}
+              className="portal-nav__account-toggle"
+              type="button"
+              aria-label={`Account menu for ${roleLabel}`}
+              aria-haspopup="menu"
+              aria-expanded={accountOpen}
+              aria-controls="portal-account-menu"
+              onClick={() => setAccountOpen((open) => !open)}
+            >
+              <span className="portal-nav__avatar" aria-hidden="true">{roleLabel.charAt(0).toLocaleUpperCase()}</span>
+              <span>{roleLabel}</span>
+              <LuChevronDown className="portal-nav__account-chevron" aria-hidden="true" />
+            </button>
 
-          <a className="portal-nav__signin" href="/Account/Login/LogOff?returnUrl=%2F">
-            <span>Sign out</span>
-          </a>
+            {accountOpen ? (
+              <div className="portal-nav__account-dropdown" id="portal-account-menu" role="menu">
+                <NavLink
+                  className="portal-nav__account-action"
+                  to="/user-profile"
+                  role="menuitem"
+                  onClick={() => {
+                    setAccountOpen(false)
+                    setMenuOpen(false)
+                  }}
+                >
+                  Profile
+                </NavLink>
+                <a
+                  className="portal-nav__account-action"
+                  href="/Account/Login/LogOff?returnUrl=%2F"
+                  role="menuitem"
+                >
+                  Sign out
+                </a>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
     </div>

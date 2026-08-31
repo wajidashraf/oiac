@@ -16,6 +16,7 @@ import NotFound from './pages/NotFound'
 import PendingApproval from './pages/PendingApproval'
 import Report from './pages/Report'
 import Resources from './pages/Resources'
+import UserProfile from './pages/UserProfile'
 
 type AppProps = {
   session?: AuthSession
@@ -53,6 +54,7 @@ export default function App({ session: suppliedSession }: AppProps) {
         <Route path="/my-reports" element={<MyReports />} />
         <Route path="/my-calendar" element={<MyCalendar contactId={session.user.contactId} />} />
         <Route path="/contact" element={<Contact user={session.user} />} />
+        <Route path="/user-profile" element={<UserProfile user={session.user} />} />
         <Route path="/activity" element={<Navigate to="/activity/events" replace />} />
         {/* <Route path="/activity/activity-log" element={<ActivityLog />} /> */}
         <Route

@@ -30,9 +30,10 @@ test('keeps unfinished navigation visible and exposes only implemented routes as
   expect(pressCoverage).toBeInTheDocument()
   expect(pressCoverage).toHaveClass('portal-nav__link--coming-soon')
   expect(within(pressCoverage).getByText('Coming Soon')).toBeInTheDocument()
-  expect(within(account).getByRole('link', { name: 'Sign out' })).toHaveAttribute(
-    'href',
-    '/Account/Login/LogOff?returnUrl=%2F',
+  expect(within(account).queryByRole('link', { name: 'Sign out' })).not.toBeInTheDocument()
+  expect(within(account).getByRole('button', { name: 'Account menu for Volunteer' })).toHaveAttribute(
+    'aria-expanded',
+    'false',
   )
   expect(within(account).getByText('Volunteer')).toBeInTheDocument()
   expect(within(primaryNavigation).queryByText('Volunteer')).not.toBeInTheDocument()
@@ -119,4 +120,45 @@ test('shows the functional Power Pages web role in the account zone', () => {
   const account = screen.getByRole('group', { name: 'Account' })
   expect(within(account).getByText('Staff')).toBeInTheDocument()
   expect(within(account).queryByText('Volunteer')).not.toBeInTheDocument()
+})
+
+test('opens the account menu from the role badge with Profile and Sign out actions', async () => {
+  const user = userEvent.setup()
+  render(<MemoryRouter><PortalNav user={volunteerUser} /></MemoryRouter>)
+
+  const accountButton = screen.getByRole('button', { name: 'Account menu for Volunteer' })
+  await user.click(accountButton)
+
+  expect(accountButton).toHaveAttribute('aria-expanded', 'true')
+  expect(screen.getByRole('menuitem', { name: 'Profile' })).toHaveAttribute('href', '/user-profile')
+  expect(screen.getByRole('menuitem', { name: 'Sign out' })).toHaveAttribute(
+    'href',
+    '/Account/Login/LogOff?returnUrl=%2F',
+  )
+})
+
+test('closes the account menu after Profile navigation', async () => {
+  const user = userEvent.setup()
+  render(<MemoryRouter><PortalNav user={volunteerUser} /></MemoryRouter>)
+
+  const accountButton = screen.getByRole('button', { name: 'Account menu for Volunteer' })
+  await user.click(accountButton)
+  await user.click(screen.getByRole('menuitem', { name: 'Profile' }))
+
+  expect(accountButton).toHaveAttribute('aria-expanded', 'false')
+  expect(screen.queryByRole('menuitem', { name: 'Profile' })).not.toBeInTheDocument()
+})
+
+test('closes the account menu on an outside click and Escape', async () => {
+  const user = userEvent.setup()
+  render(<MemoryRouter><PortalNav user={volunteerUser} /></MemoryRouter>)
+
+  const accountButton = screen.getByRole('button', { name: 'Account menu for Volunteer' })
+  await user.click(accountButton)
+  await user.click(document.body)
+  expect(accountButton).toHaveAttribute('aria-expanded', 'false')
+
+  await user.click(accountButton)
+  await user.keyboard('{Escape}')
+  expect(accountButton).toHaveAttribute('aria-expanded', 'false')
 })

@@ -42,6 +42,7 @@ test.each([
   ['/my-reports', 'My Reports'],
   ['/my-calendar', 'My Calendar'],
   ['/contact', 'Contacts'],
+  ['/user-profile', 'My Profile'],
   ['/activity/activity-log', 'Page not found'],
   ['/activity/events', 'Events'],
   ['/activity/appointments', 'Page not found'],
@@ -153,4 +154,19 @@ test('allows an authenticated profile with any assigned custom role into the por
   expect(screen.getByRole('heading', { name: 'Resources', level: 1 })).toBeInTheDocument()
   expect(screen.getByRole('navigation', { name: 'Primary navigation' })).toBeInTheDocument()
   expect(screen.getByTestId('current-path')).toHaveTextContent('/resources')
+})
+
+test('keeps the user profile route behind the pending-approval gate', async () => {
+  renderApp('/user-profile', {
+    status: 'authenticated',
+    user: {
+      userName: 'pending@oiac.org',
+      contactId: '11111111-1111-4111-8111-111111111111',
+      userRoles: ['Authenticated Users'],
+    },
+  })
+
+  expect(screen.getByRole('heading', { name: 'Your profile is under review', level: 1 })).toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'My Profile' })).not.toBeInTheDocument()
+  await waitFor(() => expect(screen.getByTestId('current-path')).toHaveTextContent('/pending-approval'))
 })
