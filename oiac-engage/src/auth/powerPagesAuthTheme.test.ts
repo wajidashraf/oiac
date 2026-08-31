@@ -8,6 +8,7 @@ import footer from '../../.powerpages-site/web-templates/oiac-auth-footer/OIAC-A
 import header from '../../.powerpages-site/web-templates/oiac-auth-header/OIAC-Auth-Header.webtemplate.source.html?raw'
 import codeSiteFooter from '../../.powerpages-site/web-templates/footer/Footer.webtemplate.source.html?raw'
 import codeSiteHeader from '../../.powerpages-site/web-templates/header/Header.webtemplate.source.html?raw'
+import headerCacheSetting from '../../.powerpages-site/site-settings/Header-OutputCache-Enabled.sitesetting.yml?raw'
 import website from '../../.powerpages-site/website.yml?raw'
 
 test('native authentication shell renders a route-aware branded header while its form stylesheet stays disabled', () => {
@@ -27,6 +28,13 @@ test('native authentication shell renders a route-aware branded header while its
   expect(header).toContain('class="auth-site-button" href="/SignIn?returnUrl=%2F"')
   expect(header).toContain('@media (max-width: 720px)')
   expect(header).toContain('.auth-site-brand:focus-visible')
+  expect(headerCacheSetting).toContain('name: Header/OutputCache/Enabled')
+  expect(headerCacheSetting).toContain('value: False')
+  expect(header).toMatch(/\.auth-site-header__inner\s*\{[^}]*width:\s*min\(81\.5rem, calc\(100% - \(2 \* clamp\(1rem, 2\.5vw, 2rem\)\)\)\)[^}]*min-height:\s*5rem/s)
+  expect(header).toMatch(/@media \(max-width: 720px\)[\s\S]*?\.auth-site-header__inner\s*\{[^}]*min-height:\s*4\.75rem/s)
+  expect(header).toContain('background: #596e6a')
+  expect(header).not.toContain('min-height: 6.5rem')
+  expect(header).not.toContain('min-height: 5.5rem')
   expect(footer.trim()).toBe('')
   expect(website).toContain('headerwebtemplateid: 1a8d7f5c-7e6b-4a4f-b9d5-2f3c6a1e8b70')
   expect(website).toContain('footerwebtemplateid: 5c3e9a12-4b7d-4f8a-a6c1-9e2d7b5f3048')
