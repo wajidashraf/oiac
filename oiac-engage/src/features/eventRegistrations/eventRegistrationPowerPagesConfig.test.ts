@@ -35,7 +35,7 @@ test('limits Event Registration management to rows related to the signed-in Cont
   expect(ownedRegistrations).toContain('write: true')
   expect(ownedRegistrations).toContain('delete: false')
   expect(ownedRegistrations).toContain('append: true')
-  expect(ownedRegistrations).toContain('appendto: false')
+  expect(ownedRegistrations).toContain('appendto: true')
 })
 
 test('allows Event records to be lookup targets without granting Event mutation access', () => {
@@ -43,6 +43,7 @@ test('allows Event records to be lookup targets without granting Event mutation 
   expect(eventPermission).not.toContain(volunteerRoleId)
   expect(eventPermission).not.toContain(anonymousUsersRoleId)
   expect(eventPermission).toContain('read: true')
+  expect(eventPermission).toContain('append: true')
   expect(eventPermission).toContain('appendto: true')
   expect(eventPermission).toContain('create: false')
   expect(eventPermission).toContain('write: false')

@@ -1,7 +1,7 @@
 adx_entitypermission_webrole:
 - 0353acdd-7b95-4c07-8997-ae95dafd978d
 append: true
-appendto: false
+appendto: true
 contactrelationship: mss_eventregistration_Contact_contact
 create: true
 delete: false
