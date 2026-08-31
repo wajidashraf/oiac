@@ -108,6 +108,11 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 
 .site-header .portal-nav__link--disabled .coming-soon-badge { min-height: 1.1rem; font-size: 0.52rem; padding: 0.16rem 0.36rem; }
 
+.site-header .portal-nav__link--coming-soon,
+.site-header .portal-nav__link--coming-soon:hover { background: transparent; color: var(--color-text-muted); cursor: not-allowed; }
+
+.site-header .portal-nav__link--coming-soon > span:first-child { opacity: 0.58; }
+
 .site-header .portal-nav__user { display: inline-flex; min-height: 2.65rem; align-items: center; gap: 0.6rem; border-radius: var(--radius-md); background: var(--color-primary-soft); color: var(--color-primary-strong); font-family: var(--font-body); font-size: 0.8rem; font-weight: 600; margin: 0; padding: 0.35rem 0.8rem; white-space: nowrap; }
 
 .portal-nav__avatar { display: grid; width: 1.65rem; height: 1.65rem; place-items: center; border-radius: 50%; background: var(--color-primary); color: white; font-size: 0.78rem; font-weight: 700; }
@@ -243,6 +248,10 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 
 .dashboard-shortcut--disabled { background: var(--color-surface-muted); color: var(--color-text-muted); cursor: default; }
 
+.dashboard-shortcut--coming-soon { border-color: var(--color-border); background: #f5f7f6; cursor: not-allowed; }
+
+.dashboard-shortcut--coming-soon > span:first-child { opacity: 0.58; }
+
 .dashboard-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
 
 .dashboard-metric {
@@ -262,6 +271,15 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 .dashboard-metric span { margin-top: var(--space-2); color: var(--color-text-muted); font-size: 0.78rem; line-height: 1.35; }
 
 .dashboard-section { min-width: 0; }
+
+.dashboard-section--coming-soon > .dashboard-section__heading h2 { color: var(--color-text-muted); }
+
+.dashboard-section--coming-soon > .dashboard-resource-grid,
+.dashboard-section--coming-soon > .dashboard-table-scroll {
+  opacity: 0.55;
+  filter: saturate(0.4);
+  pointer-events: none;
+}
 
 .dashboard-section__heading { display: flex; min-height: 2.75rem; align-items: center; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-3); }
 
@@ -409,6 +427,15 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 .content-card { overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
 
 .dashboard-panel { min-width: 0; overflow: visible; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+
+.dashboard-panel--coming-soon .content-card__header h2,
+.dashboard-panel--coming-soon .content-card__header h3 { color: var(--color-text-muted); }
+
+.dashboard-panel--coming-soon > .content-card__body {
+  opacity: 0.55;
+  filter: saturate(0.4);
+  pointer-events: none;
+}
 
 .content-card__header { display: flex; min-height: var(--dashboard-row-height); align-items: center; justify-content: space-between; gap: var(--space-4); border-bottom: 1px solid var(--color-border); padding: 0.75rem var(--space-4); }
 

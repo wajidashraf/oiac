@@ -85,8 +85,12 @@ test('keeps unfinished dashboard features visible without navigation behavior', 
   const shortcuts = screen.getByRole('navigation', { name: 'Dashboard shortcuts' })
   expect(within(shortcuts).queryByRole('link', { name: /Activity/ })).not.toBeInTheDocument()
   expect(within(shortcuts).queryByRole('link', { name: /Appointments/ })).not.toBeInTheDocument()
-  expect(within(shortcuts).getByText('Activity').closest('[aria-disabled="true"]')).toBeInTheDocument()
-  expect(within(shortcuts).getByText('Appointments').closest('[aria-disabled="true"]')).toBeInTheDocument()
+  const activityShortcut = within(shortcuts).getByText('Activity').closest<HTMLElement>('[aria-disabled="true"]')!
+  const appointmentsShortcut = within(shortcuts).getByText('Appointments').closest<HTMLElement>('[aria-disabled="true"]')!
+  expect(activityShortcut).toBeInTheDocument()
+  expect(activityShortcut).toHaveClass('dashboard-shortcut--coming-soon')
+  expect(appointmentsShortcut).toBeInTheDocument()
+  expect(appointmentsShortcut).toHaveClass('dashboard-shortcut--coming-soon')
   expect(within(shortcuts).getByRole('link', { name: 'Events' })).toHaveAttribute('href', '/activity/events')
   expect(within(shortcuts).getByRole('link', { name: 'Resources' })).toHaveAttribute('href', '/resources')
 
@@ -97,14 +101,26 @@ test('keeps unfinished dashboard features visible without navigation behavior', 
   const submissions = screen.getByRole('heading', { name: 'Volunteer Submissions' }).closest('section')!
 
   expect(within(meetingInvites).getByText('Coming Soon')).toBeInTheDocument()
+  expect(meetingInvites).toHaveClass('dashboard-panel--coming-soon')
+  expect(meetingInvites).toHaveAttribute('aria-disabled', 'true')
   expect(within(announcements).getByText('Coming Soon')).toBeInTheDocument()
+  expect(announcements).toHaveClass('dashboard-panel--coming-soon')
+  expect(announcements).toHaveAttribute('aria-disabled', 'true')
   expect(within(training).getByText('Coming Soon')).toBeInTheDocument()
+  expect(training).toHaveClass('dashboard-panel--coming-soon')
+  expect(training).toHaveAttribute('aria-disabled', 'true')
   expect(within(teams).getByText('Coming Soon')).toBeInTheDocument()
+  expect(teams).toHaveClass('dashboard-section--coming-soon')
+  expect(teams).toHaveAttribute('aria-disabled', 'true')
   expect(within(submissions).getByText('Coming Soon')).toBeInTheDocument()
+  expect(submissions).toHaveClass('dashboard-section--coming-soon')
+  expect(submissions).toHaveAttribute('aria-disabled', 'true')
   expect(within(training).queryByRole('link')).not.toBeInTheDocument()
   expect(within(teams).queryByRole('link')).not.toBeInTheDocument()
 
   const upcomingEvents = screen.getByRole('heading', { name: 'Upcoming Events' }).closest('article')!
+  expect(upcomingEvents).not.toHaveClass('dashboard-panel--coming-soon')
+  expect(upcomingEvents).not.toHaveAttribute('aria-disabled')
   expect(within(upcomingEvents).getByRole('link', { name: /My Calendar/ })).toHaveAttribute('href', '/my-calendar')
 })
 

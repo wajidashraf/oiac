@@ -28,6 +28,7 @@ test('keeps unfinished navigation visible and exposes only implemented routes as
   expect(within(primaryNavigation).queryByRole('link', { name: /Press Coverage/ })).not.toBeInTheDocument()
   const pressCoverage = within(primaryNavigation).getByText('Press Coverage').closest<HTMLElement>('[aria-disabled="true"]')!
   expect(pressCoverage).toBeInTheDocument()
+  expect(pressCoverage).toHaveClass('portal-nav__link--coming-soon')
   expect(within(pressCoverage).getByText('Coming Soon')).toBeInTheDocument()
   expect(within(account).getByRole('link', { name: 'Sign out' })).toHaveAttribute(
     'href',
@@ -44,10 +45,14 @@ test('keeps unfinished navigation visible and exposes only implemented routes as
   await user.click(activityToggle)
   expect(activityToggle).toHaveAttribute('aria-expanded', 'true')
   expect(screen.queryByRole('link', { name: /Activity Log/ })).not.toBeInTheDocument()
-  expect(screen.getByText('Activity Log').closest('[aria-disabled="true"]')).toBeInTheDocument()
+  const activityLog = screen.getByText('Activity Log').closest<HTMLElement>('[aria-disabled="true"]')!
+  expect(activityLog).toBeInTheDocument()
+  expect(activityLog).toHaveClass('portal-nav__link--coming-soon')
   expect(screen.getByRole('link', { name: 'Events' })).toHaveAttribute('href', '/activity/events')
   expect(screen.queryByRole('link', { name: /Appointments/ })).not.toBeInTheDocument()
-  expect(screen.getByText('Appointments').closest('[aria-disabled="true"]')).toBeInTheDocument()
+  const appointments = screen.getByText('Appointments').closest<HTMLElement>('[aria-disabled="true"]')!
+  expect(appointments).toBeInTheDocument()
+  expect(appointments).toHaveClass('portal-nav__link--coming-soon')
 })
 
 test('closes the responsive menu after navigation', async () => {

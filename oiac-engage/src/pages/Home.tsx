@@ -113,7 +113,7 @@ export default function Home({ contactId }: HomeProps) {
           {dashboardShortcuts.map((shortcut) => shortcut.comingSoon ? (
             <span
               key={shortcut.href}
-              className="dashboard-shortcut dashboard-shortcut--disabled"
+              className="dashboard-shortcut dashboard-shortcut--disabled dashboard-shortcut--coming-soon"
               aria-disabled="true"
             >
               <span>{shortcut.label}</span>
@@ -226,7 +226,8 @@ export default function Home({ contactId }: HomeProps) {
         <ContentCard
           title="Meeting Invites"
           headingLevel="h2"
-          className="dashboard-panel"
+          className="dashboard-panel dashboard-panel--coming-soon"
+          ariaDisabled
           meta={<ComingSoonBadge />}
         >
           <ul className="dashboard-invite-list">
@@ -246,7 +247,8 @@ export default function Home({ contactId }: HomeProps) {
           <ContentCard
             title="Teams Announcements"
             headingLevel="h2"
-            className="dashboard-panel"
+            className="dashboard-panel dashboard-panel--coming-soon"
+            ariaDisabled
             meta={<ComingSoonBadge />}
           >
             <ul className="dashboard-announcement-list">
@@ -265,7 +267,8 @@ export default function Home({ contactId }: HomeProps) {
           <ContentCard
             title="Training Resources"
             headingLevel="h2"
-            className="dashboard-panel"
+            className="dashboard-panel dashboard-panel--coming-soon"
+            ariaDisabled
             meta={<ComingSoonBadge />}
           >
             <ul className="dashboard-training-list">
@@ -284,7 +287,11 @@ export default function Home({ contactId }: HomeProps) {
         </div>
       </section>
 
-      <section className="dashboard-section" aria-labelledby="teams-resources-title">
+      <section
+        className="dashboard-section dashboard-section--coming-soon"
+        aria-labelledby="teams-resources-title"
+        aria-disabled="true"
+      >
         <div className="dashboard-section__heading">
           <h2 id="teams-resources-title">Teams &amp; Resources</h2>
           <div className="dashboard-section__labels">
@@ -326,7 +333,11 @@ export default function Home({ contactId }: HomeProps) {
         </div>
       </section>
 
-      <section className="dashboard-section" aria-labelledby="volunteer-submissions-title">
+      <section
+        className="dashboard-section dashboard-section--coming-soon"
+        aria-labelledby="volunteer-submissions-title"
+        aria-disabled="true"
+      >
         <div className="dashboard-section__heading">
           <h2 id="volunteer-submissions-title">Volunteer Submissions</h2>
           <ComingSoonBadge />

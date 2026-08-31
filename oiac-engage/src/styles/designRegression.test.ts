@@ -101,3 +101,11 @@ test('keeps Events supporting text at WCAG AA contrast', () => {
   expect(mutedColor).toBeDefined()
   expect(contrastRatio(mutedColor!, '#ffffff')).toBeGreaterThanOrEqual(4.5)
 })
+
+test('uses explicit, targeted disabled styling for Coming Soon features', () => {
+  expect(css).toContain('.portal-nav__link--coming-soon')
+  expect(css).toContain('.dashboard-shortcut--coming-soon')
+  expect(css).toContain('.dashboard-panel--coming-soon')
+  expect(css).toContain('.dashboard-section--coming-soon')
+  expect(css).not.toContain(':has(.coming-soon-badge)')
+})

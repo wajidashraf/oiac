@@ -90,7 +90,7 @@ export default function PortalNav({ user }: { user: PortalUser }) {
                   link.comingSoon ? (
                     <span
                       key={link.to}
-                      className="portal-nav__link portal-nav__link--disabled"
+                      className="portal-nav__link portal-nav__link--disabled portal-nav__link--coming-soon"
                       aria-disabled="true"
                     >
                       <span>{link.label}</span>
@@ -118,7 +118,7 @@ export default function PortalNav({ user }: { user: PortalUser }) {
             link.comingSoon ? (
               <span
                 key={link.to}
-                className="portal-nav__link portal-nav__link--disabled"
+                className="portal-nav__link portal-nav__link--disabled portal-nav__link--coming-soon"
                 aria-disabled="true"
               >
                 <span>{link.label}</span>
