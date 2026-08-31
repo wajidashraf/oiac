@@ -1,0 +1,4 @@
+description: Allow only Event Registration fields required by the portal workflow
+id: e9db3278-9cba-4626-865e-50d42d6cc632
+name: Webapi/mss_eventregistration/fields
+value: "mss_eventregistrationid,mss_contact,mss_Contact,_mss_contact_value,mss_event,mss_Event,_mss_event_value,mss_registrationdate,mss_registrationnumber,mss_registrationstatus"

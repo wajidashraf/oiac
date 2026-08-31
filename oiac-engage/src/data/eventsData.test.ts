@@ -1,39 +1,34 @@
 import { describe, expect, test } from 'vitest'
-import { eventDateLabel, eventItems } from './eventsData'
+import { eventCalendarDate, eventDateLabel, eventLocationLabel } from './eventsData'
 
-describe('Events data', () => {
-  test('contains the six standalone reference events in display order', () => {
-    expect(eventItems).toHaveLength(6)
-    expect(eventItems.map((item) => item.title)).toEqual([
-      'OIAC National Convention 2026',
-      'Iranian American Rights Rally — Los Angeles',
-      'Capitol Hill Advocacy Day',
-      'Volunteer Captain Briefing',
-      'State Coalition Summit — Texas',
-      'Iranian American Heritage Month Kickoff',
-    ])
-    expect(eventItems.map((item) => item.category)).toEqual([
-      'Convention',
-      'Rally',
-      'Advocacy Day',
-      'Briefing',
-      'Convention',
-      'Rally',
-    ])
+describe('Events presentation data', () => {
+  test('formats a same-day Dataverse date/time range', () => {
+    expect(eventDateLabel('2026-09-16T18:00:00Z', '2026-09-16T19:30:00Z')).toMatch(
+      /^Sep 16, 2026, .+–.+$/,
+    )
   })
 
-  test('keeps the reference status and registration states separate from My Calendar', () => {
-    expect(eventItems.map(({ id, status, registered }) => ({ id, status, registered }))).toEqual([
-      { id: 'directory-event-001', status: 'Registration Open', registered: true },
-      { id: 'directory-event-002', status: 'Upcoming', registered: false },
-      { id: 'directory-event-003', status: 'Upcoming', registered: true },
-      { id: 'directory-event-004', status: 'Registration Open', registered: false },
-      { id: 'directory-event-005', status: 'Completed', registered: false },
-      { id: 'directory-event-006', status: 'Upcoming', registered: false },
-    ])
+  test('uses venue and virtual format details for the location label', () => {
+    expect(eventLocationLabel('In Person', 'District Office Meeting Room', null)).toBe(
+      'District Office Meeting Room',
+    )
+    expect(eventLocationLabel('Virtual', null, 'https://teams.microsoft.com/example')).toBe('Online meeting')
+    expect(eventLocationLabel('Hybrid', 'Community Center', 'https://teams.microsoft.com/example')).toBe(
+      'Community Center / Online',
+    )
   })
 
-  test('formats an ISO date without timezone drift', () => {
-    expect(eventDateLabel('2026-09-08')).toBe('Sep 8')
+  test('handles unscheduled events and groups timestamps by the browser local date', () => {
+    expect(eventDateLabel(null, null)).toBe('Date to be announced')
+    expect(eventCalendarDate(null)).toBeNull()
+
+    const timestamp = '2026-09-16T23:30:00-11:00'
+    const local = new Date(timestamp)
+    const expected = [
+      local.getFullYear(),
+      String(local.getMonth() + 1).padStart(2, '0'),
+      String(local.getDate()).padStart(2, '0'),
+    ].join('-')
+    expect(eventCalendarDate(timestamp)).toBe(expected)
   })
 })

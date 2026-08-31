@@ -1,3 +1,6 @@
+import { eventCalendarDate, eventLocationLabel } from './eventsData'
+import type { EventItem } from '../features/events/eventTypes'
+
 export type CalendarItem = {
   id: string
   date: `${number}-${number}-${number}`
@@ -6,22 +9,12 @@ export type CalendarItem = {
   status: 'Accepted' | 'Registered'
   time: string
   location: string
-  joinUrl: string
+  joinUrl: string | null
 }
 
 export type MonthCell = { day: number; isoDate: string } | null
 
-export const calendarItems: readonly CalendarItem[] = [
-  {
-    id: 'event-001',
-    date: '2026-09-08',
-    title: 'Capitol Hill Advocacy Day',
-    kind: 'event',
-    status: 'Registered',
-    time: 'All Day',
-    location: 'Washington, D.C.',
-    joinUrl: 'https://outlook.office.com/calendar/',
-  },
+export const acceptedMeetingItems: readonly CalendarItem[] = [
   {
     id: 'meeting-002',
     date: '2026-09-18',
@@ -32,17 +25,43 @@ export const calendarItems: readonly CalendarItem[] = [
     location: 'Microsoft Teams',
     joinUrl: 'https://teams.microsoft.com/',
   },
-  {
-    id: 'event-003',
-    date: '2026-10-15',
-    title: 'OIAC National Convention 2026',
+]
+
+export const calendarItems = acceptedMeetingItems
+
+function safeHttpUrl(value: string | null): string | null {
+  if (!value) return null
+  try {
+    const url = new URL(value)
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : null
+  } catch {
+    return null
+  }
+}
+
+function eventTimeLabel(startIso: string, endIso: string | null): string {
+  const start = new Date(startIso)
+  const end = endIso ? new Date(endIso) : null
+  const formatter = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' })
+  const startLabel = formatter.format(start)
+  if (!end || Number.isNaN(end.getTime())) return startLabel
+  return `${startLabel}–${formatter.format(end)}`
+}
+
+export function eventToCalendarItem(event: EventItem): CalendarItem | null {
+  const date = eventCalendarDate(event.startDateTime)
+  if (!date || !event.startDateTime) return null
+  return {
+    id: event.id,
+    date,
+    title: event.title,
     kind: 'event',
     status: 'Registered',
-    time: 'All Day',
-    location: 'Washington, D.C.',
-    joinUrl: 'https://outlook.office.com/calendar/',
-  },
-]
+    time: eventTimeLabel(event.startDateTime, event.endDateTime),
+    location: eventLocationLabel(event.eventFormat, event.venueName, event.meetingUrl),
+    joinUrl: safeHttpUrl(event.meetingUrl),
+  }
+}
 
 export function buildMonthCells(year: number, monthIndex: number): MonthCell[] {
   const firstWeekday = new Date(year, monthIndex, 1).getDay()

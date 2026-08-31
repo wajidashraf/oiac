@@ -1,0 +1,4 @@
+description: Enable authenticated Events Web API access
+id: 0e995f64-56b5-4180-ac48-0dbcc7f5bf7c
+name: Webapi/mss_events/enabled
+value: true

@@ -7,6 +7,8 @@ import type {
   MeetingReportDetails,
   MeetingReportDraft,
   MeetingReportProfile,
+  MeetingReportPage,
+  MeetingReportQuery,
   MeetingReportSummary,
   MeetingSentiment,
   RelationshipOperation,
@@ -15,17 +17,21 @@ import type {
 
 const GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const LOOKUP_LIMIT = 15
+export const MEETING_REPORT_PAGE_SIZE = 15
 
 const CONTACT_SELECT = ['contactid', 'fullname', 'emailaddress1', 'jobtitle'] as const
 const REPORT_SELECT = [
   'mss_meetingreportid',
   'mss_subject',
+  'mss_startdateandtime',
+  'mss_enddateandtime',
   'mss_dateofmeeting',
   '_mss_representative_value',
   '_mss_district_value',
   'mss_meetingformat',
   'mss_writedownwhatthestaffsaidnotwhatyousaid',
   'mss_followupnoteoncethemeetingended',
+  'mss_documentsprovided',
   'mss_overallsentiment',
 ] as const
 
@@ -67,6 +73,8 @@ type DistrictApiRecord = {
 type ReportApiRecord = {
   readonly mss_meetingreportid?: unknown
   readonly mss_subject?: unknown
+  readonly mss_startdateandtime?: unknown
+  readonly mss_enddateandtime?: unknown
   readonly mss_dateofmeeting?: unknown
   readonly _mss_representative_value?: unknown
   readonly '_mss_representative_value@OData.Community.Display.V1.FormattedValue'?: unknown
@@ -75,6 +83,7 @@ type ReportApiRecord = {
   readonly mss_meetingformat?: unknown
   readonly mss_writedownwhatthestaffsaidnotwhatyousaid?: unknown
   readonly mss_followupnoteoncethemeetingended?: unknown
+  readonly mss_documentsprovided?: unknown
   readonly mss_overallsentiment?: unknown
   readonly mss_MeetingReport_Contact_Staff?: readonly ContactApiRecord[]
   readonly mss_MeetingReport_Contact_Volunteers?: readonly ContactApiRecord[]
@@ -92,6 +101,36 @@ export function escapeODataString(value: string): string {
 
 function text(value: unknown): string {
   return typeof value === 'string' ? value.trim() : ''
+}
+
+function twoDigits(value: number): string {
+  return String(value).padStart(2, '0')
+}
+
+function toLocalDateTimeValue(value: unknown): string {
+  const rawValue = text(value)
+  if (!rawValue) return ''
+  const parsed = new Date(rawValue)
+  if (Number.isNaN(parsed.getTime())) return ''
+  return `${parsed.getFullYear()}-${twoDigits(parsed.getMonth() + 1)}-${twoDigits(parsed.getDate())}`
+    + `T${twoDigits(parsed.getHours())}:${twoDigits(parsed.getMinutes())}`
+}
+
+function parseLocalDateTime(value: string, label: string): Date {
+  const normalized = value.trim()
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(normalized)
+  if (!match) throw new Error(`A valid ${label} is required.`)
+
+  const [, year, month, day, hour, minute] = match.map(Number)
+  const parsed = new Date(year, month - 1, day, hour, minute)
+  if (
+    parsed.getFullYear() !== year
+    || parsed.getMonth() !== month - 1
+    || parsed.getDate() !== day
+    || parsed.getHours() !== hour
+    || parsed.getMinutes() !== minute
+  ) throw new Error(`A valid ${label} is required.`)
+  return parsed
 }
 
 function requiredGuid(value: unknown, label: string): string {
@@ -239,19 +278,25 @@ export function buildMeetingReportPayload(
 ): Record<string, string | number> {
   const representativeId = requiredGuid(draft.representativeId, 'Representative')
   const districtId = requiredGuid(draft.districtId, 'District')
-  if (!draft.subject.trim()) throw new Error('Meeting Title is required.')
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(draft.date)) throw new Error('A valid Date of Meeting is required.')
+  if (!draft.subject.trim()) throw new Error('Subject is required.')
+  const startDateTime = parseLocalDateTime(draft.startDateTime, 'Start Date and Time')
+  const endDateTime = parseLocalDateTime(draft.endDateTime, 'End Date and Time')
+  if (endDateTime.getTime() <= startDateTime.getTime()) {
+    throw new Error('End Date and Time must be later than Start Date and Time.')
+  }
   if (!draft.meetingFormat) throw new Error('Meeting Format is required.')
-  if (!draft.issuesDiscussed.trim()) throw new Error('Issues Discussed is required.')
+  if (!draft.issuesDiscussed.trim()) throw new Error('Write Down What the Staff Said, Not What You Said is required.')
 
   const payload: Record<string, string | number> = {
     mss_subject: draft.subject.trim(),
-    mss_dateofmeeting: new Date(`${draft.date}T12:00:00.000Z`).toISOString(),
+    mss_startdateandtime: startDateTime.toISOString(),
+    mss_enddateandtime: endDateTime.toISOString(),
     'mss_Representative@odata.bind': `/contacts(${representativeId})`,
     'mss_District@odata.bind': `/mss_districts(${districtId})`,
     mss_meetingformat: draft.meetingFormat,
     mss_writedownwhatthestaffsaidnotwhatyousaid: draft.issuesDiscussed.trim(),
     mss_followupnoteoncethemeetingended: draft.followUpActions.trim(),
+    mss_documentsprovided: draft.documentsProvided.trim(),
   }
   if (draft.sentiment) payload.mss_overallsentiment = draft.sentiment
   if (includeOwner) {
@@ -323,15 +368,17 @@ export async function getMeetingReport(
   return {
     id: requiredGuid(record.mss_meetingreportid, 'Meeting Report'),
     subject: text(record.mss_subject),
-    date: text(record.mss_dateofmeeting).slice(0, 10),
+    startDateTime: toLocalDateTimeValue(record.mss_startdateandtime)
+      || `${text(record.mss_dateofmeeting).slice(0, 10)}T12:00`,
+    endDateTime: toLocalDateTimeValue(record.mss_enddateandtime),
     representativeId,
     districtId: resolvedDistrictId,
     meetingFormat: asMeetingFormat(record.mss_meetingformat),
     staffIds: staff.map((contact) => contact.id),
     volunteerIds: volunteers.map((contact) => contact.id),
     issuesDiscussed: text(record.mss_writedownwhatthestaffsaidnotwhatyousaid),
-    outcomesNextSteps: '',
     followUpActions: text(record.mss_followupnoteoncethemeetingended),
+    documentsProvided: text(record.mss_documentsprovided),
     sentiment: asSentiment(record.mss_overallsentiment),
     representative: {
       id: representativeId,
@@ -348,37 +395,86 @@ export async function getMeetingReport(
   }
 }
 
-export async function getMeetingReports(signal?: AbortSignal): Promise<readonly MeetingReportSummary[]> {
+function normalizeMeetingReportsNextLink(nextLink: string): string {
+  const baseOrigin = typeof window === 'undefined' ? 'https://powerpages.local' : window.location.origin
+  const parsed = new URL(nextLink, baseOrigin)
+  if (parsed.origin !== baseOrigin || parsed.pathname.toLowerCase() !== '/_api/mss_meetingreports') {
+    throw new Error('Dataverse returned an invalid Meeting Reports continuation link.')
+  }
+  return `${parsed.pathname}${parsed.search}`
+}
+
+function buildMeetingReportsQuery(limit?: number): string {
   const params = new URLSearchParams()
   params.set('$select', [
     'mss_meetingreportid',
     'mss_subject',
+    'mss_startdateandtime',
     'mss_dateofmeeting',
     '_mss_representative_value',
     'mss_overallsentiment',
   ].join(','))
-  params.set('$orderby', 'mss_dateofmeeting desc,mss_meetingreportid asc')
-  params.set('$top', '100')
+  params.set('$orderby', 'mss_startdateandtime desc,mss_meetingreportid asc')
+  if (limit !== undefined) {
+    if (!Number.isInteger(limit) || limit < 1 || limit > MEETING_REPORT_PAGE_SIZE) {
+      throw new Error(`Meeting Report limits must be between 1 and ${MEETING_REPORT_PAGE_SIZE}.`)
+    }
+    params.set('$top', String(limit))
+  }
+  return `?${params.toString()}`
+}
 
-  const response = await powerPagesFetch<{ readonly value?: readonly ReportApiRecord[] }>(
-    `/_api/mss_meetingreports?${params.toString()}`,
+export async function getMeetingReportCount(signal?: AbortSignal): Promise<number> {
+  const params = new URLSearchParams()
+  params.set('$select', 'mss_meetingreportid')
+  params.set('$count', 'true')
+  params.set('$top', '1')
+
+  const response = await powerPagesFetch<{
+    readonly value?: readonly ReportApiRecord[]
+    readonly '@odata.count'?: unknown
+  }>(`/_api/mss_meetingreports?${params.toString()}`, { signal })
+  const count = response['@odata.count']
+  if (typeof count !== 'number' || !Number.isInteger(count) || count < 0) {
+    throw new Error('Dataverse returned an invalid Meeting Report count.')
+  }
+  return count
+}
+
+export async function getMeetingReports(
+  query: MeetingReportQuery = {},
+  signal?: AbortSignal,
+): Promise<MeetingReportPage> {
+  const requestPath = query.nextLink
+    ? normalizeMeetingReportsNextLink(query.nextLink)
+    : `/_api/mss_meetingreports${buildMeetingReportsQuery(query.limit)}`
+
+  const response = await powerPagesFetch<{
+    readonly value?: readonly ReportApiRecord[]
+    readonly '@odata.nextLink'?: string
+  }>(
+    requestPath,
     {
       signal,
-      headers: { Prefer: 'odata.include-annotations="OData.Community.Display.V1.FormattedValue"' },
+      headers: {
+        Prefer: `odata.include-annotations="OData.Community.Display.V1.FormattedValue",odata.maxpagesize=${MEETING_REPORT_PAGE_SIZE}`,
+      },
     },
   )
   if (!Array.isArray(response.value)) throw new Error('Dataverse returned an invalid Meeting Reports response.')
 
-  return response.value.map((record) => {
+  const reports: MeetingReportSummary[] = response.value.map((record) => {
     const sentiment = asSentiment(record.mss_overallsentiment)
     return {
       id: requiredGuid(record.mss_meetingreportid, 'Meeting Report'),
       subject: text(record.mss_subject) || 'Untitled meeting report',
       representativeName: text(record['_mss_representative_value@OData.Community.Display.V1.FormattedValue']) || 'Not available',
-      date: text(record.mss_dateofmeeting).slice(0, 10),
+      date: text(record.mss_startdateandtime) || text(record.mss_dateofmeeting),
       sentimentLabel: sentiment ? SENTIMENT_LABELS[sentiment] : 'Not provided',
     }
   })
+  const nextLink = typeof response['@odata.nextLink'] === 'string' ? response['@odata.nextLink'] : null
+  return { reports, hasNext: Boolean(nextLink), nextLink }
 }
 
 export function buildRelationshipOperations(

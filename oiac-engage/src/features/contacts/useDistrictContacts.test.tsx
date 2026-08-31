@@ -21,7 +21,7 @@ const firstPage: ContactPage = {
     email: 'sara@example.org',
     mobilePhone: '202-555-0100',
     city: 'Washington',
-    stateOrProvince: 'DC',
+    districtName: 'District 1',
     districtId: DISTRICT_ID,
   }],
   hasNext: true,

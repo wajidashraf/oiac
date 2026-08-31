@@ -49,6 +49,23 @@ describe('powerPagesFetch', () => {
     })
   })
 
+  test('includes a CSRF token on Server Logic GET requests', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(tokenResponse('server-logic-token'))
+      .mockResolvedValueOnce(jsonResponse({ Success: true, Data: '{}' }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await powerPagesFetch('/_api/serverlogics/example')
+
+    expect(fetchMock).toHaveBeenNthCalledWith(2, '/_api/serverlogics/example', {
+      credentials: 'same-origin',
+      headers: {
+        Accept: 'application/json',
+        __RequestVerificationToken: 'server-logic-token',
+      },
+    })
+  })
+
   test('forwards request cancellation on direct GET requests', async () => {
     const controller = new AbortController()
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ value: 'district contacts' }))

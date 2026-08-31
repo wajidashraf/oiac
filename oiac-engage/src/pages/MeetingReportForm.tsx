@@ -59,17 +59,21 @@ const sentiments: readonly { value: MeetingSentiment; label: string; symbol: str
   { value: 5, label: 'Opposed', symbol: '✕✕✕' },
 ]
 
+const DATE_TIME_RANGE_ERROR = 'End Date and Time must be later than Start Date and Time.'
+const FORM_ERROR_ID = 'meeting-report-form-error'
+
 const emptyDraft: MeetingReportDraft = {
   subject: '',
-  date: '',
+  startDateTime: '',
+  endDateTime: '',
   representativeId: '',
   districtId: '',
   meetingFormat: null,
   staffIds: [],
   volunteerIds: [],
   issuesDiscussed: '',
-  outcomesNextSteps: '',
   followUpActions: '',
+  documentsProvided: '',
   sentiment: null,
 }
 
@@ -96,6 +100,7 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
   const [creationOutcomeUnknown, setCreationOutcomeUnknown] = useState(false)
   const [persistedReportId, setPersistedReportId] = useState<string | null>(reportId ?? null)
   const sectionHeading = useRef<HTMLHeadingElement>(null)
+  const endDateTimeInput = useRef<HTMLInputElement>(null)
   const originalRelationships = useRef<RelationshipSelection>({ staffIds: [], volunteerIds: [] })
   const submitLock = useRef(false)
 
@@ -127,15 +132,16 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
         if (loadedReport) {
           setDraft({
             subject: loadedReport.subject,
-            date: loadedReport.date,
+            startDateTime: loadedReport.startDateTime,
+            endDateTime: loadedReport.endDateTime,
             representativeId: loadedReport.representativeId,
             districtId: loadedReport.districtId,
             meetingFormat: loadedReport.meetingFormat,
             staffIds: loadedReport.staffIds,
             volunteerIds: loadedReport.volunteerIds,
             issuesDiscussed: loadedReport.issuesDiscussed,
-            outcomesNextSteps: loadedReport.outcomesNextSteps,
             followUpActions: loadedReport.followUpActions,
+            documentsProvided: loadedReport.documentsProvided,
             sentiment: loadedReport.sentiment,
           })
           setRepresentative(loadedReport.representative)
@@ -147,9 +153,6 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
             volunteerIds: loadedReport.volunteerIds,
           }
           setPersistedReportId(loadedReport.id)
-        } else if (loadedProfile.districtId && loadedProfile.districtName) {
-          setDistrict({ id: loadedProfile.districtId, name: loadedProfile.districtName })
-          setDraft((current) => ({ ...current, districtId: loadedProfile.districtId ?? '' }))
         }
         setLoadStatus('ready')
       })
@@ -199,10 +202,14 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
   }
 
   function validateMeetingStep(): string | null {
-    if (!draft.subject.trim()) return 'Enter a Meeting Title.'
-    if (!draft.date) return 'Select the Date of Meeting.'
-    if (!draft.representativeId) return 'Select a Representative / Office.'
-    if (!draft.districtId) return 'Select a State / District.'
+    if (!draft.subject.trim()) return 'Enter a Subject.'
+    if (!draft.startDateTime || Number.isNaN(new Date(draft.startDateTime).getTime())) return 'Select a valid Start Date and Time.'
+    if (!draft.endDateTime || Number.isNaN(new Date(draft.endDateTime).getTime())) return 'Select a valid End Date and Time.'
+    if (new Date(draft.endDateTime).getTime() <= new Date(draft.startDateTime).getTime()) {
+      return DATE_TIME_RANGE_ERROR
+    }
+    if (!draft.representativeId) return 'Select a Representative.'
+    if (!draft.districtId) return 'Select a District.'
     if (!draft.meetingFormat) return 'Select a Meeting Format.'
     return null
   }
@@ -218,13 +225,14 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
       const validationMessage = validateMeetingStep()
       if (validationMessage) {
         setFormError(validationMessage)
+        if (validationMessage === DATE_TIME_RANGE_ERROR) endDateTimeInput.current?.focus()
         return
       }
       setStep(2)
       return
     }
     if (!draft.issuesDiscussed.trim()) {
-      setFormError('Describe the Issues Discussed before submitting the report.')
+      setFormError('Write down what the staff said before submitting the report.')
       return
     }
     await saveReport()
@@ -333,7 +341,7 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
 
             <form className="report-form" onSubmit={continueForm}>
               {formError ? (
-                <div className="form-alert report-form__error" role="alert">
+                <div className="form-alert report-form__error" id={FORM_ERROR_ID} role="alert">
                   <span>{formError}</span>
                   {pendingOperations.length > 0 ? (
                     <button type="button" className="button button--quiet" onClick={retryContactLinks} disabled={isSubmitting}>Retry contact links</button>
@@ -347,8 +355,7 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
                   <div className="form-grid report-form__grid">
                     <ReadOnlyField label="Full Name" value={profile.fullName} required />
                     <ReadOnlyField label="Email" value={profile.email} required type="email" />
-                    <ReadOnlyField label="State / District" value={profile.districtName || profile.stateOrProvince} />
-                    <ReadOnlyField label="City" value={profile.city} />
+                    <ReadOnlyField label="District" value={profile.districtName || profile.stateOrProvince} />
                   </div>
                 </div>
               ) : null}
@@ -357,10 +364,11 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
                 <div className="report-form__step">
                   <SectionHeading icon={<LuCalendarDays />} title="Meeting Details" detail="Who did you meet with and how?" headingRef={sectionHeading} />
                   <div className="form-grid report-form__grid">
-                    <label className="field field--full"><span>Meeting Title <Required /></span><input aria-label="Meeting Title" name="subject" placeholder="e.g. Advocacy meeting with Sen. Miller's office" value={draft.subject} onChange={updateTextField} required disabled={formLocked} /></label>
-                    <label className="field"><span>Date of Meeting <Required /></span><input aria-label="Date of Meeting" name="date" type="date" value={draft.date} onChange={updateTextField} required disabled={formLocked} /></label>
-                    <ContactLookup label="Representative / Office" value={representative} onChange={chooseRepresentative} required disabled={formLocked} loadOptions={(search, signal) => searchContacts('representative', search, signal)} />
-                    <DistrictLookup label="State / District" value={district} onChange={chooseDistrict} required disabled={formLocked} loadOptions={searchDistricts} />
+                    <label className="field field--full"><span>Subject <Required /></span><input aria-label="Subject" name="subject" placeholder="e.g. Advocacy meeting with Sen. Miller's office" value={draft.subject} onChange={updateTextField} required disabled={formLocked} /></label>
+                    <label className="field"><span>Start Date and Time <Required /></span><input aria-label="Start Date and Time" name="startDateTime" type="datetime-local" value={draft.startDateTime} onChange={updateTextField} required disabled={formLocked} /></label>
+                    <label className="field"><span>End Date and Time <Required /></span><input ref={endDateTimeInput} aria-label="End Date and Time" aria-invalid={formError === DATE_TIME_RANGE_ERROR} aria-describedby={formError === DATE_TIME_RANGE_ERROR ? FORM_ERROR_ID : undefined} name="endDateTime" type="datetime-local" value={draft.endDateTime} onChange={updateTextField} required disabled={formLocked} /></label>
+                    <ContactLookup label="Representative" value={representative} onChange={chooseRepresentative} required disabled={formLocked} loadOptions={(search, signal) => searchContacts('representative', search, signal)} />
+                    <DistrictLookup label="District" value={district} onChange={chooseDistrict} required disabled={formLocked} loadOptions={searchDistricts} />
                     <fieldset className="report-choice-field field--full"><legend>Meeting Format <Required /></legend><div className="report-choice-grid report-choice-grid--formats">
                       {meetingFormats.map((format) => <label className="report-choice" key={format.value}><input type="radio" name="meetingFormat" value={format.value} checked={draft.meetingFormat === format.value} onChange={() => setDraft((current) => ({ ...current, meetingFormat: format.value }))} disabled={formLocked} /><span className="report-choice__symbol" aria-hidden="true">{format.icon}</span><strong>{format.label}</strong><small>{format.detail}</small></label>)}
                     </div></fieldset>
@@ -374,9 +382,9 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
                 <div className="report-form__step">
                   <SectionHeading icon={<LuFileText />} title="Report Content" detail="Summarize what was discussed and what happens next" headingRef={sectionHeading} />
                   <div className="form-grid report-form__grid">
-                    <label className="field field--full"><span>Issues Discussed <Required /></span><textarea aria-label="Issues Discussed" name="issuesDiscussed" rows={5} placeholder="Describe the main topics and issues discussed..." value={draft.issuesDiscussed} onChange={updateTextField} required disabled={formLocked} /></label>
-                    <label className="field field--full"><span>Outcomes &amp; Next Steps</span><textarea aria-label="Outcomes & Next Steps" name="outcomesNextSteps" rows={4} placeholder="What was the response? What are the agreed next steps?" value={draft.outcomesNextSteps} onChange={updateTextField} disabled={formLocked} /></label>
-                    <label className="field field--full"><span>Follow-up Actions</span><textarea aria-label="Follow-up Actions" name="followUpActions" rows={3} placeholder="Materials to send, follow-up calls, commitments made..." value={draft.followUpActions} onChange={updateTextField} disabled={formLocked} /></label>
+                    <label className="field field--full"><span>Write Down What the Staff Said, Not What You Said <Required /></span><textarea aria-label="Write Down What the Staff Said, Not What You Said" name="issuesDiscussed" rows={5} placeholder="Describe what the staff said during the meeting..." value={draft.issuesDiscussed} onChange={updateTextField} required disabled={formLocked} /></label>
+                    <label className="field field--full"><span>Follow-Up Note (Once the Meeting Ended)</span><textarea aria-label="Follow-Up Note (Once the Meeting Ended)" name="followUpActions" rows={3} placeholder="Materials to send, follow-up calls, commitments made..." value={draft.followUpActions} onChange={updateTextField} disabled={formLocked} /></label>
+                    <label className="field field--full"><span>Documents Provided</span><input aria-label="Documents Provided" name="documentsProvided" type="text" value={draft.documentsProvided} onChange={updateTextField} disabled={formLocked} /></label>
                     <fieldset className="report-choice-field field--full"><legend>Overall Sentiment</legend><div className="report-choice-grid report-choice-grid--sentiments">
                       {sentiments.map((sentiment) => <label className={`report-choice report-choice--sentiment report-choice--${sentiment.label.toLowerCase().replace(/[^a-z]+/g, '-')}`} key={sentiment.value}><input type="radio" name="sentiment" value={sentiment.value} checked={draft.sentiment === sentiment.value} onChange={() => setDraft((current) => ({ ...current, sentiment: sentiment.value }))} disabled={formLocked} /><span className="report-choice__rating" aria-hidden="true">{sentiment.symbol}</span><strong>{sentiment.label}</strong></label>)}
                     </div></fieldset>

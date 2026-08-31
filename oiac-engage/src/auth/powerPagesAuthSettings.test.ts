@@ -2,6 +2,7 @@
 
 import { describe, expect, test } from 'vitest'
 import azureAdLogin from '../../.powerpages-site/site-settings/Authentication-Registration-AzureADLoginEnabled.sitesetting.yml?raw'
+import captchaEnabled from '../../.powerpages-site/site-settings/Authentication-Registration-CaptchaEnabled.sitesetting.yml?raw'
 import registrationEnabled from '../../.powerpages-site/site-settings/Authentication-Registration-Enabled.sitesetting.yml?raw'
 import externalLogin from '../../.powerpages-site/site-settings/Authentication-Registration-ExternalLoginEnabled.sitesetting.yml?raw'
 import invitationEnabled from '../../.powerpages-site/site-settings/Authentication-Registration-InvitationEnabled.sitesetting.yml?raw'
@@ -14,11 +15,15 @@ function settingValue(yaml: string): string | undefined {
 }
 
 describe('Power Pages authentication settings', () => {
-  test('keeps invitation-only local registration enabled', () => {
+  test('keeps open and invitation local registration enabled', () => {
     expect(settingValue(registrationEnabled)).toBe('true')
     expect(settingValue(invitationEnabled)).toBe('true')
     expect(settingValue(localLogin)).toBe('true')
-    expect(settingValue(openRegistration)).toBe('false')
+    expect(settingValue(openRegistration)).toBe('true')
+  })
+
+  test('keeps registration CAPTCHA explicitly disabled', () => {
+    expect(settingValue(captchaEnabled)).toBe('false')
   })
 
   test('disables external identity providers', () => {

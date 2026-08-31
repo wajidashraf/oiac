@@ -1,0 +1,12 @@
+adx_entitypermission_webrole:
+- 6ec72c3e-4f1b-420f-9565-d20047b12c1f
+append: false
+appendto: true
+create: true
+delete: true
+entitylogicalname: mss_events
+entityname: Events Administrator Manage
+id: 950323d2-65c2-4d2e-a5b0-0d86f402071b
+read: true
+scope: 756150000
+write: true

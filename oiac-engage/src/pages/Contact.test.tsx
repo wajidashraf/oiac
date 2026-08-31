@@ -29,7 +29,7 @@ const readyState: DistrictContactsState = {
     email: 'sara.rahimi@oiac.org',
     mobilePhone: '+1 (202) 555-0142',
     city: 'Washington',
-    stateOrProvince: 'DC',
+    districtName: 'District 1',
     districtId: '367d7420-d8a2-f111-b8da-7ced8d70f293',
   }],
   search: '',
@@ -66,10 +66,11 @@ test('renders a district Contact table without record actions or record links', 
     'Full Name',
     'Mobile Phone',
     'Email',
-    'State / Province',
+    'District',
     'City',
   ])
   expect(within(table).getByRole('rowheader', { name: 'Sara Rahimi' })).toBeInTheDocument()
+  expect(within(table).getByText('District 1')).toBeInTheDocument()
   expect(within(table).queryByRole('button', { name: /View/i })).not.toBeInTheDocument()
   expect(within(table).queryByRole('link')).not.toBeInTheDocument()
   expect(screen.queryByRole('form', { name: /Contact details/i })).not.toBeInTheDocument()
@@ -84,7 +85,7 @@ test('shows missing values as em dashes without failing the row', () => {
       email: null,
       mobilePhone: null,
       city: null,
-      stateOrProvince: null,
+      districtName: null,
       districtId: '367d7420-d8a2-f111-b8da-7ced8d70f293',
     }],
   })
@@ -98,7 +99,7 @@ test('passes search text to the debounced directory state', async () => {
   renderContact()
 
   const search = screen.getByRole('searchbox', { name: 'Search contacts' })
-  expect(search).toHaveAttribute('placeholder', 'Search by name, email, phone, city, or state...')
+  expect(search).toHaveAttribute('placeholder', 'Search by name, email, phone, or city...')
   fireEvent.change(search, { target: { value: 'Sara' } })
 
   expect(setSearch).toHaveBeenCalledWith('Sara')

@@ -11,6 +11,7 @@ const authenticatedSession: AuthSession = {
     userName: 'member@oiac.org',
     firstName: 'OIAC',
     lastName: 'Member',
+    contactId: '11111111-1111-4111-8111-111111111111',
     userRoles: ['Authenticated Users', 'Volunteer'],
   },
 }
@@ -35,11 +36,11 @@ test.each([
   ['/my-reports', 'My Reports'],
   ['/my-calendar', 'My Calendar'],
   ['/contact', 'Contacts'],
-  ['/activity/activity-log', 'Activity'],
+  ['/activity/activity-log', 'Page not found'],
   ['/activity/events', 'Events'],
-  ['/activity/appointments', 'Appointments'],
-  ['/press-coverage', 'Press Coverage'],
-  ['/activity', 'Activity'],
+  ['/activity/appointments', 'Page not found'],
+  ['/press-coverage', 'Page not found'],
+  ['/activity', 'Events'],
   ['/unknown', 'Page not found'],
 ])('renders %s as %s', (route, heading) => {
   renderApp(route)

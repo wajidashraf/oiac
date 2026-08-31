@@ -27,15 +27,16 @@ export type MeetingSentiment = 1 | 2 | 3 | 4 | 5
 
 export type MeetingReportDraft = {
   readonly subject: string
-  readonly date: string
+  readonly startDateTime: string
+  readonly endDateTime: string
   readonly representativeId: string
   readonly districtId: string
   readonly meetingFormat: MeetingFormat | null
   readonly staffIds: readonly string[]
   readonly volunteerIds: readonly string[]
   readonly issuesDiscussed: string
-  readonly outcomesNextSteps: string
   readonly followUpActions: string
+  readonly documentsProvided: string
   readonly sentiment: MeetingSentiment | null
 }
 
@@ -53,6 +54,17 @@ export type MeetingReportSummary = {
   readonly representativeName: string
   readonly date: string
   readonly sentimentLabel: string
+}
+
+export type MeetingReportPage = {
+  readonly reports: readonly MeetingReportSummary[]
+  readonly hasNext: boolean
+  readonly nextLink: string | null
+}
+
+export type MeetingReportQuery = {
+  readonly limit?: number
+  readonly nextLink?: string | null
 }
 
 export type RelationshipKind = 'staff' | 'volunteer'

@@ -123,7 +123,8 @@ export async function powerPagesRequest(
   options: PowerPagesRequestOptions = {},
 ): Promise<Response> {
   const method = (options.method ?? 'GET').toUpperCase()
-  const requiresVerificationToken = method !== 'GET' && method !== 'HEAD'
+  const isServerLogicRequest = path.startsWith('/_api/serverlogics/')
+  const requiresVerificationToken = method !== 'HEAD' && (method !== 'GET' || isServerLogicRequest)
   const { headers: suppliedHeaders, ...requestOptions } = options
   const headers: Record<string, string> = {
     Accept: 'application/json',

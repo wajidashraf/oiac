@@ -3,6 +3,7 @@ import { LuChevronDown, LuMenu } from 'react-icons/lu'
 import { NavLink, useLocation } from 'react-router-dom'
 import { getPrimaryRole } from '../auth/authorization'
 import type { PortalUser } from '../auth/powerPagesSession'
+import ComingSoonBadge from './ComingSoonBadge'
 
 const topLevelLinks = [
   { label: 'Home', to: '/' },
@@ -12,13 +13,13 @@ const topLevelLinks = [
 ]
 
 const activityLinks = [
-  { label: 'Activity Log', to: '/activity/activity-log' },
-  { label: 'Events', to: '/activity/events' },
-  { label: 'Appointments', to: '/activity/appointments' },
+  { label: 'Activity Log', to: '/activity/activity-log', comingSoon: true },
+  { label: 'Events', to: '/activity/events', comingSoon: false },
+  { label: 'Appointments', to: '/activity/appointments', comingSoon: true },
 ]
 
 const secondaryLinks = [
-  { label: 'Press Coverage', to: '/press-coverage' },
+  { label: 'Press Coverage', to: '/press-coverage', comingSoon: true },
 ]
 
 function navClassName({ isActive }: { isActive: boolean }) {
@@ -86,26 +87,48 @@ export default function PortalNav({ user }: { user: PortalUser }) {
             {activityOpen ? (
               <div className="portal-nav__submenu" id="activity-navigation-list">
                 {activityLinks.map((link) => (
-                  <NavLink
-                    key={link.to}
-                    className={navClassName}
-                    to={link.to}
-                    onClick={() => {
-                      setActivityOpen(false)
-                      setMenuOpen(false)
-                    }}
-                  >
-                    {link.label}
-                  </NavLink>
+                  link.comingSoon ? (
+                    <span
+                      key={link.to}
+                      className="portal-nav__link portal-nav__link--disabled"
+                      aria-disabled="true"
+                    >
+                      <span>{link.label}</span>
+                      <ComingSoonBadge />
+                    </span>
+                  ) : (
+                    <NavLink
+                      key={link.to}
+                      className={navClassName}
+                      to={link.to}
+                      onClick={() => {
+                        setActivityOpen(false)
+                        setMenuOpen(false)
+                      }}
+                    >
+                      {link.label}
+                    </NavLink>
+                  )
                 ))}
               </div>
             ) : null}
           </div>
 
           {secondaryLinks.map((link) => (
-            <NavLink key={link.to} className={navClassName} to={link.to}>
-              {link.label}
-            </NavLink>
+            link.comingSoon ? (
+              <span
+                key={link.to}
+                className="portal-nav__link portal-nav__link--disabled"
+                aria-disabled="true"
+              >
+                <span>{link.label}</span>
+                <ComingSoonBadge />
+              </span>
+            ) : (
+              <NavLink key={link.to} className={navClassName} to={link.to}>
+                {link.label}
+              </NavLink>
+            )
           ))}
         </nav>
 

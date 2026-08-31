@@ -45,7 +45,7 @@ export default function Contact({ user }: ContactProps) {
             id="contact-search"
             type="search"
             value={directory.search}
-            placeholder="Search by name, email, phone, city, or state..."
+            placeholder="Search by name, email, phone, or city..."
             autoComplete="off"
             onChange={(event) => directory.setSearch(event.target.value)}
           />
@@ -93,7 +93,7 @@ export default function Contact({ user }: ContactProps) {
                   <th scope="col">Full Name</th>
                   <th scope="col">Mobile Phone</th>
                   <th scope="col">Email</th>
-                  <th scope="col">State / Province</th>
+                  <th scope="col">District</th>
                   <th scope="col">City</th>
                 </tr>
               </thead>
@@ -103,7 +103,7 @@ export default function Contact({ user }: ContactProps) {
                     <th scope="row">{displayValue(contact.fullName)}</th>
                     <td>{displayValue(contact.mobilePhone)}</td>
                     <td>{displayValue(contact.email)}</td>
-                    <td>{displayValue(contact.stateOrProvince)}</td>
+                    <td>{displayValue(contact.districtName)}</td>
                     <td>{displayValue(contact.city)}</td>
                   </tr>
                 ))}

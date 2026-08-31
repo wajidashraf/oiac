@@ -10,7 +10,7 @@ const volunteerUser: PortalUser = {
   userRoles: ['Authenticated Users', 'Volunteer'],
 }
 
-test('exposes top-level links and expands the Activity routes', async () => {
+test('keeps unfinished navigation visible and exposes only implemented routes as links', async () => {
   const user = userEvent.setup()
   render(
     <MemoryRouter>
@@ -25,7 +25,10 @@ test('exposes top-level links and expands the Activity routes', async () => {
   expect(within(primaryNavigation).getByRole('link', { name: 'Meeting Report' })).toHaveAttribute('href', '/report')
   expect(within(primaryNavigation).getByRole('link', { name: 'My Calendar' })).toHaveAttribute('href', '/my-calendar')
   expect(within(primaryNavigation).getByRole('link', { name: 'Contact' })).toHaveAttribute('href', '/contact')
-  expect(within(primaryNavigation).getByRole('link', { name: 'Press Coverage' })).toHaveAttribute('href', '/press-coverage')
+  expect(within(primaryNavigation).queryByRole('link', { name: /Press Coverage/ })).not.toBeInTheDocument()
+  const pressCoverage = within(primaryNavigation).getByText('Press Coverage').closest<HTMLElement>('[aria-disabled="true"]')!
+  expect(pressCoverage).toBeInTheDocument()
+  expect(within(pressCoverage).getByText('Coming Soon')).toBeInTheDocument()
   expect(within(account).getByRole('link', { name: 'Sign out' })).toHaveAttribute(
     'href',
     '/Account/Login/LogOff?returnUrl=%2F',
@@ -40,9 +43,11 @@ test('exposes top-level links and expands the Activity routes', async () => {
   expect(activityToggle.querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
   await user.click(activityToggle)
   expect(activityToggle).toHaveAttribute('aria-expanded', 'true')
-  expect(screen.getByRole('link', { name: 'Activity Log' })).toHaveAttribute('href', '/activity/activity-log')
+  expect(screen.queryByRole('link', { name: /Activity Log/ })).not.toBeInTheDocument()
+  expect(screen.getByText('Activity Log').closest('[aria-disabled="true"]')).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Events' })).toHaveAttribute('href', '/activity/events')
-  expect(screen.getByRole('link', { name: 'Appointments' })).toHaveAttribute('href', '/activity/appointments')
+  expect(screen.queryByRole('link', { name: /Appointments/ })).not.toBeInTheDocument()
+  expect(screen.getByText('Appointments').closest('[aria-disabled="true"]')).toBeInTheDocument()
 })
 
 test('closes the responsive menu after navigation', async () => {

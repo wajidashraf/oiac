@@ -1,0 +1,4 @@
+description: Allow only Event fields required by the SPA workflow
+id: 1c199b86-9f3c-46f9-8f63-a8457bd8b0f1
+name: Webapi/mss_events/fields
+value: "mss_eventsid,mss_eventname,mss_description,mss_eventtype,mss_eventformat,mss_startdatetime,mss_enddatetime,mss_eventstatus,mss_venuename,mss_address,mss_city,mss_meetingurl"

@@ -1,0 +1,4 @@
+description: Disable CAPTCHA on the native user registration page
+id: 6306c2de-4539-44ce-b54d-a87f6434f1a7
+name: Authentication/Registration/CaptchaEnabled
+value: false

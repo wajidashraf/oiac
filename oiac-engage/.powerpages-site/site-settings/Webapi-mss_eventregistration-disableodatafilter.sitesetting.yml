@@ -1,0 +1,4 @@
+description: Allow secured Contact and Event filters for Event Registrations
+id: ee65d45d-abb8-4a7f-a40e-6946887f3968
+name: Webapi/mss_eventregistration/disableodatafilter
+value: false

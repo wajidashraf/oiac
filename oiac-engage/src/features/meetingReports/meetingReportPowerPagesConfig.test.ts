@@ -34,7 +34,8 @@ test('exposes only the fields required by the meeting report workflow', () => {
   expect(reportEnabled).toContain('value: true')
   expect(reportFields).toContain('name: Webapi/mss_meetingreport/fields')
   for (const field of [
-    'mss_meetingreportid', 'mss_subject', 'mss_dateofmeeting', 'mss_representative',
+    'mss_meetingreportid', 'mss_subject', 'mss_dateofmeeting', 'mss_startdateandtime',
+    'mss_enddateandtime', 'mss_documentsprovided', 'mss_representative',
     '_mss_representative_value', 'mss_district', '_mss_district_value', 'mss_meetingformat',
     'mss_writedownwhatthestaffsaidnotwhatyousaid', 'mss_followupnoteoncethemeetingended',
     'mss_overallsentiment', 'mss_reportedby', '_mss_reportedby_value',

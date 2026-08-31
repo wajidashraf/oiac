@@ -4,8 +4,8 @@ export type ContactRecord = {
   readonly emailaddress1?: string | null
   readonly mobilephone?: string | null
   readonly address1_city?: string | null
-  readonly address1_stateorprovince?: string | null
   readonly _mss_district_value?: string | null
+  readonly '_mss_district_value@OData.Community.Display.V1.FormattedValue'?: string | null
 }
 
 export type DistrictContact = {
@@ -14,7 +14,7 @@ export type DistrictContact = {
   readonly email: string | null
   readonly mobilePhone: string | null
   readonly city: string | null
-  readonly stateOrProvince: string | null
+  readonly districtName: string | null
   readonly districtId: string
 }
 

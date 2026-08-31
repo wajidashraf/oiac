@@ -9,7 +9,6 @@ const CONTACT_SELECT = [
   'emailaddress1',
   'mobilephone',
   'address1_city',
-  'address1_stateorprovince',
   '_mss_district_value',
 ] as const
 
@@ -18,8 +17,9 @@ const SEARCH_FIELDS = [
   'emailaddress1',
   'mobilephone',
   'address1_city',
-  'address1_stateorprovince',
 ] as const
+
+const CONTACT_PREFER = `odata.include-annotations="OData.Community.Display.V1.FormattedValue",odata.maxpagesize=${CONTACT_PAGE_SIZE}`
 
 const GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -48,7 +48,9 @@ function mapContact(record: ContactRecord, districtId: string): DistrictContact 
     email: textOrNull(record.emailaddress1),
     mobilePhone: textOrNull(record.mobilephone),
     city: textOrNull(record.address1_city),
-    stateOrProvince: textOrNull(record.address1_stateorprovince),
+    districtName: textOrNull(
+      record['_mss_district_value@OData.Community.Display.V1.FormattedValue'],
+    ),
     districtId: normalizeGuid(record._mss_district_value) ?? districtId,
   }
 }
@@ -120,7 +122,7 @@ export async function getDistrictContacts(
     requestPath,
     {
       signal,
-      headers: { Prefer: `odata.maxpagesize=${CONTACT_PAGE_SIZE}` },
+      headers: { Prefer: CONTACT_PREFER },
     },
   )
   if (!Array.isArray(response.value)) throw new Error('Dataverse returned an invalid Contacts response.')

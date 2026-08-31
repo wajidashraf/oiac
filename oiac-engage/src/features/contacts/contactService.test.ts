@@ -23,8 +23,8 @@ function makeContact(index: number): ContactRecord {
     emailaddress1: `contact${index}@example.org`,
     mobilephone: `202-555-${String(index).padStart(4, '0')}`,
     address1_city: 'Washington',
-    address1_stateorprovince: 'DC',
     _mss_district_value: DISTRICT_ID,
+    '_mss_district_value@OData.Community.Display.V1.FormattedValue': 'District 1',
   }
 }
 
@@ -38,7 +38,7 @@ describe('Contact Web API service', () => {
     const params = new URLSearchParams(query.slice(1))
 
     expect(params.get('$select')).toBe(
-      'contactid,fullname,emailaddress1,mobilephone,address1_city,address1_stateorprovince,_mss_district_value',
+      'contactid,fullname,emailaddress1,mobilephone,address1_city,_mss_district_value',
     )
     expect(params.get('$filter')).toBe(`_mss_district_value eq ${DISTRICT_ID}`)
     expect(params.get('$orderby')).toBe('fullname asc,contactid asc')
@@ -56,8 +56,7 @@ describe('Contact Web API service', () => {
       + "contains(fullname,'O''Connor & Sons') or "
       + "contains(emailaddress1,'O''Connor & Sons') or "
       + "contains(mobilephone,'O''Connor & Sons') or "
-      + "contains(address1_city,'O''Connor & Sons') or "
-      + "contains(address1_stateorprovince,'O''Connor & Sons'))",
+      + "contains(address1_city,'O''Connor & Sons'))",
     )
   })
 
@@ -110,9 +109,12 @@ describe('Contact Web API service', () => {
       expect.stringMatching(/^\/_api\/contacts\?/),
       {
         signal: undefined,
-        headers: { Prefer: `odata.maxpagesize=${CONTACT_PAGE_SIZE}` },
+        headers: {
+          Prefer: `odata.include-annotations="OData.Community.Display.V1.FormattedValue",odata.maxpagesize=${CONTACT_PAGE_SIZE}`,
+        },
       },
     )
+    expect(result.contacts[0]?.districtName).toBe('District 1')
   })
 
   test('uses the server continuation link directly for the next page', async () => {
@@ -123,7 +125,9 @@ describe('Contact Web API service', () => {
 
     expect(powerPagesFetchMock).toHaveBeenCalledWith(nextLink, {
       signal: undefined,
-      headers: { Prefer: `odata.maxpagesize=${CONTACT_PAGE_SIZE}` },
+      headers: {
+        Prefer: `odata.include-annotations="OData.Community.Display.V1.FormattedValue",odata.maxpagesize=${CONTACT_PAGE_SIZE}`,
+      },
     })
   })
 
@@ -150,7 +154,7 @@ describe('Contact Web API service', () => {
       email: null,
       mobilePhone: null,
       city: null,
-      stateOrProvince: null,
+      districtName: null,
       districtId: DISTRICT_ID,
     })
   })

@@ -1,0 +1,4 @@
+description: Enable authenticated Event Registration Web API access
+id: c8fa0789-f511-47a0-be18-598aa91ea5d8
+name: Webapi/mss_eventregistration/enabled
+value: true

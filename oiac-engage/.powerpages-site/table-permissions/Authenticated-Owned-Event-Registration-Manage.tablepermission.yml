@@ -1,0 +1,13 @@
+adx_entitypermission_webrole:
+- 0353acdd-7b95-4c07-8997-ae95dafd978d
+append: true
+appendto: false
+contactrelationship: mss_eventregistration_Contact_contact
+create: true
+delete: false
+entitylogicalname: mss_eventregistration
+entityname: Authenticated Owned Event Registration Manage
+id: 3db07c33-7346-4edd-9432-8b79fb38ad1c
+read: true
+scope: 756150001
+write: true

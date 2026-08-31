@@ -4,23 +4,6 @@ export type DashboardMetric = {
   label: string
 }
 
-export type MeetingReport = {
-  id: string
-  meeting: string
-  representative: string
-  date: string
-  dateTime: string
-  outcome: string
-}
-
-export type DashboardEvent = {
-  id: string
-  day: string
-  month: string
-  dateTime: string
-  title: string
-}
-
 export type MeetingInvite = {
   id: string
   title: string
@@ -65,43 +48,10 @@ export type VolunteerSubmission = {
 }
 
 export const dashboardMetrics: readonly DashboardMetric[] = [
-  { id: 'activities-submitted', value: 12, label: 'Activities Submitted' },
-  { id: 'meetings-requested', value: 3, label: 'Meetings Requested' },
-  { id: 'events-registered', value: 5, label: 'Events Registered' },
-  { id: 'hours-volunteered', value: 28, label: 'Hours Volunteered' },
-]
-
-export const meetingReports: readonly MeetingReport[] = [
-  {
-    id: 'advocacy-briefing-chen',
-    meeting: 'Advocacy Briefing — Rep. Chen Office',
-    representative: "Rep. Chen's Office",
-    date: 'Aug 5, 2026',
-    dateTime: '2026-08-05',
-    outcome: 'Supportive',
-  },
-  {
-    id: 'sen-carter-staff',
-    meeting: 'Meeting with Sen. Carter Staff',
-    representative: "Sen. Carter's Office",
-    date: 'Jul 18, 2026',
-    dateTime: '2026-07-18',
-    outcome: 'Neutral',
-  },
-  {
-    id: 'va-delegation-outreach',
-    meeting: 'District Outreach — VA Delegation',
-    representative: 'VA Congressional Delegation',
-    date: 'Jun 30, 2026',
-    dateTime: '2026-06-30',
-    outcome: 'Very Supportive',
-  },
-]
-
-export const dashboardEvents: readonly DashboardEvent[] = [
-  { id: 'capitol-hill', day: '8', month: 'Sep', dateTime: '2026-09-08', title: 'Capitol Hill Advocacy Day — Washington, D.C.' },
-  { id: 'captain-briefing', day: '15', month: 'Sep', dateTime: '2026-09-15', title: 'Volunteer Captain Briefing — Microsoft Teams' },
-  { id: 'heritage-month', day: '2', month: 'Oct', dateTime: '2026-10-02', title: 'Iranian American Heritage Month Kickoff' },
+  { id: 'activities-submitted', value: 0, label: 'Activities Submitted' },
+  { id: 'report-submitted', value: 0, label: 'Reports Submitted' },
+  { id: 'events-registered', value: 0, label: 'Events Registered' },
+  { id: 'hours-volunteered', value: 0, label: 'Hours Volunteered' },
 ]
 
 export const meetingInvites: readonly MeetingInvite[] = [

@@ -1,0 +1,12 @@
+adx_entitypermission_webrole:
+- 0353acdd-7b95-4c07-8997-ae95dafd978d
+append: false
+appendto: true
+create: false
+delete: false
+entitylogicalname: mss_events
+entityname: Events Global Read
+id: d416e11f-cf76-48e0-a507-35ec25f40ba7
+read: true
+scope: 756150000
+write: false
