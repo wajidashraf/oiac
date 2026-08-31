@@ -5,8 +5,8 @@ appendto: false
 create: false
 delete: false
 entitylogicalname: contact
-entityname: Contact Self Read
+entityname: Contact Self Manage
 id: d859bb62-3c13-4b47-b63a-d43a7e6b9f4c
 read: true
 scope: 756150004
-write: false
+write: true

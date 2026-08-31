@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
 import { expect, test } from 'vitest'
-import contactSelfRead from '../../../.powerpages-site/table-permissions/Contact-Self-Read.tablepermission.yml?raw'
+import contactSelfManage from '../../../.powerpages-site/table-permissions/Contact-Self-Read.tablepermission.yml?raw'
 import districtContactsRead from '../../../.powerpages-site/table-permissions/District-Contacts-Read.tablepermission.yml?raw'
 import authenticatedDistrictRead from '../../../.powerpages-site/table-permissions/Authenticated-User-District-Read.tablepermission.yml?raw'
 import disableODataFilter from '../../../.powerpages-site/site-settings/Webapi-contact-disableodatafilter.sitesetting.yml?raw'
@@ -27,18 +27,28 @@ test('enables only the required Contact Web API fields and secured filtering', (
   expect(contactEnabled).toContain('name: Webapi/contact/enabled')
   expect(contactEnabled).toContain('value: true')
   expect(contactFields).toContain('name: Webapi/contact/fields')
-  expect(contactFields).toContain('value: "contactid,fullname,emailaddress1,mobilephone,address1_city,address1_stateorprovince,jobtitle,mss_district,_mss_district_value"')
+  expect(contactFields).toContain('value: "contactid,firstname,lastname,fullname,emailaddress1,mobilephone,address1_city,address1_stateorprovince,jobtitle,mss_district,_mss_district_value"')
   expect(disableODataFilter).toContain('name: Webapi/contact/disableodatafilter')
   expect(disableODataFilter).toContain('value: false')
   expect(innerError).toContain('name: Webapi/error/innererror')
   expect(innerError).toContain('value: false')
 })
 
-test('grants Authenticated Users a read-only district permission chain', () => {
-  expectReadOnly(contactSelfRead)
-  expect(contactSelfRead).toContain('entitylogicalname: contact')
-  expect(contactSelfRead).toContain('scope: 756150004')
+test('allows Authenticated Users to read and update only their own Contact', () => {
+  expect(contactSelfManage).toContain('entityname: Contact Self Manage')
+  expect(contactSelfManage).toContain('entitylogicalname: contact')
+  expect(contactSelfManage).toContain('scope: 756150004')
+  expect(contactSelfManage).toContain('read: true')
+  expect(contactSelfManage).toContain('write: true')
+  expect(contactSelfManage).toContain('create: false')
+  expect(contactSelfManage).toContain('delete: false')
+  expect(contactSelfManage).toContain('append: false')
+  expect(contactSelfManage).toContain('appendto: false')
+  expect(contactSelfManage).toContain(`- ${authenticatedUsersRoleId}`)
+  expect(contactSelfManage).not.toContain(anonymousUsersRoleId)
+})
 
+test('keeps the district permission chain read-only for Authenticated Users', () => {
   expectReadOnly(authenticatedDistrictRead)
   expect(authenticatedDistrictRead).toContain('entitylogicalname: mss_district')
   expect(authenticatedDistrictRead).toContain('scope: 756150001')
