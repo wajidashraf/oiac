@@ -1,8 +1,9 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { hasRole } from './auth/authorization'
+import { hasRole, requiresProfileApproval } from './auth/authorization'
 import { readPowerPagesSession, type AuthSession } from './auth/powerPagesSession'
 import AnonymousShell from './components/AnonymousShell'
 import AppShell from './components/AppShell'
+import PendingApprovalShell from './components/PendingApprovalShell'
 import type { ExternalNavigate } from './components/SignInRedirect'
 import AnonymousHome from './pages/AnonymousHome'
 import Contact from './pages/Contact'
@@ -12,6 +13,7 @@ import MyCalendar from './pages/MyCalendar'
 import MyReports from './pages/MyReports'
 import MeetingReportForm from './pages/MeetingReportForm'
 import NotFound from './pages/NotFound'
+import PendingApproval from './pages/PendingApproval'
 import Report from './pages/Report'
 import Resources from './pages/Resources'
 
@@ -30,6 +32,17 @@ export default function App({ session: suppliedSession }: AppProps) {
           <Route path="*" element={<AnonymousHome />} />
         </Routes>
       </AnonymousShell>
+    )
+  }
+
+  if (requiresProfileApproval(session)) {
+    return (
+      <PendingApprovalShell>
+        <Routes>
+          <Route path="/pending-approval" element={<PendingApproval />} />
+          <Route path="*" element={<Navigate to="/pending-approval" replace />} />
+        </Routes>
+      </PendingApprovalShell>
     )
   }
 

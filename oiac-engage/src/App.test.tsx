@@ -1,6 +1,6 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { expect, test, vi } from 'vitest'
 import App from './App'
 import type { AuthSession } from './auth/powerPagesSession'
@@ -16,6 +16,11 @@ const authenticatedSession: AuthSession = {
   },
 }
 
+function LocationProbe() {
+  const location = useLocation()
+  return <output data-testid="current-path">{location.pathname}</output>
+}
+
 function renderApp(
   route: string,
   session: AuthSession = authenticatedSession,
@@ -24,6 +29,7 @@ function renderApp(
   return render(
     <MemoryRouter initialEntries={[route]}>
       <App session={session} navigate={navigate} />
+      <LocationProbe />
     </MemoryRouter>,
   )
 }
@@ -110,4 +116,41 @@ test('renders Resources only for an authenticated session', () => {
   expect(screen.getByRole('heading', { name: 'Resources', level: 1 })).toBeInTheDocument()
   const primaryNavigation = screen.getByRole('navigation', { name: 'Primary navigation' })
   expect(within(primaryNavigation).queryByRole('link', { name: 'Resources' })).not.toBeInTheDocument()
+})
+
+test.each([
+  ['no assigned roles', []],
+  ['only the authenticated implicit role', ['Authenticated Users']],
+  ['both implicit roles', ['Anonymous Users', 'Authenticated Users']],
+])('gates a signed-in profile with %s', async (_label, userRoles) => {
+  renderApp('/report', {
+    status: 'authenticated',
+    user: { userName: 'pending@oiac.org', userRoles },
+  })
+
+  expect(screen.getByRole('heading', { name: 'Your profile is under review', level: 1 })).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Sign Out' })).toHaveAttribute(
+    'href',
+    '/Account/Login/LogOff?returnUrl=%2F',
+  )
+  expect(screen.queryByRole('navigation', { name: 'Primary navigation' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Meeting Reports' })).not.toBeInTheDocument()
+
+  await waitFor(() => {
+    expect(screen.getByTestId('current-path')).toHaveTextContent('/pending-approval')
+  })
+})
+
+test('allows an authenticated profile with any assigned custom role into the portal', () => {
+  renderApp('/resources', {
+    status: 'authenticated',
+    user: {
+      userName: 'coordinator@oiac.org',
+      userRoles: ['Authenticated Users', 'Regional Coordinator'],
+    },
+  })
+
+  expect(screen.getByRole('heading', { name: 'Resources', level: 1 })).toBeInTheDocument()
+  expect(screen.getByRole('navigation', { name: 'Primary navigation' })).toBeInTheDocument()
+  expect(screen.getByTestId('current-path')).toHaveTextContent('/resources')
 })
