@@ -10,12 +10,23 @@ import codeSiteFooter from '../../.powerpages-site/web-templates/footer/Footer.w
 import codeSiteHeader from '../../.powerpages-site/web-templates/header/Header.webtemplate.source.html?raw'
 import website from '../../.powerpages-site/website.yml?raw'
 
-test('native authentication shell keeps its custom stylesheet disabled without visible header or footer markup', () => {
+test('native authentication shell renders a route-aware branded header while its form stylesheet stays disabled', () => {
   const activeHeader = header.replace(/<!--[\s\S]*?-->/g, '').trim()
 
-  expect(header.trim()).toBe('<!-- <link rel="stylesheet" href="/auth.css?v=3"> -->')
+  expect(header).toContain('<!-- <link rel="stylesheet" href="/auth.css?v=3"> -->')
   expect(activeHeader).not.toContain('<link')
-  expect(header).not.toContain('<header')
+  expect(header).toContain('request.path | downcase')
+  expect(header).toContain("auth_path == '/signin'")
+  expect(header).toContain("auth_path == '/register'")
+  expect(header).toContain("auth_path contains '/account/login'")
+  expect(header).toContain('class="auth-site-header"')
+  expect(header).toContain('class="auth-site-header__inner"')
+  expect(header).toContain('class="auth-site-brand" href="/"')
+  expect(header).toContain('src="/logo.png"')
+  expect(header).toContain('class="auth-site-button" href="#ContentContainer_MainContent_MainContent_LocalLogin"')
+  expect(header).toContain('class="auth-site-button" href="/SignIn?returnUrl=%2F"')
+  expect(header).toContain('@media (max-width: 720px)')
+  expect(header).toContain('.auth-site-brand:focus-visible')
   expect(footer.trim()).toBe('')
   expect(website).toContain('headerwebtemplateid: 1a8d7f5c-7e6b-4a4f-b9d5-2f3c6a1e8b70')
   expect(website).toContain('footerwebtemplateid: 5c3e9a12-4b7d-4f8a-a6c1-9e2d7b5f3048')
