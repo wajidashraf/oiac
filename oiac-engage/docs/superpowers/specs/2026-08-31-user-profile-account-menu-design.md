@@ -21,14 +21,14 @@ Email is not displayed or edited. The existing Contact directory may continue us
 
 Replace the static role badge and separate Sign out button in `PortalNav` with one account-menu button. The button retains the current avatar and functional role label and adds a down chevron. Activating it opens a small menu aligned to the account button with:
 
-1. `Profile`, an internal React Router link to `/profile`.
+1. `Profile`, an internal React Router link to `/user-profile`. Power Pages reserves `/profile` for its legacy server-rendered profile page.
 2. `Sign out`, an anchor to `/Account/Login/LogOff?returnUrl=%2F`.
 
 The button uses `aria-expanded` and `aria-controls`. The menu closes after route navigation, when the user clicks outside it, and when the user presses Escape. On narrow screens it remains inside the existing responsive navigation panel and uses full-width touch targets.
 
 ## Profile Page UI
 
-Add a custom React page at `/profile` using the established OIAC page spacing, serif heading, bordered white form card, muted supporting copy, and existing button/field styles.
+Add a custom React page at `/user-profile` using the established OIAC page spacing, serif heading, bordered white form card, muted supporting copy, and existing button/field styles.
 
 The page contains:
 
@@ -96,7 +96,7 @@ This limits an authenticated user’s update capability to the Contact record re
 - `UserProfile.tsx`: page state, validation, loading/error/success rendering, and form submission.
 - `profileService.ts`: Contact GUID validation, Web API paths, payload mapping, and GET/PATCH operations.
 - `profileTypes.ts`: Dataverse response and editable profile types.
-- `App.tsx`: registers `/profile` for approved authenticated users and supplies their `PortalUser`.
+- `App.tsx`: registers `/user-profile` for approved authenticated users and supplies their `PortalUser`.
 - `theme.css`: isolated account-menu and profile-page selectors consistent with the existing design system.
 
 ## Testing
@@ -106,7 +106,7 @@ Automated tests will cover:
 - Account menu opens from the role badge and contains Profile and Sign out.
 - The former separate Sign out control is removed.
 - Account menu closes on navigation, outside click, and Escape.
-- `/profile` remains available to approved users and unavailable through the pending-user gate.
+- `/user-profile` remains available to approved users and unavailable through the pending-user gate.
 - Profile GET uses only the current Contact ID and requested columns.
 - Profile PATCH contains only the four editable columns and converts blank optional fields to null.
 - Missing/invalid Contact IDs do not make Web API calls.

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add an accessible header account menu and a custom `/profile` page that lets an approved signed-in user read and update their own Contact through the Power Pages Web API.
+**Goal:** Add an accessible header account menu and a custom `/user-profile` page that lets an approved signed-in user read and update their own Contact through the Power Pages Web API.
 
 **Architecture:** Keep Dataverse transport and mapping in a focused profile service built on `powerPagesFetch`, keep form state and validation in a dedicated React page, and keep account-menu interaction in `PortalNav`. The existing approved-user route gate remains the UI boundary, while a Self-scoped Contact table permission supplies the actual write boundary.
 
@@ -13,7 +13,7 @@
 - Display and edit only `firstname`, `lastname`, `address1_city`, and `address1_stateorprovince`; never display email on the profile page.
 - Use the current Power Pages session `contactId`; never accept an arbitrary Contact ID from the URL.
 - Use the existing `powerPagesFetch` wrapper for GET and PATCH requests.
-- Keep anonymous and pending-approval experiences unchanged; expose `/profile` only inside the existing approved-user application shell.
+- Keep anonymous and pending-approval experiences unchanged; expose `/user-profile` only inside the existing approved-user application shell. Do not use server-reserved `/profile`.
 - Grant Contact update only through the existing Self-scoped authenticated permission; keep global and district Contact permissions read-only.
 - Do not deploy as part of implementation.
 
@@ -28,7 +28,7 @@
 
 **Interfaces:**
 - Consumes: `powerPagesFetch<T>(path, init)` from `src/shared/powerPagesApi.ts`.
-- Produces: `normalizeProfileContactId(value): string | null`, `getUserProfile(contactId, signal): Promise<UserProfileValues>`, and `updateUserProfile(contactId, values): Promise<UserProfileValues>`.
+- Produces: `normalizeProfileContactId(value): string | null`, `getMyProfile(contactId, signal): Promise<ProfileContact>`, and `updateMyProfile(contactId, values): Promise<ProfileContact>`.
 
 - [ ] **Step 1: Write failing service tests**
 
@@ -63,22 +63,22 @@ Expected: FAIL because the profile service and types do not exist.
 Define a small editable value model and raw Dataverse record model. Normalize GUID braces, trim save values, map nullable strings, and throw before calling `powerPagesFetch` when the ID is invalid.
 
 ```ts
-export type UserProfileValues = {
+export type ProfileContact = {
   firstName: string
   lastName: string
   city: string
   state: string
 }
 
-export async function getUserProfile(
+export async function getMyProfile(
   contactId: string,
   signal?: AbortSignal,
-): Promise<UserProfileValues>
+): Promise<ProfileContact>
 
-export async function updateUserProfile(
+export async function updateMyProfile(
   contactId: string,
-  values: UserProfileValues,
-): Promise<UserProfileValues>
+  values: ProfileContact,
+): Promise<ProfileContact>
 ```
 
 - [ ] **Step 4: Run the focused tests and confirm pass**
@@ -104,7 +104,7 @@ git commit -m "feat: add profile Web API service"
 - Modify: `src/styles/theme.css`
 
 **Interfaces:**
-- Consumes: `PortalUser`, `normalizeProfileContactId`, `getUserProfile`, `updateUserProfile`.
+- Consumes: `PortalUser`, `normalizeProfileContactId`, `getMyProfile`, `updateMyProfile`.
 - Produces: `UserProfile({ user }: { user: PortalUser })` for routing in Task 3.
 
 - [ ] **Step 1: Write failing page tests**
@@ -167,15 +167,15 @@ git commit -m "feat: add editable user profile page"
 
 **Interfaces:**
 - Consumes: `UserProfile` from Task 2 and the existing `PortalUser` session object.
-- Produces: an accessible account-menu button plus the approved `/profile` route.
+- Produces: an accessible account-menu button plus the approved `/user-profile` route.
 
 - [ ] **Step 1: Write failing navigation and route tests**
 
-Assert the role badge is a button with `aria-expanded`, opens Profile and Sign out items, has no separate Sign out control when closed, and closes on Profile navigation, outside click, and Escape. Add App coverage showing approved users can render `/profile` while pending users are redirected to `/pending-approval`.
+Assert the role badge is a button with `aria-expanded`, opens Profile and Sign out items, has no separate Sign out control when closed, and closes on Profile navigation, outside click, and Escape. Add App coverage showing approved users can render `/user-profile` while pending users are redirected to `/pending-approval`.
 
 ```tsx
 await user.click(screen.getByRole('button', { name: /account menu/i }))
-expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/profile')
+expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/user-profile')
 expect(screen.getByRole('link', { name: 'Sign out' })).toHaveAttribute(
   'href',
   '/Account/Login/LogOff?returnUrl=%2F',
@@ -195,7 +195,7 @@ Add account state/ref, accessible toggle semantics, click-outside and Escape han
 - [ ] **Step 4: Register the approved profile route**
 
 ```tsx
-<Route path="/profile" element={<UserProfile user={session.user} />} />
+<Route path="/user-profile" element={<UserProfile user={session.user} />} />
 ```
 
 Place it only in the authenticated approved-user route tree so the existing anonymous and pending gates remain authoritative for UI routing.
@@ -306,4 +306,3 @@ git commit -m "fix: complete profile feature verification"
 ```
 
 Expected: no additional commit when no fixes were required.
-
