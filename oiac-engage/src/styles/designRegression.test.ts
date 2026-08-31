@@ -109,3 +109,9 @@ test('uses explicit, targeted disabled styling for Coming Soon features', () => 
   expect(css).toContain('.dashboard-section--coming-soon')
   expect(css).not.toContain(':has(.coming-soon-badge)')
 })
+
+test('keeps the pending profile experience isolated from the full portal shell', () => {
+  expect(css).toContain('.pending-header')
+  expect(css).toContain('.pending-approval-page')
+  expect(css).toContain('.pending-approval-card')
+})
