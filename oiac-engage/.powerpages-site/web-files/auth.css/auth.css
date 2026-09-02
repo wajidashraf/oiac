@@ -153,7 +153,7 @@ body:has(.nav-account) .nav-account > .nav-item > .nav-link.active:focus {
 body:has(.nav-account) [id$="_SecureRegister"] .portal-form .row.mb-3,
 :is(body:has(.nav-account), body:has(.forgot-password)) .form-horizontal .form-group {
   display: grid !important;
-  grid-template-columns: 7rem minmax(0, 1fr) !important;
+  grid-template-columns: 10rem minmax(0, 1fr) !important;
   align-items: center;
   gap: 1rem;
   margin: 0 0 1.25rem !important;

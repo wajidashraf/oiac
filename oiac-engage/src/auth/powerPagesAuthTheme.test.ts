@@ -55,7 +55,7 @@ test('native account stylesheet scopes the responsive reference layout', () => {
   expect(authCss).toContain('body:has(.nav-account)')
   expect(authCss).toContain('body:has(.forgot-password)')
   expect(authCss).toContain('@media (max-width: 720px)')
-  expect(authCss).toContain('grid-template-columns: 7rem minmax(0, 1fr)')
+  expect(authCss).toContain('grid-template-columns: 10rem minmax(0, 1fr)')
 })
 
 test('native account tabs stay 45px tall without vertical scrolling', () => {
@@ -92,7 +92,7 @@ test('native Register page uses the same full-width 500px form grid as Sign in',
   expect(authCss).not.toContain('#SecureRegister')
   expect(authCss).toMatch(new RegExp(`${secureRegister}\\s*>\\s*\\.row[\\s\\S]*?width:\\s*100%\\s*!important`))
   expect(authCss).toMatch(new RegExp(`${secureRegister}\\s*>\\s*\\.row\\s*>\\s*\\[class\\*="col-"\\]:has\\(\\.portal-form\\)[\\s\\S]*?flex:\\s*0 0 100%\\s*!important`))
-  expect(authCss).toMatch(new RegExp(`${secureRegister}\\s+\\.portal-form\\s+\\.row\\.mb-3[\\s\\S]*?grid-template-columns:\\s*7rem minmax\\(0, 1fr\\)\\s*!important`))
+  expect(authCss).toMatch(new RegExp(`${secureRegister}\\s+\\.portal-form\\s+\\.row\\.mb-3[\\s\\S]*?grid-template-columns:\\s*10rem minmax\\(0, 1fr\\)\\s*!important`))
   expect(authCss).toMatch(new RegExp(`@media \\(max-width: 720px\\)[\\s\\S]*?${secureRegister}\\s+\\.portal-form\\s+\\.row\\.mb-3[\\s\\S]*?grid-template-columns:\\s*1fr\\s*!important`))
 })
 

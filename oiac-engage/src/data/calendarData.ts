@@ -14,18 +14,7 @@ export type CalendarItem = {
 
 export type MonthCell = { day: number; isoDate: string } | null
 
-export const acceptedMeetingItems: readonly CalendarItem[] = [
-  {
-    id: 'meeting-002',
-    date: '2026-09-18',
-    title: 'Congressional Outreach Training Session',
-    kind: 'meeting',
-    status: 'Accepted',
-    time: '2:00 PM ET',
-    location: 'Microsoft Teams',
-    joinUrl: 'https://teams.microsoft.com/',
-  },
-]
+export const acceptedMeetingItems: readonly CalendarItem[] = []
 
 export const calendarItems = acceptedMeetingItems
 
