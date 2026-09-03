@@ -22,15 +22,25 @@ export function hasAllRoles(session: AuthSession, roleNames: readonly string[]):
 }
 
 const implicitRoles = new Set(['authenticated users', 'anonymous users'])
-const functionalRolePriority = ['Administrators', 'Staff', 'Volunteer', 'Applicant'] as const
+
+export const PORTAL_ACCESS_ROLES = [
+  'Administrators',
+  'Staff',
+  'Volunteer',
+  'Applicant',
+] as const
+
+export type PortalAccessRole = (typeof PORTAL_ACCESS_ROLES)[number]
+
+const functionalRolePriority = PORTAL_ACCESS_ROLES
+
+export function hasPortalAccess(session: AuthSession): boolean {
+  return session.status === 'authenticated'
+    && hasAnyRole(session, PORTAL_ACCESS_ROLES)
+}
 
 export function requiresProfileApproval(session: AuthSession): boolean {
-  if (session.status === 'anonymous') return false
-
-  return !session.user.userRoles.some((role) => {
-    const normalizedRole = role.trim().toLowerCase()
-    return normalizedRole.length > 0 && !implicitRoles.has(normalizedRole)
-  })
+  return session.status === 'authenticated' && !hasPortalAccess(session)
 }
 
 export function getPrimaryRole(session: AuthSession): string | undefined {

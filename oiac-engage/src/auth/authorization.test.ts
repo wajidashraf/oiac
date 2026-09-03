@@ -4,6 +4,7 @@ import {
   getPrimaryRole,
   hasAllRoles,
   hasAnyRole,
+  hasPortalAccess,
   hasRole,
   requiresProfileApproval,
 } from './authorization'
@@ -49,21 +50,62 @@ describe('Power Pages web-role authorization', () => {
   })
 })
 
-describe('profile approval role gate', () => {
-  test.each([
-    [[], true],
-    [['Authenticated Users'], true],
-    [[' anonymous users ', 'AUTHENTICATED USERS'], true],
-    [['Authenticated Users', 'Volunteer'], false],
-    [['Authenticated Users', 'Regional Coordinator'], false],
-  ])('evaluates authenticated roles %j', (userRoles, expected) => {
-    expect(requiresProfileApproval({
+describe('portal access role gate', () => {
+  test.each(['Administrators', 'Staff', 'Volunteer', 'Applicant'])(
+    'allows the %s role',
+    (role) => {
+      const approvedSession: AuthSession = {
+        status: 'authenticated',
+        user: { userName: 'member@oiac.org', userRoles: ['Authenticated Users', role] },
+      }
+
+      expect(hasPortalAccess(approvedSession)).toBe(true)
+      expect(requiresProfileApproval(approvedSession)).toBe(false)
+    },
+  )
+
+  test('matches approved roles case-insensitively after trimming whitespace', () => {
+    const approvedSession: AuthSession = {
       status: 'authenticated',
-      user: { userName: 'member@oiac.org', userRoles },
-    })).toBe(expected)
+      user: { userName: 'member@oiac.org', userRoles: [' authenticated users ', ' volunteer '] },
+    }
+
+    expect(hasPortalAccess(approvedSession)).toBe(true)
+    expect(requiresProfileApproval(approvedSession)).toBe(false)
   })
 
-  test('does not treat anonymous visitors as pending profiles', () => {
-    expect(requiresProfileApproval({ status: 'anonymous' })).toBe(false)
+  test.each([
+    [[]],
+    [['Authenticated Users']],
+    [['Anonymous Users', 'Authenticated Users']],
+    [['Authenticated Users', 'Regional Coordinator']],
+  ])('denies authenticated roles %j', (userRoles) => {
+    const deniedSession: AuthSession = {
+      status: 'authenticated',
+      user: { userName: 'pending@oiac.org', userRoles },
+    }
+
+    expect(hasPortalAccess(deniedSession)).toBe(false)
+    expect(requiresProfileApproval(deniedSession)).toBe(true)
+  })
+
+  test('allows a mixed role list when one role is approved', () => {
+    const approvedSession: AuthSession = {
+      status: 'authenticated',
+      user: {
+        userName: 'member@oiac.org',
+        userRoles: ['Authenticated Users', 'Regional Coordinator', 'Staff'],
+      },
+    }
+
+    expect(hasPortalAccess(approvedSession)).toBe(true)
+    expect(requiresProfileApproval(approvedSession)).toBe(false)
+  })
+
+  test('does not grant portal access or pending status to an anonymous session', () => {
+    const anonymousSession: AuthSession = { status: 'anonymous' }
+
+    expect(hasPortalAccess(anonymousSession)).toBe(false)
+    expect(requiresProfileApproval(anonymousSession)).toBe(false)
   })
 })
