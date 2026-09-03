@@ -6,6 +6,7 @@ import {
   hasAnyRole,
   hasPortalAccess,
   hasRole,
+  PORTAL_ACCESS_ROLES,
   requiresProfileApproval,
 } from './authorization'
 
@@ -51,6 +52,15 @@ describe('Power Pages web-role authorization', () => {
 })
 
 describe('portal access role gate', () => {
+  test('limits portal access to the four approved functional roles', () => {
+    expect(PORTAL_ACCESS_ROLES).toEqual([
+      'Administrators',
+      'Staff',
+      'Volunteer',
+      'Applicant',
+    ])
+  })
+
   test.each(['Administrators', 'Staff', 'Volunteer', 'Applicant'])(
     'allows the %s role',
     (role) => {
