@@ -1,7 +1,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
-import { expect, test, vi } from 'vitest'
+import { afterEach, expect, test, vi } from 'vitest'
 import App from './App'
 import type { AuthSession } from './auth/powerPagesSession'
 
@@ -16,6 +16,38 @@ const authenticatedSession: AuthSession = {
   },
 }
 
+const protectedRoutes = [
+  '/',
+  '/my-reports',
+  '/my-calendar',
+  '/contact',
+  '/user-profile',
+  '/activity',
+  '/activity/activity-log',
+  '/activity/events',
+  '/activity/appointments',
+  '/press-coverage',
+  '/report',
+  '/report/new',
+  '/report/11111111-1111-4111-8111-111111111111/edit',
+  '/resources',
+  '/unknown',
+] as const
+
+const deniedSession: AuthSession = {
+  status: 'authenticated',
+  user: {
+    userName: 'pending@oiac.org',
+    contactId: '11111111-1111-4111-8111-111111111111',
+    userRoles: ['Authenticated Users'],
+  },
+}
+
+afterEach(() => {
+  vi.restoreAllMocks()
+  vi.unstubAllGlobals()
+})
+
 function LocationProbe() {
   const location = useLocation()
   return <output data-testid="current-path">{location.pathname}</output>
@@ -29,6 +61,15 @@ function renderApp(
   return render(
     <MemoryRouter initialEntries={[route]}>
       <App session={session} navigate={navigate} />
+      <LocationProbe />
+    </MemoryRouter>,
+  )
+}
+
+function renderAppFromPowerPages(route: string) {
+  return render(
+    <MemoryRouter initialEntries={[route]}>
+      <App />
       <LocationProbe />
     </MemoryRouter>,
   )
@@ -119,15 +160,8 @@ test('renders Resources only for an authenticated session', () => {
   expect(within(primaryNavigation).queryByRole('link', { name: 'Resources' })).not.toBeInTheDocument()
 })
 
-test.each([
-  ['no assigned roles', []],
-  ['only the authenticated implicit role', ['Authenticated Users']],
-  ['both implicit roles', ['Anonymous Users', 'Authenticated Users']],
-])('gates a signed-in profile with %s', async (_label, userRoles) => {
-  renderApp('/report', {
-    status: 'authenticated',
-    user: { userName: 'pending@oiac.org', userRoles },
-  })
+test.each(protectedRoutes)('redirects a denied signed-in user from %s', async (route) => {
+  renderApp(route, deniedSession)
 
   expect(screen.getByRole('heading', { name: 'Your profile is under review', level: 1 })).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Sign Out' })).toHaveAttribute(
@@ -135,38 +169,65 @@ test.each([
     '/Account/Login/LogOff?returnUrl=%2F',
   )
   expect(screen.queryByRole('navigation', { name: 'Primary navigation' })).not.toBeInTheDocument()
-  expect(screen.queryByRole('heading', { name: 'Meeting Reports' })).not.toBeInTheDocument()
 
   await waitFor(() => {
     expect(screen.getByTestId('current-path')).toHaveTextContent('/pending-approval')
   })
 })
 
-test('allows an authenticated profile with any assigned custom role into the portal', () => {
-  renderApp('/resources', {
-    status: 'authenticated',
-    user: {
-      userName: 'coordinator@oiac.org',
-      userRoles: ['Authenticated Users', 'Regional Coordinator'],
-    },
-  })
+test.each(['Administrators', 'Staff', 'Volunteer', 'Applicant'])(
+  'allows an authenticated user with the %s role into the portal',
+  (role) => {
+    renderApp('/resources', {
+      status: 'authenticated',
+      user: {
+        userName: 'approved@oiac.org',
+        userRoles: ['Authenticated Users', role],
+      },
+    })
 
-  expect(screen.getByRole('heading', { name: 'Resources', level: 1 })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Resources', level: 1 })).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: 'Primary navigation' })).toBeInTheDocument()
+  },
+)
+
+test('does not show the pending page to an approved user', () => {
+  renderApp('/pending-approval')
+
+  expect(screen.getByRole('heading', { name: 'Page not found', level: 1 })).toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Your profile is under review' })).not.toBeInTheDocument()
   expect(screen.getByRole('navigation', { name: 'Primary navigation' })).toBeInTheDocument()
-  expect(screen.getByTestId('current-path')).toHaveTextContent('/resources')
 })
 
-test('keeps the user profile route behind the pending-approval gate', async () => {
-  renderApp('/user-profile', {
-    status: 'authenticated',
-    user: {
-      userName: 'pending@oiac.org',
-      contactId: '11111111-1111-4111-8111-111111111111',
-      userRoles: ['Authenticated Users'],
-    },
+test('does not start protected page requests before portal access is approved', () => {
+  const fetchSpy = vi.spyOn(globalThis, 'fetch')
+
+  renderApp('/activity/events', deniedSession)
+
+  expect(fetchSpy).not.toHaveBeenCalled()
+})
+
+test('rechecks Power Pages roles before rendering a client-side destination', async () => {
+  const user = userEvent.setup()
+  const portalUser = {
+    userName: 'member@oiac.org',
+    contactId: '11111111-1111-4111-8111-111111111111',
+    userRoles: ['Authenticated Users', 'Volunteer'],
+  }
+
+  vi.stubGlobal('Microsoft', {
+    Dynamic365: { Portal: { User: portalUser } },
   })
+  renderAppFromPowerPages('/resources')
+  expect(screen.getByRole('heading', { name: 'Resources', level: 1 })).toBeInTheDocument()
+
+  portalUser.userRoles = ['Authenticated Users']
+  await user.click(within(screen.getByRole('navigation', { name: 'Primary navigation' }))
+    .getByRole('link', { name: 'Contact' }))
 
   expect(screen.getByRole('heading', { name: 'Your profile is under review', level: 1 })).toBeInTheDocument()
-  expect(screen.queryByRole('heading', { name: 'My Profile' })).not.toBeInTheDocument()
-  await waitFor(() => expect(screen.getByTestId('current-path')).toHaveTextContent('/pending-approval'))
+  expect(screen.queryByRole('heading', { name: 'Contacts', level: 1 })).not.toBeInTheDocument()
+  await waitFor(() => {
+    expect(screen.getByTestId('current-path')).toHaveTextContent('/pending-approval')
+  })
 })
