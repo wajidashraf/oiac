@@ -29,7 +29,7 @@ Add a dedicated, deployable JavaScript web file and load it only from the existi
 
 ### Pending Registration Profile
 
-Immediately before a valid native registration submit, store a versioned pending payload in `sessionStorage`. It contains trimmed First Name, trimmed Last Name, the registration Email or Username identifier, and a creation timestamp. It contains no password, token, role, or Contact identifier.
+Immediately before a valid native registration submit, store a versioned pending payload in `sessionStorage`. It contains trimmed First Name, trimmed Last Name, the registration Email and Username identifiers when those native controls are present, and a creation timestamp. It contains no password, token, role, or Contact identifier.
 
 The payload is scoped to the current browser tab and expires after 30 minutes. If the native registration page re-renders because Power Pages rejected another field, the script restores the name inputs from the pending payload so the user does not need to type them again.
 
@@ -39,7 +39,7 @@ Before the authenticated SPA renders its normal portal-role boundary, a registra
 
 1. Ignore and remove malformed or expired payloads.
 2. Require an authenticated session with a valid `contactId`.
-3. When the pending identifier is an email address, require it to match the authenticated username case-insensitively before updating anything.
+3. Require the authenticated username to match either the pending Email or Username case-insensitively before updating anything. This supports both native local-login modes without changing the site's authentication configuration.
 4. PATCH only `firstname` and `lastname` on `/_api/contacts(<contactId>)` through the existing CSRF-aware client.
 5. Clear the pending payload only after a successful update.
 6. Refresh the in-memory session name values for the current page.
