@@ -3,6 +3,7 @@ import { hasRole } from './auth/authorization'
 import { readPowerPagesSession, type AuthSession } from './auth/powerPagesSession'
 import AnonymousShell from './components/AnonymousShell'
 import AppShell from './components/AppShell'
+import RegistrationProfileGate from './components/RegistrationProfileGate'
 import RequirePortalRole from './components/RequirePortalRole'
 import type { ExternalNavigate } from './components/SignInRedirect'
 import AnonymousHome from './pages/AnonymousHome'
@@ -37,29 +38,41 @@ export default function App({ session: suppliedSession }: AppProps) {
   }
 
   return (
-    <RequirePortalRole session={session}>
-      <AppShell user={session.user}>
-        <Routes>
-          <Route path="/" element={<Home contactId={session.user.contactId} />} />
-          <Route path="/my-reports" element={<MyReports />} />
-          <Route path="/my-calendar" element={<MyCalendar contactId={session.user.contactId} />} />
-          <Route path="/contact" element={<Contact user={session.user} />} />
-          <Route path="/user-profile" element={<UserProfile user={session.user} />} />
-          <Route path="/activity" element={<Navigate to="/activity/events" replace />} />
-          {/* <Route path="/activity/activity-log" element={<ActivityLog />} /> */}
-          <Route
-            path="/activity/events"
-            element={<Events isAdmin={hasRole(session, 'Administrators')} contactId={session.user.contactId} />}
-          />
-          {/* <Route path="/activity/appointments" element={<Appointments />} /> */}
-          {/* <Route path="/press-coverage" element={<PressCoverage />} /> */}
-          <Route path="/report" element={<Report />} />
-          <Route path="/report/new" element={<MeetingReportForm user={session.user} />} />
-          <Route path="/report/:reportId/edit" element={<MeetingReportForm user={session.user} />} />
-          <Route path="/resources" element={<Resources />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </AppShell>
-    </RequirePortalRole>
+    <RegistrationProfileGate
+      key={`${session.user.userName}|${session.user.contactId ?? ''}`}
+      session={session}
+    >
+      {(completedSession) => (
+        <RequirePortalRole session={completedSession}>
+          <AppShell user={completedSession.user}>
+            <Routes>
+              <Route path="/" element={<Home contactId={completedSession.user.contactId} />} />
+              <Route path="/my-reports" element={<MyReports />} />
+              <Route path="/my-calendar" element={<MyCalendar contactId={completedSession.user.contactId} />} />
+              <Route path="/contact" element={<Contact user={completedSession.user} />} />
+              <Route path="/user-profile" element={<UserProfile user={completedSession.user} />} />
+              <Route path="/activity" element={<Navigate to="/activity/events" replace />} />
+              {/* <Route path="/activity/activity-log" element={<ActivityLog />} /> */}
+              <Route
+                path="/activity/events"
+                element={(
+                  <Events
+                    isAdmin={hasRole(completedSession, 'Administrators')}
+                    contactId={completedSession.user.contactId}
+                  />
+                )}
+              />
+              {/* <Route path="/activity/appointments" element={<Appointments />} /> */}
+              {/* <Route path="/press-coverage" element={<PressCoverage />} /> */}
+              <Route path="/report" element={<Report />} />
+              <Route path="/report/new" element={<MeetingReportForm user={completedSession.user} />} />
+              <Route path="/report/:reportId/edit" element={<MeetingReportForm user={completedSession.user} />} />
+              <Route path="/resources" element={<Resources />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AppShell>
+        </RequirePortalRole>
+      )}
+    </RegistrationProfileGate>
   )
 }

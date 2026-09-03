@@ -1,9 +1,12 @@
+import { StrictMode } from 'react'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
-import { afterEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import App from './App'
 import type { AuthSession } from './auth/powerPagesSession'
+import { REGISTRATION_PROFILE_STORAGE_KEY } from './features/registrationProfile/registrationProfile'
+import { clearPowerPagesRequestVerificationToken } from './shared/powerPagesApi'
 
 const authenticatedSession: AuthSession = {
   status: 'authenticated',
@@ -43,10 +46,28 @@ const deniedSession: AuthSession = {
   },
 }
 
+beforeEach(() => {
+  sessionStorage.clear()
+  clearPowerPagesRequestVerificationToken()
+})
+
 afterEach(() => {
+  sessionStorage.clear()
+  clearPowerPagesRequestVerificationToken()
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
 })
+
+function storePendingRegistrationProfile(): void {
+  sessionStorage.setItem(REGISTRATION_PROFILE_STORAGE_KEY, JSON.stringify({
+    version: 1,
+    firstName: 'Ada',
+    lastName: 'Lovelace',
+    email: deniedSession.status === 'authenticated' ? deniedSession.user.userName : '',
+    username: '',
+    createdAt: Date.now(),
+  }))
+}
 
 function LocationProbe() {
   const location = useLocation()
@@ -205,6 +226,156 @@ test('does not start protected page requests before portal access is approved', 
   renderApp('/activity/events', deniedSession)
 
   expect(fetchSpy).not.toHaveBeenCalled()
+})
+
+test('blocks every route while the newly registered Contact profile is being completed', async () => {
+  storePendingRegistrationProfile()
+  let resolveContactUpdate!: (response: Response) => void
+  const contactUpdate = new Promise<Response>((resolve) => {
+    resolveContactUpdate = resolve
+  })
+  const fetchMock = vi.fn((input: RequestInfo | URL) => {
+    const path = String(input)
+    if (path === '/_layout/tokenhtml') {
+      return Promise.resolve(new Response(
+        '<input name="__RequestVerificationToken" value="verification-token">',
+        { status: 200 },
+      ))
+    }
+    if (path.startsWith('/_api/contacts(')) return contactUpdate
+    return Promise.reject(new Error(`Unexpected request: ${path}`))
+  })
+  vi.stubGlobal('fetch', fetchMock)
+
+  renderApp('/resources', deniedSession)
+
+  expect(screen.getByRole('heading', { name: 'Completing your profile', level: 1 })).toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Your profile is under review' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Resources' })).not.toBeInTheDocument()
+  await waitFor(() => {
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/_api/contacts(11111111-1111-4111-8111-111111111111)',
+      expect.objectContaining({ method: 'PATCH' }),
+    )
+  })
+
+  resolveContactUpdate(new Response(null, { status: 204 }))
+
+  expect(await screen.findByRole('heading', {
+    name: 'Your profile is under review',
+    level: 1,
+  })).toBeInTheDocument()
+  expect(sessionStorage.getItem(REGISTRATION_PROFILE_STORAGE_KEY)).toBeNull()
+})
+
+test('keeps routing blocked after a profile update error and retries successfully', async () => {
+  storePendingRegistrationProfile()
+  const contactResponses = [
+    new Response(JSON.stringify({ error: { message: 'Dataverse unavailable' } }), {
+      status: 503,
+      headers: { 'Content-Type': 'application/json' },
+    }),
+    new Response(null, { status: 204 }),
+  ]
+  const fetchMock = vi.fn((input: RequestInfo | URL) => {
+    const path = String(input)
+    if (path === '/_layout/tokenhtml') {
+      return Promise.resolve(new Response(
+        '<input name="__RequestVerificationToken" value="verification-token">',
+        { status: 200 },
+      ))
+    }
+    if (path.startsWith('/_api/contacts(')) return Promise.resolve(contactResponses.shift()!)
+    return Promise.reject(new Error(`Unexpected request: ${path}`))
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  const user = userEvent.setup()
+
+  renderApp('/resources', deniedSession)
+
+  expect(await screen.findByRole('heading', {
+    name: 'We couldn’t finish your profile',
+    level: 1,
+  })).toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Your profile is under review' })).not.toBeInTheDocument()
+  expect(sessionStorage.getItem(REGISTRATION_PROFILE_STORAGE_KEY)).not.toBeNull()
+
+  await user.click(screen.getByRole('button', { name: 'Retry' }))
+
+  expect(await screen.findByRole('heading', {
+    name: 'Your profile is under review',
+    level: 1,
+  })).toBeInTheDocument()
+  expect(fetchMock.mock.calls.filter(([input]) => String(input).startsWith('/_api/contacts('))).toHaveLength(2)
+})
+
+test('releases routing when a failed pending profile expires before Retry', async () => {
+  storePendingRegistrationProfile()
+  const fetchMock = vi.fn((input: RequestInfo | URL) => {
+    const path = String(input)
+    if (path === '/_layout/tokenhtml') {
+      return Promise.resolve(new Response(
+        '<input name="__RequestVerificationToken" value="verification-token">',
+        { status: 200 },
+      ))
+    }
+    if (path.startsWith('/_api/contacts(')) {
+      return Promise.resolve(new Response(null, { status: 503 }))
+    }
+    return Promise.reject(new Error(`Unexpected request: ${path}`))
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  const user = userEvent.setup()
+
+  renderApp('/resources', deniedSession)
+  expect(await screen.findByRole('heading', {
+    name: 'We couldn’t finish your profile',
+    level: 1,
+  })).toBeInTheDocument()
+
+  const pending = JSON.parse(sessionStorage.getItem(REGISTRATION_PROFILE_STORAGE_KEY)!)
+  sessionStorage.setItem(REGISTRATION_PROFILE_STORAGE_KEY, JSON.stringify({
+    ...pending,
+    createdAt: Date.now() - (31 * 60 * 1000),
+  }))
+  await user.click(screen.getByRole('button', { name: 'Retry' }))
+
+  expect(await screen.findByRole('heading', {
+    name: 'Your profile is under review',
+    level: 1,
+  })).toBeInTheDocument()
+  expect(sessionStorage.getItem(REGISTRATION_PROFILE_STORAGE_KEY)).toBeNull()
+  expect(fetchMock.mock.calls.filter(([input]) => String(input).startsWith('/_api/contacts('))).toHaveLength(1)
+})
+
+test('starts only one Contact update when React Strict Mode replays effects', async () => {
+  storePendingRegistrationProfile()
+  const fetchMock = vi.fn((input: RequestInfo | URL) => {
+    const path = String(input)
+    if (path === '/_layout/tokenhtml') {
+      return Promise.resolve(new Response(
+        '<input name="__RequestVerificationToken" value="verification-token">',
+        { status: 200 },
+      ))
+    }
+    if (path.startsWith('/_api/contacts(')) return Promise.resolve(new Response(null, { status: 204 }))
+    return Promise.reject(new Error(`Unexpected request: ${path}`))
+  })
+  vi.stubGlobal('fetch', fetchMock)
+
+  render(
+    <StrictMode>
+      <MemoryRouter initialEntries={['/resources']}>
+        <App session={deniedSession} />
+      </MemoryRouter>
+    </StrictMode>,
+  )
+
+  expect(await screen.findByRole('heading', {
+    name: 'Your profile is under review',
+    level: 1,
+  })).toBeInTheDocument()
+  expect(fetchMock.mock.calls.filter(([input]) => String(input).startsWith('/_api/contacts('))).toHaveLength(1)
 })
 
 test('rechecks Power Pages roles before rendering a client-side destination', async () => {
