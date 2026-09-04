@@ -173,7 +173,9 @@
         return
       }
 
-      var usernameInput = document.getElementById('UsernameTextBox')
+      var usernameInput =
+        document.getElementById('UserNameTextBox') ||
+        document.getElementById('UsernameTextBox')
       var payload = {
         version: PAYLOAD_VERSION,
         firstName: firstName.input.value.trim(),

@@ -1,15 +1,15 @@
 adx_serverlogic:
 - RecordId: 1e6a785b-2c41-4128-b312-b60c4c8e4c3c
   DisplayName: 1e6a785b-2c41-4128-b312-b60c4c8e4c3c
-  CheckSum: 
+  CheckSum:
   IsDeleted: true
 - RecordId: 73b1f407-b4e9-4f4a-8b1a-9fee9edbf1e5
   DisplayName: 73b1f407-b4e9-4f4a-8b1a-9fee9edbf1e5
-  CheckSum: 
+  CheckSum:
   IsDeleted: true
 - RecordId: e548ece6-d9e7-4702-ae51-2189ca25d812
   DisplayName: e548ece6-d9e7-4702-ae51-2189ca25d812
-  CheckSum: 
+  CheckSum:
   IsDeleted: true
 adx_serverlogic_adx_webrole:
 - RecordId: 6ec72c3e-4f1b-420f-9565-d20047b12c1f
@@ -61,6 +61,10 @@ adx_webfile:
   DisplayName: index-BtE8J3xK.js
   CheckSum: 
   IsDeleted: true
+- RecordId: 4f5705ec-541a-411f-82f5-0a9a39c2e3b2
+  DisplayName: index-DWadqE-W.js
+  CheckSum:
+  IsDeleted: true
 - RecordId: 580e5fb2-e77c-4053-a449-cd75194d3239
   DisplayName: index-Ca07T5eO.js
   CheckSum: 
@@ -68,6 +72,10 @@ adx_webfile:
 - RecordId: 5f2bd069-f209-4431-9aca-48354d373c41
   DisplayName: index-BmDFhVLv.js
   CheckSum: 
+  IsDeleted: true
+- RecordId: 6051e4f0-dca2-4401-bbc8-960a55eceb07
+  DisplayName: index-DYGkLvVC.css
+  CheckSum:
   IsDeleted: true
 - RecordId: 667e7142-0092-441a-8a2f-7c498c2ed024
   DisplayName: index-Vc-tUEFz.css

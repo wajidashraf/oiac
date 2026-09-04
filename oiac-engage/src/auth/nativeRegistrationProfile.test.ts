@@ -26,8 +26,8 @@ function renderNativeRegistrationForm(): HTMLFormElement {
         <div><input id="EmailTextBox" name="EmailTextBox" type="email"></div>
       </div>
       <div class="row mb-3">
-        <label for="UsernameTextBox">Username</label>
-        <div><input id="UsernameTextBox" name="UsernameTextBox"></div>
+        <label for="UserNameTextBox">Username</label>
+        <div><input id="UserNameTextBox" name="UserNameTextBox"></div>
       </div>
       <div class="row mb-3">
         <label for="PasswordTextBox">Password</label>
@@ -69,7 +69,7 @@ describe('native Power Pages registration profile fields', () => {
     expect(metadata).toContain('mimetype: application/javascript')
     expect(metadata).toContain('partialurl: registration-profile.js')
     expect(header).toContain("auth_path == '/account/login/register'")
-    expect(header).toContain('<script src="/registration-profile.js?v=1" defer></script>')
+    expect(header).toContain('<script src="/registration-profile.js?v=2" defer></script>')
   })
 
   test('inserts First Name and Last Name immediately before Email', () => {
@@ -140,7 +140,7 @@ describe('native Power Pages registration profile fields', () => {
     document.querySelector<HTMLInputElement>('#RegistrationFirstName')!.value = '  Ada  '
     document.querySelector<HTMLInputElement>('#RegistrationLastName')!.value = '  Lovelace '
     document.querySelector<HTMLInputElement>('#EmailTextBox')!.value = 'ada@example.org'
-    document.querySelector<HTMLInputElement>('#UsernameTextBox')!.value = 'ada.lovelace'
+    document.querySelector<HTMLInputElement>('#UserNameTextBox')!.value = 'ada.lovelace'
     document.querySelector<HTMLInputElement>('#PasswordTextBox')!.value = 'do-not-store-this'
 
     const event = new Event('submit', { bubbles: true, cancelable: true })
