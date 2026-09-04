@@ -62,14 +62,14 @@ afterEach(() => {
 })
 
 describe('native Power Pages registration profile fields', () => {
-  test('is deployed and loaded only on the exact native registration route', () => {
+  test('is deployed when the native registration path has runtime suffixes', () => {
     const metadata = registrationAssets[metadataPath]
 
     expect(metadata).toContain('filename: registration-profile.js')
     expect(metadata).toContain('mimetype: application/javascript')
     expect(metadata).toContain('partialurl: registration-profile.js')
-    expect(header).toContain("auth_path == '/account/login/register'")
-    expect(header).toContain('<script src="/registration-profile.js?v=2" defer></script>')
+    expect(header).toContain("auth_path contains '/account/login/register'")
+    expect(header).toContain('<script src="/registration-profile.js?v=3" defer></script>')
   })
 
   test('inserts First Name and Last Name immediately before Email', () => {
