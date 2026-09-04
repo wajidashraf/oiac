@@ -2690,6 +2690,113 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 
 .page--report-form .report-form__notice svg { width: 1rem; height: 1rem; flex: none; }
 
+.page--report-form .meeting-report-attachments { display: grid; min-width: 0; gap: 0.65rem; }
+
+.page--report-form .meeting-report-attachments__label { color: var(--color-text); font-size: 0.78rem; font-weight: 700; }
+
+.page--report-form .meeting-report-attachments__help { margin: -0.2rem 0 0; color: var(--color-text-muted); font-size: 0.72rem; line-height: 1.5; }
+
+.page--report-form .meeting-report-attachments__picker {
+  position: relative;
+  display: flex;
+  min-height: 4.25rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  border: 1px dashed #a9bfbb;
+  border-radius: var(--radius-md);
+  background: #f8faf9;
+  color: var(--color-primary-strong);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.8rem;
+}
+
+.page--report-form .meeting-report-attachments__picker:hover { border-color: var(--color-primary); background: var(--color-primary-soft); }
+
+.page--report-form .meeting-report-attachments__picker:focus-within { outline: 3px solid rgb(60 92 87 / 24%); outline-offset: 2px; }
+
+.page--report-form .meeting-report-attachments__picker > svg { width: 1.15rem; height: 1.15rem; }
+
+.page--report-form .meeting-report-attachments__picker > input {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  cursor: pointer;
+  inset: 0;
+  opacity: 0;
+}
+
+.page--report-form .meeting-report-attachments__picker:has(input:disabled) { cursor: not-allowed; opacity: 0.65; }
+
+.page--report-form .meeting-report-attachments__picker > input:disabled { cursor: not-allowed; }
+
+.page--report-form .meeting-report-attachments__errors { border-radius: var(--radius-sm); background: #fae8ea; color: var(--color-danger); font-size: 0.75rem; padding: 0.65rem 0.8rem; }
+
+.page--report-form .meeting-report-attachments__errors ul { display: grid; gap: 0.25rem; margin: 0; padding-left: 1.1rem; }
+
+.page--report-form .meeting-report-attachments__group { display: grid; gap: 0.45rem; margin-top: 0.25rem; }
+
+.page--report-form .meeting-report-attachments__group h3 { margin: 0; color: var(--color-text); font-size: 0.76rem; }
+
+.page--report-form .meeting-report-attachments__list { display: grid; gap: 0.45rem; margin: 0; list-style: none; padding: 0; }
+
+.page--report-form .meeting-report-attachments__item {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  padding: 0.45rem 0.55rem;
+}
+
+.page--report-form .meeting-report-attachments__item > svg { width: 1rem; height: 1rem; flex: none; color: var(--color-primary); }
+
+.page--report-form .meeting-report-attachments__meta { display: grid; min-width: 0; flex: 1; gap: 0.08rem; }
+
+.page--report-form .meeting-report-attachments__meta strong { overflow: hidden; color: var(--color-text); font-size: 0.78rem; text-overflow: ellipsis; white-space: nowrap; }
+
+.page--report-form .meeting-report-attachments__meta small { color: var(--color-text-muted); font-size: 0.68rem; }
+
+.page--report-form .meeting-report-attachments__actions { display: flex; align-items: center; gap: 0.25rem; }
+
+.page--report-form .meeting-report-attachments__item button,
+.page--report-form .meeting-report-attachments__item a,
+.page--report-form .meeting-report-attachments__state button {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-primary-strong);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.35rem 0.55rem;
+}
+
+.page--report-form .meeting-report-attachments__item button:hover,
+.page--report-form .meeting-report-attachments__item a:hover,
+.page--report-form .meeting-report-attachments__state button:hover { background: var(--color-primary-soft); }
+
+.page--report-form .meeting-report-attachments__item button:disabled,
+.page--report-form .meeting-report-attachments__state button:disabled { cursor: not-allowed; opacity: 0.6; }
+
+.page--report-form .meeting-report-attachments__item button svg,
+.page--report-form .meeting-report-attachments__item a svg { width: 0.9rem; height: 0.9rem; }
+
+.page--report-form .meeting-report-attachments__state { margin: 0; border-radius: var(--radius-sm); background: #f5f7f6; color: var(--color-text-muted); font-size: 0.74rem; padding: 0.65rem 0.75rem; }
+
+.page--report-form .meeting-report-attachments__state--error { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; color: var(--color-danger); }
+
 .required-mark { color: var(--color-danger); }
 
 .report-form__actions { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-top: 1.7rem; }
@@ -2971,6 +3078,9 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   .report-page__state.form-alert { align-items: stretch; flex-direction: column; }
   .page--report-form .meeting-report-lookup__options,
   .page--report-form .meeting-report-lookup__multi-panel { position: static; max-height: 16rem; }
+  .page--report-form .meeting-report-attachments__item { align-items: flex-start; flex-wrap: wrap; }
+  .page--report-form .meeting-report-attachments__actions { width: 100%; justify-content: flex-end; }
+  .page--report-form .meeting-report-attachments__state--error { align-items: stretch; flex-direction: column; }
   .report-form__cancel { margin-left: 0; }
   .summary-strip { grid-template-columns: 1fr; }
   .contact-layout { grid-template-columns: 1fr; }
