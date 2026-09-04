@@ -260,7 +260,7 @@ Collects:
 
 The staff-said narrative is validated again before submission. The service also validates required values, the date-time range, and GUID formats before creating the Dataverse payload, so invalid identifiers cannot be inserted into OData binding paths.
 
-The document picker accepts up to 10 files of 10 MB each. Empty files and duplicate names are rejected. File names may contain ASCII letters, digits, spaces, hyphens, underscores, and parentheses, followed by one alphanumeric extension. Leading or trailing spaces, extra dots, and other punctuation are rejected. Examples such as `Meeting Notes_2026.pdf` and `report(1).pdf` are valid. Validation runs immediately in the browser, before any flow request.
+The document picker accepts up to 10 files of 10 MB each and 70 MB combined raw file content. Empty files and duplicate names are rejected. File names may contain ASCII letters, digits, spaces, hyphens, underscores, and parentheses, followed by one alphanumeric extension. Leading or trailing spaces, extra dots, and other punctuation are rejected. Examples such as `Meeting Notes_2026.pdf` and `report(1).pdf` are valid. Validation runs immediately in the browser, before any flow request.
 
 ## 8. Meeting Report field mapping
 
@@ -294,7 +294,7 @@ The final create process is:
 5. Read the new Meeting Report GUID from the response `entityid` header.
 6. Build one add operation for each selected Staff and Volunteer Contact.
 7. Execute the many-to-many relationship operations.
-8. Upload each selected file sequentially through the flow's `upload` operation, passing the new Meeting Report GUID.
+8. Send all selected files in one flow `upload` request, passing the new Meeting Report GUID and a stable `clientFileId` for every file. Process the per-file results and retain only failed files for retry.
 9. If all operations succeed, navigate to `/report` with a `reportSaved` success state.
 
 The main report must exist before N:N links or attachments can be created because each downstream request needs the new Meeting Report GUID.
@@ -308,7 +308,7 @@ The update process is:
 3. `PATCH /_api/mss_meetingreports(<report-guid>)` with the updated main fields. The owner binding is intentionally not changed during update.
 4. Compare the original and newly selected Contact sets.
 5. Add newly selected relationships and remove deselected relationships.
-6. Upload each newly selected file sequentially through the flow's `upload` operation.
+6. Send all newly selected files in one flow `upload` request and process its per-`clientFileId` results, retaining only failed files for retry.
 7. Navigate to `/report` with a `reportUpdated` success state after all operations succeed.
 
 The Contact-scoped report permission provides read and write access only when the report is related to the logged-in Contact through `Reported By`.
@@ -449,7 +449,7 @@ The current implementation includes:
 - Retry for failed profile/list requests.
 - Retry of only failed N:N operations.
 - Frontend filename, size, count, empty-file, and duplicate-name validation.
-- Sequential per-file upload after the report and relationship stages succeed.
+- One batch upload request containing all selected files after the report and relationship stages succeed.
 - Upload-only retry that retains only failed files and does not repeat report persistence.
 - Edit-only attachment listing with request cancellation and a focused retry state.
 - Confirmation before attachment deletion; failed deletion leaves the item available.

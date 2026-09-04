@@ -40,6 +40,7 @@ test('provides a multiple file input and forwards each selected file', async () 
   expect(input).toHaveAttribute('type', 'file')
   expect(input).toHaveAttribute('name', 'documentsProvided')
   expect(input).toHaveAttribute('multiple')
+  expect(screen.getByText(/70 MB combined/)).toBeInTheDocument()
   await actor.upload(input, [selectedFile, secondFile])
 
   expect(onFilesSelected).toHaveBeenCalledWith([selectedFile, secondFile])

@@ -19,7 +19,7 @@ import { MultiContactLookup } from '../features/meetingReports/MultiContactLooku
 import {
   deleteMeetingReportAttachment,
   listMeetingReportAttachments,
-  uploadMeetingReportAttachment,
+  uploadMeetingReportAttachments,
   validateAndMergeAttachmentFiles,
   type MeetingReportAttachment,
 } from '../features/meetingReports/meetingReportAttachmentService'
@@ -117,6 +117,7 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
   const endDateTimeInput = useRef<HTMLInputElement>(null)
   const originalRelationships = useRef<RelationshipSelection>({ staffIds: [], volunteerIds: [] })
   const submitLock = useRef(false)
+  const attachmentListRequestId = useRef(0)
 
   useEffect(() => {
     document.title = `${isEdit ? 'Edit' : 'New'} Meeting Report — OIAC Engage`
@@ -192,15 +193,16 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
       return
     }
     const controller = new AbortController()
+    const requestId = ++attachmentListRequestId.current
     setAttachmentListStatus('loading')
     listMeetingReportAttachments(persistedReportId, controller.signal)
       .then((attachments) => {
-        if (controller.signal.aborted) return
+        if (controller.signal.aborted || requestId !== attachmentListRequestId.current) return
         setExistingAttachments(attachments)
         setAttachmentListStatus('ready')
       })
       .catch(() => {
-        if (!controller.signal.aborted) setAttachmentListStatus('error')
+        if (!controller.signal.aborted && requestId === attachmentListRequestId.current) setAttachmentListStatus('error')
       })
     return () => controller.abort()
   }, [attachmentListRetry, isEdit, loadStatus, persistedReportId])
@@ -263,18 +265,27 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
   }
 
   async function uploadFiles(reportIdentifier: string, files: readonly File[]): Promise<readonly File[]> {
-    const failures: File[] = []
-    for (const file of files) {
-      try {
-        const attachment = await uploadMeetingReportAttachment(reportIdentifier, file)
-        setExistingAttachments((current) => [...current, attachment])
-      } catch {
-        failures.push(file)
-      }
+    if (files.length === 0) {
+      setSelectedFiles([])
+      setPendingUploadFiles([])
+      return []
     }
-    setSelectedFiles(failures)
-    setPendingUploadFiles(failures)
-    return failures
+
+    try {
+      const result = await uploadMeetingReportAttachments(reportIdentifier, files)
+      if (result.succeededAttachments.length > 0) {
+        setExistingAttachments((current) => [...current, ...result.succeededAttachments])
+      }
+      setSelectedFiles(result.failedFiles)
+      setPendingUploadFiles(result.failedFiles)
+      if (isEdit && result.failedFiles.length > 0) setAttachmentListRetry((current) => current + 1)
+      return result.failedFiles
+    } catch {
+      setSelectedFiles(files)
+      setPendingUploadFiles(files)
+      if (isEdit) setAttachmentListRetry((current) => current + 1)
+      return files
+    }
   }
 
   async function finishUploadsOrShowRetry(reportIdentifier: string, files: readonly File[]): Promise<boolean> {
@@ -353,6 +364,7 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
         setFormError('The report was saved, but some contact links could not be completed. Retry the contact links without creating another report.')
         return
       }
+      attachmentListRequestId.current += 1
       if (!await finishUploadsOrShowRetry(id, selectedFiles)) return
       finishSave()
     } catch (error) {
@@ -381,6 +393,7 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
         return
       }
       setPendingOperations([])
+      attachmentListRequestId.current += 1
       if (!await finishUploadsOrShowRetry(persistedReportId, selectedFiles)) return
       finishSave()
     } catch {

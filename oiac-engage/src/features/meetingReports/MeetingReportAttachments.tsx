@@ -41,7 +41,7 @@ export function MeetingReportAttachments({
     <section className="meeting-report-attachments field field--full" aria-label="Meeting report documents">
       <span className="meeting-report-attachments__label">Documents Provided</span>
       <p className="meeting-report-attachments__help" id={helpId}>
-        Up to 10 files, 10 MB each. File names may use letters, numbers, spaces, hyphens, underscores, and parentheses.
+        Up to 10 files, 10 MB each, and 70 MB combined. File names may use letters, numbers, spaces, hyphens, underscores, and parentheses.
       </p>
       <label className="meeting-report-attachments__picker" htmlFor={inputId}>
         <LuUpload aria-hidden="true" />

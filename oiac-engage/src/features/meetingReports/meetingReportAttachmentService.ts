@@ -5,6 +5,7 @@ export { MEETING_REPORT_ATTACHMENT_FLOW_URL }
 
 export const MAX_ATTACHMENT_FILES = 10
 export const MAX_ATTACHMENT_FILE_SIZE = 10 * 1024 * 1024
+export const MAX_ATTACHMENT_TOTAL_SIZE = 70 * 1024 * 1024
 export const ATTACHMENT_FILE_NAME_PATTERN = /^[A-Za-z0-9_()-](?:[A-Za-z0-9 _()-]*[A-Za-z0-9_()-])?\.[A-Za-z0-9]+$/
 
 const INVALID_FILE_NAME_MESSAGE = 'File names can contain only letters, numbers, spaces, hyphens, underscores, and parentheses, followed by a file extension.'
@@ -21,6 +22,13 @@ export type AttachmentSelectionResult = {
   readonly files: readonly File[]
   readonly errors: readonly string[]
 }
+
+export type AttachmentBatchUploadResult = {
+  readonly succeededAttachments: readonly MeetingReportAttachment[]
+  readonly failedFiles: readonly File[]
+}
+
+const clientFileIds = new WeakMap<File, string>()
 
 export class MeetingReportAttachmentFlowError extends Error {
   readonly status: number | null
@@ -43,6 +51,7 @@ export function validateAndMergeAttachmentFiles(
   const files = [...current]
   const errors: string[] = []
   const names = new Set(current.map((file) => file.name.toLowerCase()))
+  let totalSize = current.reduce((total, file) => total + file.size, 0)
 
   for (const file of incoming) {
     const prefix = `${file.name}: `
@@ -67,8 +76,13 @@ export function validateAndMergeAttachmentFiles(
       errors.push(`${prefix}You can select up to 10 files.`)
       continue
     }
+    if (totalSize + file.size > MAX_ATTACHMENT_TOTAL_SIZE) {
+      errors.push(`${prefix}Combined file size must be 70 MB or smaller.`)
+      continue
+    }
     files.push(file)
     names.add(normalizedName)
+    totalSize += file.size
   }
 
   return { files, errors }
@@ -185,27 +199,71 @@ export async function listMeetingReportAttachments(
   return response.attachments.map(normalizeAttachment)
 }
 
-export async function uploadMeetingReportAttachment(
+function clientFileId(file: File): string {
+  const existing = clientFileIds.get(file)
+  if (existing) return existing
+  const created = crypto.randomUUID()
+  clientFileIds.set(file, created)
+  return created
+}
+
+export async function uploadMeetingReportAttachments(
   meetingReportId: string,
-  file: File,
-): Promise<MeetingReportAttachment> {
+  files: readonly File[],
+): Promise<AttachmentBatchUploadResult> {
   const normalizedReportId = requiredGuid(meetingReportId, 'Meeting Report identifier')
-  const validation = validateAndMergeAttachmentFiles([], [file])
+  if (files.length === 0) throw new Error('Select at least one file to upload.')
+  const validation = validateAndMergeAttachmentFiles([], files)
   if (validation.errors.length > 0) throw new Error(validation.errors[0])
-  const response = object((await callAttachmentFlow({
-    operation: 'upload',
-    meetingReportId: normalizedReportId,
-    file: {
+  const requestFiles = []
+  for (const file of files) {
+    requestFiles.push({
+      clientFileId: clientFileId(file),
       fileName: file.name,
       contentType: file.type || 'application/octet-stream',
       size: file.size,
       contentBase64: await fileToBase64(file),
-    },
-  }, [200, 201])).body)
-  if (!response || !('attachment' in response)) {
+    })
+  }
+  const response = object((await callAttachmentFlow({
+    operation: 'upload',
+    meetingReportId: normalizedReportId,
+    files: requestFiles,
+  }, [200])).body)
+  if (!response || !Array.isArray(response.results) || response.results.length !== files.length) {
     throw new Error('The attachment flow returned an invalid response.')
   }
-  return normalizeAttachment(response.attachment)
+
+  const requestById = new Map(requestFiles.map((requestFile, index) => [
+    requestFile.clientFileId,
+    { file: files[index], fileName: requestFile.fileName },
+  ]))
+  const seen = new Set<string>()
+  const succeededAttachments: MeetingReportAttachment[] = []
+  const failedFiles: File[] = []
+  for (const value of response.results) {
+    const result = object(value)
+    const id = optionalText(result?.clientFileId)
+    const fileName = optionalText(result?.fileName)
+    const request = id ? requestById.get(id) : undefined
+    if (!result || !id || !request || seen.has(id) || fileName !== request.fileName) {
+      throw new Error('The attachment flow returned an invalid response.')
+    }
+    seen.add(id)
+    if (result.status === 'failed') {
+      failedFiles.push(request.file)
+      continue
+    }
+    if (result.status !== 'succeeded') {
+      throw new Error('The attachment flow returned an invalid response.')
+    }
+    const attachment = normalizeAttachment(result.attachment)
+    if (attachment.fileName !== request.fileName) {
+      throw new Error('The attachment flow returned an invalid response.')
+    }
+    succeededAttachments.push(attachment)
+  }
+  return { succeededAttachments, failedFiles }
 }
 
 export async function deleteMeetingReportAttachment(

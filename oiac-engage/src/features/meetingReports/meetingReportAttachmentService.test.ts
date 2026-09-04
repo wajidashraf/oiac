@@ -5,13 +5,14 @@ vi.mock('../../config/flowUrl.js', () => ({
 }))
 import {
   MAX_ATTACHMENT_FILE_SIZE,
+  MAX_ATTACHMENT_TOTAL_SIZE,
   MEETING_REPORT_ATTACHMENT_FLOW_URL,
   MeetingReportAttachmentFlowError,
   deleteMeetingReportAttachment,
   fileToBase64,
   isValidAttachmentFileName,
   listMeetingReportAttachments,
-  uploadMeetingReportAttachment,
+  uploadMeetingReportAttachments,
   validateAndMergeAttachmentFiles,
 } from './meetingReportAttachmentService'
 
@@ -107,6 +108,23 @@ describe('attachment selection validation', () => {
     expect(result.files).toEqual(current)
     expect(result.errors).toEqual(['Extra.txt: You can select up to 10 files.'])
   })
+
+  test('accepts exactly 70 MB and rejects one additional byte', () => {
+    const current = Array.from({ length: 6 }, (_, index) => (
+      { name: `Existing_${index}.pdf`, size: 10 * 1024 * 1024 } as File
+    ))
+    const finalTenMb = { name: 'Final.pdf', size: 10 * 1024 * 1024 } as File
+    const exactLimit = validateAndMergeAttachmentFiles(current, [finalTenMb])
+    const oneByteOver = { name: 'Extra.pdf', size: 1 } as File
+
+    const result = validateAndMergeAttachmentFiles(exactLimit.files, [oneByteOver])
+
+    expect(MAX_ATTACHMENT_TOTAL_SIZE).toBe(70 * 1024 * 1024)
+    expect(exactLimit.files).toEqual([...current, finalTenMb])
+    expect(exactLimit.errors).toEqual([])
+    expect(result.files).toEqual(exactLimit.files)
+    expect(result.errors).toEqual(['Extra.pdf: Combined file size must be 70 MB or smaller.'])
+  })
 })
 
 describe('attachment flow operations', () => {
@@ -136,31 +154,63 @@ describe('attachment flow operations', () => {
     await expect(fileToBase64(file)).resolves.toBe('aGVsbG8=')
   })
 
-  test('uploads one file with the normalized flow payload', async () => {
-    const file = new File(['hello'], 'Meeting Notes.txt', { type: '' })
-    fetchMock.mockResolvedValue(jsonResponse({
-      attachment: attachmentResponse({
-        fileName: 'Meeting Notes.txt',
-        contentType: 'application/octet-stream',
-      }),
-    }, 201))
-
-    await expect(uploadMeetingReportAttachment(reportId, file)).resolves.toMatchObject({
-      attachmentId,
-      fileName: 'Meeting Notes.txt',
+  test('uploads all files in one request and returns per-file outcomes', async () => {
+    const first = new File(['hello'], 'Meeting Notes.txt', { type: '' })
+    const second = new File(['follow'], 'Follow-up.pdf', { type: 'application/pdf' })
+    fetchMock.mockImplementation(async (_url, init) => {
+      const body = JSON.parse(String(init?.body))
+      return jsonResponse({ results: [
+        {
+          clientFileId: body.files[0].clientFileId,
+          fileName: first.name,
+          status: 'succeeded',
+          attachment: attachmentResponse({ fileName: first.name, contentType: 'application/octet-stream' }),
+        },
+        {
+          clientFileId: body.files[1].clientFileId,
+          fileName: second.name,
+          status: 'failed',
+          errorCode: 'SharePointUploadFailed',
+        },
+      ] })
     })
 
+    const result = await uploadMeetingReportAttachments(reportId, [first, second])
+
+    expect(result.succeededAttachments).toHaveLength(1)
+    expect(result.failedFiles).toEqual([second])
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+
     const request = fetchMock.mock.calls[0][1]
-    expect(JSON.parse(String(request?.body))).toEqual({
-      operation: 'upload',
-      meetingReportId: reportId,
-      file: {
+    expect(JSON.parse(String(request?.body))).toEqual(expect.objectContaining({
+      operation: 'upload', meetingReportId: reportId,
+      files: [expect.objectContaining({
         fileName: 'Meeting Notes.txt',
         contentType: 'application/octet-stream',
         size: 5,
         contentBase64: 'aGVsbG8=',
-      },
+        clientFileId: expect.stringMatching(/^[0-9a-f-]{36}$/),
+      }), expect.objectContaining({ fileName: 'Follow-up.pdf' })],
+    }))
+  })
+
+  test('reuses each client file ID when failed files are retried', async () => {
+    const file = new File(['retry'], 'Retry.pdf', { type: 'application/pdf' })
+    const requestIds: string[] = []
+    fetchMock.mockImplementation(async (_url, init) => {
+      const body = JSON.parse(String(init?.body))
+      requestIds.push(body.files[0].clientFileId)
+      return jsonResponse({ results: [{
+        clientFileId: body.files[0].clientFileId,
+        fileName: file.name,
+        status: 'failed',
+      }] })
     })
+
+    await uploadMeetingReportAttachments(reportId, [file])
+    await uploadMeetingReportAttachments(reportId, [file])
+
+    expect(requestIds[0]).toBe(requestIds[1])
   })
 
   test('deletes an attachment and accepts an empty 204 response', async () => {
@@ -190,8 +240,8 @@ describe('attachment flow operations', () => {
     fetchMock.mockResolvedValue(jsonResponse({ attachments: [] }, 201))
     await expect(listMeetingReportAttachments(reportId)).rejects.toMatchObject({ status: 201 })
 
-    fetchMock.mockResolvedValue(jsonResponse({ attachment: attachmentResponse() }, 202))
-    await expect(uploadMeetingReportAttachment(reportId, new File(['hello'], 'Report.pdf')))
+    fetchMock.mockResolvedValue(jsonResponse({ results: [] }, 202))
+    await expect(uploadMeetingReportAttachments(reportId, [new File(['hello'], 'Report.pdf')]))
       .rejects.toMatchObject({ status: 202 })
   })
 
@@ -202,8 +252,8 @@ describe('attachment flow operations', () => {
       'The attachment flow returned an invalid response.',
     )
 
-    fetchMock.mockResolvedValue(jsonResponse({ attachment: { fileName: 'Missing ID.pdf' } }))
-    await expect(uploadMeetingReportAttachment(reportId, new File(['hello'], 'Report.pdf'))).rejects.toThrow(
+    fetchMock.mockResolvedValue(jsonResponse({ results: [] }))
+    await expect(uploadMeetingReportAttachments(reportId, [new File(['hello'], 'Report.pdf')])).rejects.toThrow(
       'The attachment flow returned an invalid response.',
     )
   })
