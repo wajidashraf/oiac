@@ -17,6 +17,7 @@ vite.config.ts.timestamp-*
 .env
 .env.local
 .env*.local
+src/config/flowUrl.js
 
 # Logs
 *.log
