@@ -69,7 +69,7 @@ export function MeetingReportAttachments({
           <h3>Ready to upload</h3>
           <ul className="meeting-report-attachments__list" aria-label="Files selected for upload">
             {selectedFiles.map((file) => (
-              <li className="meeting-report-attachments__item" key={file.name.toLocaleLowerCase()}>
+              <li className="meeting-report-attachments__item" key={file.name.toLowerCase()}>
                 <LuFile aria-hidden="true" />
                 <span className="meeting-report-attachments__meta">
                   <strong>{file.name}</strong>

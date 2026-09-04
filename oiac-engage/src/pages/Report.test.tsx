@@ -291,6 +291,9 @@ test('creates a report and associates selected Staff and Volunteers', async () =
   await actor.click(screen.getByRole('button', { name: 'Submit Report' }))
 
   expect(await screen.findByRole('status', { name: 'Saving report' })).toHaveTextContent('Saving report')
+  const pageBackLabel = screen.getByText('Back', { selector: '.report-page__back > span' })
+  expect(pageBackLabel.parentElement).toHaveAttribute('aria-disabled', 'true')
+  expect(screen.queryByRole('link', { name: 'Back' })).not.toBeInTheDocument()
   expect(createMeetingReport).toHaveBeenCalledWith(expect.objectContaining({
     subject: 'Community briefing', representativeId: representative.id, districtId: district.id,
     startDateTime: '2026-09-01T09:30', endDateTime: '2026-09-01T10:45',
@@ -329,6 +332,8 @@ test('hydrates and updates a report, removing deselected relationships', async (
   await actor.click(screen.getByRole('button', { name: 'Next: Report Content' }))
   expect(screen.getByLabelText(staffSaidLabel)).toHaveValue('Existing issues')
   expect(screen.getByLabelText('Documents Provided')).toHaveAttribute('type', 'file')
+  const editFile = new File(['edit'], 'Edit attachment.pdf', { type: 'application/pdf' })
+  await actor.upload(screen.getByLabelText('Documents Provided'), editFile)
   await actor.click(screen.getByRole('button', { name: 'Update Report' }))
 
   expect(updateMeetingReport).toHaveBeenCalledWith(reportId, expect.objectContaining({
@@ -339,7 +344,11 @@ test('hydrates and updates a report, removing deselected relationships', async (
   expect(runRelationshipOperations).toHaveBeenCalledWith(reportId, [
     { action: 'remove', relationship: 'volunteer', contactId: volunteer.id },
   ])
-  expect(uploadMeetingReportAttachment).not.toHaveBeenCalled()
+  expect(uploadMeetingReportAttachment).toHaveBeenCalledWith(reportId, editFile)
+  expect(vi.mocked(updateMeetingReport).mock.invocationCallOrder[0])
+    .toBeLessThan(vi.mocked(runRelationshipOperations).mock.invocationCallOrder[0])
+  expect(vi.mocked(runRelationshipOperations).mock.invocationCallOrder[0])
+    .toBeLessThan(vi.mocked(uploadMeetingReportAttachment).mock.invocationCallOrder[0])
   expect(await screen.findByRole('status')).toHaveTextContent('Report updated.')
 })
 

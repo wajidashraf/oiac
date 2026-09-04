@@ -42,11 +42,11 @@ export function validateAndMergeAttachmentFiles(
 ): AttachmentSelectionResult {
   const files = [...current]
   const errors: string[] = []
-  const names = new Set(current.map((file) => file.name.toLocaleLowerCase()))
+  const names = new Set(current.map((file) => file.name.toLowerCase()))
 
   for (const file of incoming) {
     const prefix = `${file.name}: `
-    const normalizedName = file.name.toLocaleLowerCase()
+    const normalizedName = file.name.toLowerCase()
     if (!isValidAttachmentFileName(file.name)) {
       errors.push(`${prefix}${INVALID_FILE_NAME_MESSAGE}`)
       continue
@@ -143,8 +143,9 @@ function normalizeAttachment(value: unknown): MeetingReportAttachment {
 
 async function callAttachmentFlow(
   payload: Record<string, unknown>,
+  acceptedStatuses: readonly number[],
   signal?: AbortSignal,
-): Promise<unknown> {
+): Promise<{ readonly status: number; readonly body: unknown }> {
   let response: Response
   try {
     response = await fetch(MEETING_REPORT_ATTACHMENT_FLOW_URL, {
@@ -157,11 +158,13 @@ async function callAttachmentFlow(
     throw new MeetingReportAttachmentFlowError()
   }
 
-  if (!response.ok) throw new MeetingReportAttachmentFlowError(response.status)
-  if (response.status === 204) return null
+  if (!response.ok || !acceptedStatuses.includes(response.status)) {
+    throw new MeetingReportAttachmentFlowError(response.status)
+  }
+  if (response.status === 204) return { status: response.status, body: null }
 
   try {
-    return await response.json()
+    return { status: response.status, body: await response.json() }
   } catch {
     throw new Error('The attachment flow returned an invalid response.')
   }
@@ -172,10 +175,10 @@ export async function listMeetingReportAttachments(
   signal?: AbortSignal,
 ): Promise<readonly MeetingReportAttachment[]> {
   const normalizedReportId = requiredGuid(meetingReportId, 'Meeting Report identifier')
-  const response = object(await callAttachmentFlow({
+  const response = object((await callAttachmentFlow({
     operation: 'list',
     meetingReportId: normalizedReportId,
-  }, signal))
+  }, [200], signal)).body)
   if (!response || !Array.isArray(response.attachments)) {
     throw new Error('The attachment flow returned an invalid response.')
   }
@@ -189,7 +192,7 @@ export async function uploadMeetingReportAttachment(
   const normalizedReportId = requiredGuid(meetingReportId, 'Meeting Report identifier')
   const validation = validateAndMergeAttachmentFiles([], [file])
   if (validation.errors.length > 0) throw new Error(validation.errors[0])
-  const response = object(await callAttachmentFlow({
+  const response = object((await callAttachmentFlow({
     operation: 'upload',
     meetingReportId: normalizedReportId,
     file: {
@@ -198,7 +201,7 @@ export async function uploadMeetingReportAttachment(
       size: file.size,
       contentBase64: await fileToBase64(file),
     },
-  }))
+  }, [200, 201])).body)
   if (!response || !('attachment' in response)) {
     throw new Error('The attachment flow returned an invalid response.')
   }
@@ -209,9 +212,16 @@ export async function deleteMeetingReportAttachment(
   meetingReportId: string,
   attachmentId: string,
 ): Promise<void> {
-  await callAttachmentFlow({
+  const normalizedReportId = requiredGuid(meetingReportId, 'Meeting Report identifier')
+  const normalizedAttachmentId = requiredGuid(attachmentId, 'Attachment identifier')
+  const response = await callAttachmentFlow({
     operation: 'delete',
-    meetingReportId: requiredGuid(meetingReportId, 'Meeting Report identifier'),
-    attachmentId: requiredGuid(attachmentId, 'Attachment identifier'),
-  })
+    meetingReportId: normalizedReportId,
+    attachmentId: normalizedAttachmentId,
+  }, [200, 204])
+  if (response.status === 204) return
+  const body = object(response.body)
+  if (body?.deleted !== true || normalizeGuid(body.attachmentId) !== normalizedAttachmentId) {
+    throw new Error('The attachment flow returned an invalid response.')
+  }
 }

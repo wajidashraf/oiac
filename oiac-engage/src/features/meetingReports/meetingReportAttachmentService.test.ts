@@ -1,4 +1,8 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+
+vi.mock('../../config/flowUrl.js', () => ({
+  MEETING_REPORT_ATTACHMENT_FLOW_URL: 'https://flow.example.test/meeting-report-attachments',
+}))
 import {
   MAX_ATTACHMENT_FILE_SIZE,
   MEETING_REPORT_ATTACHMENT_FLOW_URL,
@@ -171,10 +175,35 @@ describe('attachment flow operations', () => {
     })
   })
 
+  test('validates a successful 200 delete response before accepting it', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ deleted: true, attachmentId }))
+
+    await expect(deleteMeetingReportAttachment(reportId, attachmentId)).resolves.toBeUndefined()
+
+    fetchMock.mockResolvedValue(jsonResponse({ deleted: false, attachmentId }))
+    await expect(deleteMeetingReportAttachment(reportId, attachmentId)).rejects.toThrow(
+      'The attachment flow returned an invalid response.',
+    )
+  })
+
+  test('rejects successful but unsupported operation statuses', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ attachments: [] }, 201))
+    await expect(listMeetingReportAttachments(reportId)).rejects.toMatchObject({ status: 201 })
+
+    fetchMock.mockResolvedValue(jsonResponse({ attachment: attachmentResponse() }, 202))
+    await expect(uploadMeetingReportAttachment(reportId, new File(['hello'], 'Report.pdf')))
+      .rejects.toMatchObject({ status: 202 })
+  })
+
   test('rejects malformed attachment responses', async () => {
     fetchMock.mockResolvedValue(jsonResponse({ attachments: [{ fileName: 'Missing ID.pdf' }] }))
 
     await expect(listMeetingReportAttachments(reportId)).rejects.toThrow(
+      'The attachment flow returned an invalid response.',
+    )
+
+    fetchMock.mockResolvedValue(jsonResponse({ attachment: { fileName: 'Missing ID.pdf' } }))
+    await expect(uploadMeetingReportAttachment(reportId, new File(['hello'], 'Report.pdf'))).rejects.toThrow(
       'The attachment flow returned an invalid response.',
     )
   })

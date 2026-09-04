@@ -2153,6 +2153,8 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 
 .report-page__back:hover { color: var(--color-primary-strong); }
 
+.report-page__back[aria-disabled="true"] { cursor: not-allowed; opacity: 0.55; }
+
 .report-page__header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-6); }
 
 .report-page__header h1 { margin-bottom: 0.45rem; font-size: 1.65rem; font-weight: 600; letter-spacing: -0.01em; }

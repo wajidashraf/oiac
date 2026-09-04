@@ -2,8 +2,8 @@
 
 **Audience:** OIAC Engage Team Lead  
 **System:** React-based Power Pages SPA with Dataverse Web API  
-**Report date:** August 29, 2026  
-**Implementation status:** Implemented and deployed to OIAC Dev
+**Report date:** September 4, 2026
+**Implementation status:** Implemented in the Power Pages SPA; deployment is tracked separately
 
 ## 1. Executive summary
 
@@ -14,12 +14,13 @@ The two primary access rules are:
 1. The Contacts page obtains the logged-in Contact's District and adds that District GUID to every directory query. The page therefore displays Contacts assigned to the same District as the logged-in user.
 2. Meeting Reports are linked to the submitting Contact through the `Reported By` lookup. A Contact-scoped Power Pages table permission uses that relationship to return only reports owned by the logged-in Contact.
 
-Meeting Report submission is a two-part transaction from the SPA's perspective:
+Meeting Report submission is a three-part transaction from the SPA's perspective:
 
 1. Create or update the main `mss_meetingreport` record.
 2. Add or remove Contact relationships for selected OIAC Staff Members and Volunteers through two Dataverse many-to-many relationships.
+3. Upload each selected document through the manually managed Power Automate HTTP flow after the Meeting Report GUID is available.
 
-The application protects this workflow with validation, duplicate prevention, request cancellation, loading states, explicit error handling, and retry logic that retries only failed relationship operations instead of creating a second Meeting Report.
+The application protects this workflow with validation, duplicate prevention, request cancellation, loading states, explicit error handling, and targeted retries. Failed relationship operations and failed file uploads are retried without creating or updating the Meeting Report a second time.
 
 ## 2. Main Dataverse tables and relationships
 
@@ -254,10 +255,12 @@ Collects:
 
 - Write Down What the Staff Said, Not What You Said, required
 - Follow-Up Note (Once the Meeting Ended)
-- Documents Provided, optional single-line text
+- Documents Provided, optional multi-file upload
 - Overall Sentiment
 
 The staff-said narrative is validated again before submission. The service also validates required values, the date-time range, and GUID formats before creating the Dataverse payload, so invalid identifiers cannot be inserted into OData binding paths.
+
+The document picker accepts up to 10 files of 10 MB each. Empty files and duplicate names are rejected. File names may contain ASCII letters, digits, spaces, hyphens, underscores, and parentheses, followed by one alphanumeric extension. Leading or trailing spaces, extra dots, and other punctuation are rejected. Examples such as `Meeting Notes_2026.pdf` and `report(1).pdf` are valid. Validation runs immediately in the browser, before any flow request.
 
 ## 8. Meeting Report field mapping
 
@@ -271,13 +274,14 @@ The staff-said narrative is validated again before submission. The service also 
 | Meeting Format | `mss_meetingformat` |
 | Write Down What the Staff Said, Not What You Said | `mss_writedownwhatthestaffsaidnotwhatyousaid` |
 | Follow-Up Note (Once the Meeting Ended) | `mss_followupnoteoncethemeetingended` |
-| Documents Provided | `mss_documentsprovided` |
 | Overall Sentiment | `mss_overallsentiment` |
 | Logged-in report owner, create only | `mss_Reportedby@odata.bind: /contacts(<logged-in-contact-guid>)` |
 
 The two `datetime-local` form values are interpreted in the user's browser timezone and converted to ISO timestamps for Dataverse. When editing, Dataverse timestamps are converted back to local date-time control values. Legacy `mss_dateofmeeting` values remain readable and are shown as noon on the legacy calendar date; new saves use only the start and end date-time columns.
 
 Meeting Format uses values `1` through `5` for In-person, Microsoft Teams, Phone, District, and Other. Overall Sentiment uses `1` through `5` for Very Supportive, Supportive, Neutral, Non-committal, and Opposed.
+
+`Documents Provided` is no longer read from or written to `mss_documentsprovided`. The existing Dataverse column is retained for compatibility, while file content and attachment-reference records are managed by Power Automate and SharePoint.
 
 ## 9. Create workflow
 
@@ -290,9 +294,10 @@ The final create process is:
 5. Read the new Meeting Report GUID from the response `entityid` header.
 6. Build one add operation for each selected Staff and Volunteer Contact.
 7. Execute the many-to-many relationship operations.
-8. If all operations succeed, navigate to `/report` with a `reportSaved` success state.
+8. Upload each selected file sequentially through the flow's `upload` operation, passing the new Meeting Report GUID.
+9. If all operations succeed, navigate to `/report` with a `reportSaved` success state.
 
-The main report must exist before N:N links can be created because each relationship request needs the new Meeting Report GUID.
+The main report must exist before N:N links or attachments can be created because each downstream request needs the new Meeting Report GUID.
 
 ## 10. Update workflow
 
@@ -303,9 +308,16 @@ The update process is:
 3. `PATCH /_api/mss_meetingreports(<report-guid>)` with the updated main fields. The owner binding is intentionally not changed during update.
 4. Compare the original and newly selected Contact sets.
 5. Add newly selected relationships and remove deselected relationships.
-6. Navigate to `/report` with a `reportUpdated` success state after all operations succeed.
+6. Upload each newly selected file sequentially through the flow's `upload` operation.
+7. Navigate to `/report` with a `reportUpdated` success state after all operations succeed.
 
 The Contact-scoped report permission provides read and write access only when the report is related to the logged-in Contact through `Reported By`.
+
+When an edit form loads, it also calls the flow's `list` operation and displays the returned SharePoint links. Listing failure does not block report editing and has its own retry action. Deleting an existing file requires confirmation and calls the flow's `delete` operation immediately; a failed delete leaves the item visible.
+
+The flow URL is exported by local `src/config/flowUrl.js`. That file is ignored by Git; `src/config/flowUrl.example.js` and `src/config/flowUrl.d.ts` document the expected export without committing the signed endpoint. Because the direct endpoint is compiled into client JavaScript, it is visible to portal users and must be treated as a rotatable client-side credential rather than a server-side secret.
+
+Because the browser calls a different Power Platform origin, the HTTP trigger must allow the deployed portal origin and its `POST`/`OPTIONS` preflight behavior. The built SPA cannot prove this configuration locally. Create/upload, edit/list, SharePoint-link opening, and confirmed delete therefore remain runtime-unverified until the site and flow are deployed together and smoke-tested in a browser with an allowed portal role.
 
 ## 11. Multi-select lookup logic
 
@@ -436,6 +448,11 @@ The current implementation includes:
 - Separate loading, empty, missing-profile, missing-District, and error states.
 - Retry for failed profile/list requests.
 - Retry of only failed N:N operations.
+- Frontend filename, size, count, empty-file, and duplicate-name validation.
+- Sequential per-file upload after the report and relationship stages succeed.
+- Upload-only retry that retains only failed files and does not repeat report persistence.
+- Edit-only attachment listing with request cancellation and a focused retry state.
+- Confirmation before attachment deletion; failed deletion leaves the item available.
 - Sanitized diagnostic console logging.
 - Navigation back to the Meeting Reports list with create/update success feedback.
 
@@ -449,6 +466,10 @@ The current implementation includes:
 | Contacts page UI | `src/pages/Contact.tsx` |
 | Meeting Report API, payloads, retrieval, and relationships | `src/features/meetingReports/meetingReportService.ts` |
 | Meeting Report domain types | `src/features/meetingReports/meetingReportTypes.ts` |
+| Attachment flow client, validation, and request contracts | `src/features/meetingReports/meetingReportAttachmentService.ts` |
+| Attachment picker and existing-file controls | `src/features/meetingReports/MeetingReportAttachments.tsx` |
+| Local ignored flow endpoint | `src/config/flowUrl.js` |
+| Safe flow endpoint template and TypeScript declaration | `src/config/flowUrl.example.js`, `src/config/flowUrl.d.ts` |
 | Shared lookup request lifecycle | `src/features/meetingReports/useMeetingReportLookup.ts` |
 | Single Contact and District lookups | `src/features/meetingReports/ContactLookup.tsx` |
 | Staff and Volunteer multi-select | `src/features/meetingReports/MultiContactLookup.tsx` |
@@ -460,6 +481,6 @@ The current implementation includes:
 
 ## 18. Conclusion
 
-The Meeting Report implementation has a clear server-enforced ownership model: each new report is bound to the authenticated Contact, and Contact-scoped table permission controls later read and update access. Main report data and N:N participant links are intentionally saved in sequence, with targeted retry behavior to avoid duplicate reports.
+The Meeting Report implementation has a clear server-enforced ownership model: each new report is bound to the authenticated Contact, and Contact-scoped table permission controls later read and update access. Main report data, N:N participant links, and SharePoint-backed attachments are intentionally processed in sequence, with targeted retry behavior to avoid duplicate reports or repeated successful operations.
 
 The Contacts page provides the required same-District user experience, server-side search, and continuation pagination. The team should nevertheless treat the global Contact read permission as an explicit security decision. If Contact data must be confidential by District, the globally available reporting lookups should be moved behind a separate table or server-controlled endpoint so the Contact directory can remain securely District-scoped at the Power Pages permission layer.

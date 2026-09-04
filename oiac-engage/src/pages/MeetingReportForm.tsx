@@ -240,7 +240,7 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
   }
 
   function removeSelectedFile(fileName: string) {
-    setSelectedFiles((current) => current.filter((file) => file.name.toLocaleLowerCase() !== fileName.toLocaleLowerCase()))
+    setSelectedFiles((current) => current.filter((file) => file.name.toLowerCase() !== fileName.toLowerCase()))
     setSelectionErrors([])
   }
 
@@ -414,7 +414,11 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
   return (
     <div className="page page--meeting-report page--report-form">
       {isSubmitting ? <LoadingBackdrop label={isEdit ? 'Updating report' : 'Saving report'} /> : null}
-      <Link className="report-page__back" to="/report"><LuChevronLeft aria-hidden="true" /><span>Back</span></Link>
+      {formLocked ? (
+        <span className="report-page__back" aria-disabled="true"><LuChevronLeft aria-hidden="true" /><span>Back</span></span>
+      ) : (
+        <Link className="report-page__back" to="/report"><LuChevronLeft aria-hidden="true" /><span>Back</span></Link>
+      )}
       <header className="report-page__header">
         <div><h1>Meeting Reports</h1><p>Submit and track your congressional and organizational meeting reports.</p></div>
       </header>

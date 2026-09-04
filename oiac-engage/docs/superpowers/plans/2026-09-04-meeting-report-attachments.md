@@ -412,3 +412,16 @@ git commit -m "docs: document meeting report attachments"
 - [ ] **Step 7: Verify runtime after a separate deployment request**
 
 On the deployed site, test create upload, edit list, download, and confirmed delete with an allowed portal role. Confirm browser preflight/POST requests have no CORS errors and responses match the approved contract. Deployment is not part of this implementation plan unless separately requested.
+
+## Implementation record
+
+Completed locally on September 4, 2026:
+
+- Removed the legacy `mss_documentsprovided` SPA mapping.
+- Added the ignored direct-flow configuration contract and typed `list`, `upload`, and `delete` client.
+- Added frontend filename, duplicate, empty-file, 10-file, and 10 MB validation.
+- Added the responsive attachment picker, uploaded-file list, confirmed deletion, and list retry UI.
+- Integrated create/edit persistence ordering and relationship/upload-only retry safety.
+- Verified all focused suites, the complete application suite, and the production build.
+
+Runtime verification remains intentionally pending until a separate deployment request.
