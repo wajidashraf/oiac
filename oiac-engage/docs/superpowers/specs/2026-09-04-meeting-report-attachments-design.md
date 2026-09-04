@@ -16,7 +16,7 @@ The HTTP trigger URL supplied by the user will be used directly from the browser
 
 - Replace `Documents Provided` with an optional file picker labelled `Documents Provided`.
 - Enable the native `multiple` attribute.
-- Allow at most 10 selected files and at most 10 MB per file.
+- Allow at most 10 selected files, at most 10 MB per file, and at most 70 MB of raw file content per upload batch.
 - Do not restrict extensions or MIME types beyond the filename rule below; SharePoint or the flow may apply additional restrictions and report an upload failure.
 - Show each selected file's name and formatted size.
 - Allow a selected file to be removed locally before submission.
@@ -50,7 +50,7 @@ The validation message is:
 File names can contain only letters, numbers, spaces, hyphens, underscores, and parentheses, followed by a file extension.
 ```
 
-The client also rejects empty files, files larger than 10 MB, more than 10 files, and duplicate selected filenames compared case-insensitively. Validation happens when files are selected and is repeated before upload.
+The client also rejects empty files, files larger than 10 MB, more than 10 files, selections whose combined raw size exceeds 70 MB, and duplicate selected filenames compared case-insensitively. Validation happens when files are selected and is repeated before upload. The 70 MB raw limit leaves room for Base64 expansion and JSON overhead under Power Automate's 100 MB message limit.
 
 ## Client-to-flow contract
 
@@ -58,7 +58,7 @@ All flow calls use `POST`, `Content-Type: application/json`, and the same direct
 
 ### Power Automate HTTP trigger schema
 
-Use this JSON schema in **When an HTTP request is received**. The common fields are required by the trigger. Operation-specific requirements are validated in the flow's Switch branches: `file` is required for `upload`, and `attachmentId` is required for `delete`.
+Use this JSON schema in **When an HTTP request is received**. The common fields are required by the trigger. Operation-specific requirements are validated in the flow's Switch branches: `files` is required and non-empty for `upload`, and `attachmentId` is required for `delete`.
 
 ```json
 {
@@ -80,33 +80,43 @@ Use this JSON schema in **When an HTTP request is received**. The common fields 
       "type": "string",
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
     },
-    "file": {
-      "type": "object",
-      "properties": {
-        "fileName": {
-          "type": "string",
-          "pattern": "^[A-Za-z0-9_()-](?:[A-Za-z0-9 _()-]*[A-Za-z0-9_()-])?\\.[A-Za-z0-9]+$"
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "properties": {
+          "clientFileId": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+          },
+          "fileName": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_()-](?:[A-Za-z0-9 _()-]*[A-Za-z0-9_()-])?\\.[A-Za-z0-9]+$"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10485760
+          },
+          "contentBase64": {
+            "type": "string",
+            "minLength": 1
+          }
         },
-        "contentType": {
-          "type": "string"
-        },
-        "size": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 10485760
-        },
-        "contentBase64": {
-          "type": "string",
-          "minLength": 1
-        }
-      },
-      "required": [
-        "fileName",
-        "contentType",
-        "size",
-        "contentBase64"
-      ],
-      "additionalProperties": false
+        "required": [
+          "clientFileId",
+          "fileName",
+          "contentType",
+          "size",
+          "contentBase64"
+        ],
+        "additionalProperties": false
+      }
     }
   },
   "required": [
@@ -148,36 +158,54 @@ Successful response, status 200:
 
 ### Upload operation
 
-The client reads each file as Base64 and sends one request per file, sequentially:
+The client reads all selected files as Base64 and sends one request containing a `files` array. Each `clientFileId` remains stable across retry attempts, and the flow should use the Meeting Report GUID plus `clientFileId` as an idempotency key before creating a SharePoint file or attachment record.
 
 ```json
 {
   "operation": "upload",
   "meetingReportId": "11111111-1111-4111-8111-111111111111",
-  "file": {
-    "fileName": "meeting-notes_2026.pdf",
-    "contentType": "application/pdf",
-    "size": 12345,
-    "contentBase64": "JVBERi0xLjQK..."
-  }
+  "files": [
+    {
+      "clientFileId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "fileName": "meeting-notes_2026.pdf",
+      "contentType": "application/pdf",
+      "size": 12345,
+      "contentBase64": "JVBERi0xLjQK..."
+    }
+  ]
 }
 ```
 
 `contentBase64` contains only the Base64 payload. It does not include a `data:*;base64,` prefix. If the browser does not provide a MIME type, `contentType` is `application/octet-stream`.
 
-Successful response, status 200 or 201:
+The flow continues after individual file failures and returns HTTP 200 with one result for every request item:
 
 ```json
 {
-  "attachment": {
-    "attachmentId": "22222222-2222-4222-8222-222222222222",
-    "fileName": "meeting-notes_2026.pdf",
-    "fileUrl": "https://contoso.sharepoint.com/sites/example/Documents/meeting-notes_2026.pdf",
-    "contentType": "application/pdf",
-    "size": 12345
-  }
+  "results": [
+    {
+      "clientFileId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "fileName": "meeting-notes_2026.pdf",
+      "status": "succeeded",
+      "attachment": {
+        "attachmentId": "22222222-2222-4222-8222-222222222222",
+        "fileName": "meeting-notes_2026.pdf",
+        "fileUrl": "https://contoso.sharepoint.com/sites/example/Documents/meeting-notes_2026.pdf",
+        "contentType": "application/pdf",
+        "size": 12345
+      }
+    },
+    {
+      "clientFileId": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      "fileName": "follow-up.pdf",
+      "status": "failed",
+      "errorCode": "SharePointUploadFailed"
+    }
+  ]
 }
 ```
+
+Every request item must have exactly one response item with the same `clientFileId` and `fileName`. A succeeded item requires `attachment`; a failed item may include a safe `errorCode`. Missing, duplicate, or unknown result IDs make the entire response invalid. If the request itself fails or its result is unknown, the SPA retains all files and retries them with the same IDs; the flow's idempotency check prevents duplicate records.
 
 ### Delete operation
 
@@ -225,14 +253,14 @@ For a new report:
 
 1. Create the Meeting Report and capture its GUID.
 2. Save staff and volunteer relationships.
-3. Upload selected files sequentially.
+3. Upload all selected files in one batch request.
 4. Navigate to the Meeting Reports list only after all stages succeed.
 
 For an existing report:
 
 1. Update the Meeting Report.
 2. Reconcile staff and volunteer relationships.
-3. Upload newly selected files sequentially.
+3. Upload all newly selected files in one batch request.
 4. Navigate to the Meeting Reports list only after all stages succeed.
 
 If one or more uploads fail, the page states that the report itself was saved but some files were not uploaded. It retains the persisted Meeting Report GUID and only failed/unattempted file selections. A `Retry file uploads` action retries those files without recreating or re-updating the Meeting Report and without repeating successful relationship operations.
@@ -251,10 +279,10 @@ Automated tests will cover:
 
 - File-picker rendering on create and edit forms.
 - Multiple selection and removal before submission.
-- Filename, zero-byte, per-file size, count, and duplicate-name validation.
+- Filename, zero-byte, per-file size, 70 MB total size, count, and duplicate-name validation.
 - Report creation before the first upload call.
 - Existing report update before new-file uploads.
-- One sequential upload call per selected file using the persisted report GUID.
+- One batch upload call for all selected files using the persisted report GUID and stable per-file client IDs.
 - Base64 conversion without a data URL prefix.
 - Retry of failed/unattempted uploads without duplicate report creation.
 - Listing, rendering, linking, confirmation, successful deletion, deletion failure, and list retry for existing attachments.
