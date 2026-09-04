@@ -39,15 +39,15 @@ The existing Dataverse column `mss_documentsprovided` remains in the environment
 Every selected filename must match:
 
 ```text
-^[A-Za-z0-9_-](?:[A-Za-z0-9 _-]*[A-Za-z0-9_-])?\.[A-Za-z0-9]+$
+^[A-Za-z0-9_()-](?:[A-Za-z0-9 _()-]*[A-Za-z0-9_()-])?\.[A-Za-z0-9]+$
 ```
 
-The base filename therefore permits ASCII letters, digits, spaces, hyphens, and underscores. It must start and end with a non-space character. A single final dot separates a required alphanumeric extension. Valid examples are `meeting-notes_2026.pdf`, `Meeting Notes_2026.pdf`, and `Photo_01.JPG`. Invalid examples include ` report.pdf`, `report .pdf`, `report.final.pdf`, `report(1).pdf`, `.env`, and `report`.
+The base filename therefore permits ASCII letters, digits, spaces, hyphens, underscores, and parentheses. It must start and end with a non-space character. A single final dot separates a required alphanumeric extension. Valid examples are `meeting-notes_2026.pdf`, `Meeting Notes_2026.pdf`, `report(1).pdf`, and `Photo_01.JPG`. Invalid examples include ` report.pdf`, `report .pdf`, `report.final.pdf`, `report&notes.pdf`, `.env`, and `report`.
 
 The validation message is:
 
 ```text
-File names can contain only letters, numbers, spaces, hyphens, and underscores, followed by a file extension.
+File names can contain only letters, numbers, spaces, hyphens, underscores, and parentheses, followed by a file extension.
 ```
 
 The client also rejects empty files, files larger than 10 MB, more than 10 files, and duplicate selected filenames compared case-insensitively. Validation happens when files are selected and is repeated before upload.
@@ -85,7 +85,7 @@ Use this JSON schema in **When an HTTP request is received**. The common fields 
       "properties": {
         "fileName": {
           "type": "string",
-          "pattern": "^[A-Za-z0-9_-](?:[A-Za-z0-9 _-]*[A-Za-z0-9_-])?\\.[A-Za-z0-9]+$"
+          "pattern": "^[A-Za-z0-9_()-](?:[A-Za-z0-9 _()-]*[A-Za-z0-9_()-])?\\.[A-Za-z0-9]+$"
         },
         "contentType": {
           "type": "string"
