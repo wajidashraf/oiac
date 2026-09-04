@@ -47,7 +47,6 @@ const draft: MeetingReportDraft = {
   volunteerIds: [volunteerId],
   issuesDiscussed: 'Constituent services',
   followUpActions: 'Send the policy brief',
-  documentsProvided: 'Policy summary',
   sentiment: 1,
 }
 
@@ -91,11 +90,11 @@ describe('meeting report queries and mapping', () => {
       mss_meetingformat: 2,
       mss_writedownwhatthestaffsaidnotwhatyousaid: 'Constituent services',
       mss_followupnoteoncethemeetingended: 'Send the policy brief',
-      mss_documentsprovided: 'Policy summary',
       mss_overallsentiment: 1,
       'mss_Reportedby@odata.bind': `/contacts(${contactId})`,
     })
     expect(payload).not.toHaveProperty('mss_dateofmeeting')
+    expect(payload).not.toHaveProperty('mss_documentsprovided')
   })
 
   test('rejects a meeting whose end is not later than its start', () => {
@@ -200,7 +199,6 @@ describe('meeting report mutations', () => {
       mss_meetingformat: 2,
       mss_writedownwhatthestaffsaidnotwhatyousaid: 'Issues',
       mss_followupnoteoncethemeetingended: 'Follow up',
-      mss_documentsprovided: 'One pager',
       mss_overallsentiment: 3,
       mss_MeetingReport_Contact_Staff: [{ contactid: staffId, fullname: 'Staff Person' }],
       mss_MeetingReport_Contact_Volunteers: [{ contactid: volunteerId, fullname: 'Volunteer Person' }],
@@ -210,10 +208,10 @@ describe('meeting report mutations', () => {
     expect(result.subject).toBe('Existing meeting')
     expect(new Date(result.startDateTime).getTime()).toBe(new Date('2026-08-18T12:30:00Z').getTime())
     expect(new Date(result.endDateTime).getTime()).toBe(new Date('2026-08-18T13:45:00Z').getTime())
-    expect(result.documentsProvided).toBe('One pager')
     expect(result.representative).toEqual({ id: representativeId, name: 'Rep. Carter', email: null, jobTitle: null })
     expect(result.staff).toEqual([{ id: staffId, name: 'Staff Person', email: null, jobTitle: null }])
     expect(result.volunteers).toEqual([{ id: volunteerId, name: 'Volunteer Person', email: null, jobTitle: null }])
+    expect(decodeURIComponent(fetchMock.mock.calls[0][0])).not.toContain('mss_documentsprovided')
   })
 
   test('falls back to the legacy meeting date when start and end date-times are absent', async () => {

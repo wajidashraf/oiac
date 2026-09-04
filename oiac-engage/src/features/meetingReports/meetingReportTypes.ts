@@ -36,7 +36,6 @@ export type MeetingReportDraft = {
   readonly volunteerIds: readonly string[]
   readonly issuesDiscussed: string
   readonly followUpActions: string
-  readonly documentsProvided: string
   readonly sentiment: MeetingSentiment | null
 }
 

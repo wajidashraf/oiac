@@ -31,7 +31,6 @@ const REPORT_SELECT = [
   'mss_meetingformat',
   'mss_writedownwhatthestaffsaidnotwhatyousaid',
   'mss_followupnoteoncethemeetingended',
-  'mss_documentsprovided',
   'mss_overallsentiment',
 ] as const
 
@@ -83,7 +82,6 @@ type ReportApiRecord = {
   readonly mss_meetingformat?: unknown
   readonly mss_writedownwhatthestaffsaidnotwhatyousaid?: unknown
   readonly mss_followupnoteoncethemeetingended?: unknown
-  readonly mss_documentsprovided?: unknown
   readonly mss_overallsentiment?: unknown
   readonly mss_MeetingReport_Contact_Staff?: readonly ContactApiRecord[]
   readonly mss_MeetingReport_Contact_Volunteers?: readonly ContactApiRecord[]
@@ -296,7 +294,6 @@ export function buildMeetingReportPayload(
     mss_meetingformat: draft.meetingFormat,
     mss_writedownwhatthestaffsaidnotwhatyousaid: draft.issuesDiscussed.trim(),
     mss_followupnoteoncethemeetingended: draft.followUpActions.trim(),
-    mss_documentsprovided: draft.documentsProvided.trim(),
   }
   if (draft.sentiment) payload.mss_overallsentiment = draft.sentiment
   if (includeOwner) {
@@ -378,7 +375,6 @@ export async function getMeetingReport(
     volunteerIds: volunteers.map((contact) => contact.id),
     issuesDiscussed: text(record.mss_writedownwhatthestaffsaidnotwhatyousaid),
     followUpActions: text(record.mss_followupnoteoncethemeetingended),
-    documentsProvided: text(record.mss_documentsprovided),
     sentiment: asSentiment(record.mss_overallsentiment),
     representative: {
       id: representativeId,
