@@ -8,7 +8,7 @@ Replace the optional `Documents Provided` text input on the final Meeting Report
 
 The code change covers the React create/edit form, a focused HTTP-flow client, attachment state and validation, retry-safe save orchestration, styling, automated tests, and the Meeting Report technical documentation. It does not create or modify the Power Automate flow, SharePoint library, Dataverse attachment table, table permissions, or cloud-flow-consumer metadata.
 
-The HTTP trigger URL supplied by the user will be used directly from the browser and hardcoded in the attachment-flow service. No Vite environment variable will be introduced. Because the signed URL is shipped in the compiled JavaScript, it is visible to portal users and changing its signature requires a source update, rebuild, and redeployment.
+The HTTP trigger URL supplied by the user will be used directly from the browser through `src/config/flowUrl.js`. This local JavaScript configuration file is ignored by Git, while a safe example file and TypeScript declaration are committed. No Vite environment variable will be introduced. Because the signed URL is shipped in the compiled JavaScript, it is visible to portal users and changing its signature requires updating the ignored file, rebuilding, and redeploying.
 
 ## Form behavior
 
@@ -54,7 +54,7 @@ The client also rejects empty files, files larger than 10 MB, more than 10 files
 
 ## Client-to-flow contract
 
-All flow calls use `POST`, `Content-Type: application/json`, and the same hardcoded HTTP trigger URL. The common request body contains an operation and normalized Meeting Report GUID.
+All flow calls use `POST`, `Content-Type: application/json`, and the same direct HTTP trigger URL imported from ignored `src/config/flowUrl.js`. The common request body contains an operation and normalized Meeting Report GUID.
 
 ### Power Automate HTTP trigger schema
 
@@ -260,6 +260,7 @@ Automated tests will cover:
 - Listing, rendering, linking, confirmation, successful deletion, deletion failure, and list retry for existing attachments.
 - No flow call when a submission has no selected files.
 - Removal of `mss_documentsprovided` from Meeting Report payloads and reads.
+- The direct URL module is ignored by Git and the signed endpoint does not appear in tracked files.
 - Existing Meeting Report relationships, authorization, and duplicate-prevention tests continuing to pass.
 
 The relevant Vitest suites and production build must pass before completion. A deployed runtime test must verify CORS and the agreed request/response contract against the manually configured flow.
