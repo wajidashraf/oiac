@@ -12,6 +12,7 @@ import {
   fileToBase64,
   isValidAttachmentFileName,
   listMeetingReportAttachments,
+  listMeetingReportPageAttachments,
   uploadMeetingReportAttachments,
   validateAndMergeAttachmentFiles,
 } from './meetingReportAttachmentService'
@@ -128,9 +129,94 @@ describe('attachment selection validation', () => {
 })
 
 describe('attachment flow operations', () => {
+  test('loads one page of Dataverse attachments grouped by report and collapses duplicate SharePoint files', async () => {
+    const secondReportId = '33333333-3333-4333-8333-333333333333'
+    fetchMock.mockResolvedValue(jsonResponse({
+      value: [
+        {
+          mss_attachmentsid: attachmentId,
+          mss_attachmentname: 'Meeting Notes.pdf',
+          mss_filesize: 2048,
+          mss_filetype: 'application/pdf',
+          _mss_meetingreport_value: reportId,
+          mss_sharepointfileid: 'different-connector-file-id',
+          mss_sharepointfilepath: '/Shared Documents/report/Meeting Notes.pdf',
+          mss_sharepointfileurl: 'https://contoso.sharepoint.com/Shared%20Documents/report/Meeting%20Notes.pdf',
+        },
+        {
+          mss_attachmentsid: '44444444-4444-4444-8444-444444444444',
+          mss_attachmentname: 'Duplicate row.pdf',
+          mss_filesize: 2048,
+          mss_filetype: 'application/pdf',
+          _mss_meetingreport_value: reportId,
+          mss_sharepointfileid: 'shared-documents/report/meeting-notes.pdf',
+          mss_sharepointfilepath: '/Shared Documents/report/Alias.pdf',
+          mss_sharepointfileurl: 'https://contoso.sharepoint.com/Shared%20Documents/report/Alias.pdf',
+        },
+        {
+          mss_attachmentsid: '66666666-6666-4666-8666-666666666666',
+          mss_attachmentname: 'Third duplicate row.pdf',
+          mss_filesize: 2048,
+          mss_filetype: 'application/pdf',
+          _mss_meetingreport_value: reportId,
+          mss_sharepointfileid: 'shared-documents/report/meeting-notes.pdf',
+          mss_sharepointfilepath: '/Shared Documents/report/Meeting Notes.pdf',
+          mss_sharepointfileurl: 'https://contoso.sharepoint.com/Shared%20Documents/report/Meeting%20Notes.pdf',
+        },
+        {
+          mss_attachmentsid: '55555555-5555-4555-8555-555555555555',
+          mss_attachmentname: 'District data.xlsx',
+          mss_filesize: 4096,
+          mss_filetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          _mss_meetingreport_value: secondReportId,
+          mss_sharepointfileid: 'shared-documents/report/district-data.xlsx',
+          mss_sharepointfilepath: '/Shared Documents/report/District data.xlsx',
+          mss_sharepointfileurl: 'javascript:alert(1)',
+        },
+      ],
+    }))
+
+    const result = await listMeetingReportPageAttachments([reportId, secondReportId])
+
+    expect(result.get(reportId)).toEqual([{
+      attachmentId,
+      duplicateAttachmentIds: [
+        '44444444-4444-4444-8444-444444444444',
+        '66666666-6666-4666-8666-666666666666',
+      ],
+      fileName: 'Meeting Notes.pdf',
+      fileUrl: 'https://contoso.sharepoint.com/Shared%20Documents/report/Meeting%20Notes.pdf',
+      contentType: 'application/pdf',
+      size: 2048,
+    }])
+    expect(result.get(secondReportId)).toEqual([{
+      attachmentId: '55555555-5555-4555-8555-555555555555',
+      fileName: 'District data.xlsx',
+      fileUrl: null,
+      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      size: 4096,
+    }])
+    const [requestUrl, requestInit] = fetchMock.mock.calls[0]
+    const parsedUrl = new URL(String(requestUrl), 'https://portal.example')
+    expect(parsedUrl.pathname).toBe('/_api/mss_attachmentses')
+    expect(parsedUrl.searchParams.get('$filter')).toBe(
+      `_mss_meetingreport_value eq ${reportId} or _mss_meetingreport_value eq ${secondReportId}`,
+    )
+    expect(requestInit).toEqual(expect.objectContaining({ credentials: 'same-origin' }))
+  })
+
   test('lists and normalizes existing attachments', async () => {
     fetchMock.mockResolvedValue(jsonResponse({
-      attachments: [attachmentResponse({ contentType: undefined, size: undefined })],
+      value: [{
+        mss_attachmentsid: attachmentId,
+        mss_attachmentname: 'Meeting Notes_2026.pdf',
+        mss_filetype: null,
+        mss_filesize: null,
+        _mss_meetingreport_value: reportId,
+        mss_sharepointfileid: 'meeting-notes-file-id',
+        mss_sharepointfilepath: '/Shared Documents/Meeting Notes_2026.pdf',
+        mss_sharepointfileurl: 'https://contoso.sharepoint.com/Meeting%20Notes_2026.pdf',
+      }],
     }))
 
     await expect(listMeetingReportAttachments(reportId)).resolves.toEqual([{
@@ -140,12 +226,10 @@ describe('attachment flow operations', () => {
       contentType: null,
       size: null,
     }])
-    expect(fetchMock).toHaveBeenCalledWith(MEETING_REPORT_ATTACHMENT_FLOW_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ operation: 'list', meetingReportId: reportId }),
-      signal: undefined,
-    })
+    const [requestUrl] = fetchMock.mock.calls[0]
+    const parsedUrl = new URL(String(requestUrl), 'https://portal.example')
+    expect(parsedUrl.pathname).toBe('/_api/mss_attachmentses')
+    expect(parsedUrl.searchParams.get('$filter')).toBe(`_mss_meetingreport_value eq ${reportId}`)
   })
 
   test('converts file content to base64 without a data URL prefix', async () => {
@@ -215,12 +299,24 @@ describe('attachment flow operations', () => {
 
   test('deletes an attachment and accepts an empty 204 response', async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 204 }))
+    const duplicateAttachmentId = '33333333-3333-4333-8333-333333333333'
 
-    await expect(deleteMeetingReportAttachment(reportId, attachmentId)).resolves.toBeUndefined()
-    expect(fetchMock).toHaveBeenCalledWith(MEETING_REPORT_ATTACHMENT_FLOW_URL, {
+    await expect(deleteMeetingReportAttachment(
+      reportId,
+      attachmentId,
+      [duplicateAttachmentId],
+    )).resolves.toBeUndefined()
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock).toHaveBeenNthCalledWith(1, MEETING_REPORT_ATTACHMENT_FLOW_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ operation: 'delete', meetingReportId: reportId, attachmentId }),
+      signal: undefined,
+    })
+    expect(fetchMock).toHaveBeenNthCalledWith(2, MEETING_REPORT_ATTACHMENT_FLOW_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ operation: 'delete', meetingReportId: reportId, attachmentId: duplicateAttachmentId }),
       signal: undefined,
     })
   })
@@ -236,20 +332,36 @@ describe('attachment flow operations', () => {
     )
   })
 
-  test('rejects successful but unsupported operation statuses', async () => {
-    fetchMock.mockResolvedValue(jsonResponse({ attachments: [] }, 201))
-    await expect(listMeetingReportAttachments(reportId)).rejects.toMatchObject({ status: 201 })
+  test('retries duplicate cleanup after the primary attachment was already deleted', async () => {
+    const duplicateAttachmentId = '33333333-3333-4333-8333-333333333333'
+    fetchMock
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(jsonResponse({ error: { code: 'TemporaryFailure' } }, 500))
+      .mockResolvedValueOnce(jsonResponse({ error: { code: 'AttachmentNotFound' } }, 404))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
 
+    await expect(deleteMeetingReportAttachment(reportId, attachmentId, [duplicateAttachmentId]))
+      .rejects.toMatchObject({ status: 500 })
+    await expect(deleteMeetingReportAttachment(reportId, attachmentId, [duplicateAttachmentId]))
+      .resolves.toBeUndefined()
+
+    expect(fetchMock).toHaveBeenCalledTimes(4)
+  })
+
+  test('rejects successful but unsupported operation statuses', async () => {
     fetchMock.mockResolvedValue(jsonResponse({ results: [] }, 202))
     await expect(uploadMeetingReportAttachments(reportId, [new File(['hello'], 'Report.pdf')]))
       .rejects.toMatchObject({ status: 202 })
   })
 
   test('rejects malformed attachment responses', async () => {
-    fetchMock.mockResolvedValue(jsonResponse({ attachments: [{ fileName: 'Missing ID.pdf' }] }))
+    fetchMock.mockResolvedValue(jsonResponse({ value: [{
+      mss_attachmentname: 'Missing ID.pdf',
+      _mss_meetingreport_value: reportId,
+    }] }))
 
     await expect(listMeetingReportAttachments(reportId)).rejects.toThrow(
-      'The attachment flow returned an invalid response.',
+      'Attachment identifier is invalid.',
     )
 
     fetchMock.mockResolvedValue(jsonResponse({ results: [] }))
@@ -263,7 +375,7 @@ describe('attachment flow operations', () => {
       error: { code: 'RawFailure', message: MEETING_REPORT_ATTACHMENT_FLOW_URL },
     }, 500))
 
-    const error = await listMeetingReportAttachments(reportId).catch((reason: unknown) => reason)
+    const error = await deleteMeetingReportAttachment(reportId, attachmentId).catch((reason: unknown) => reason)
 
     expect(error).toBeInstanceOf(MeetingReportAttachmentFlowError)
     expect(error).toMatchObject({ status: 500 })

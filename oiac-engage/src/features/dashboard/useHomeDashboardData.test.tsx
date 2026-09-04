@@ -4,6 +4,7 @@ import { getCalendarEvents } from '../events/eventService'
 import type { EventItem } from '../events/eventTypes'
 import { getEventRegistrations } from '../eventRegistrations/eventRegistrationService'
 import { EVENT_REGISTRATION_STATUS } from '../eventRegistrations/eventRegistrationTypes'
+import { listMeetingReportPageAttachments } from '../meetingReports/meetingReportAttachmentService'
 import { getMeetingReportCount, getMeetingReports } from '../meetingReports/meetingReportService'
 import { useHomeDashboardData } from './useHomeDashboardData'
 
@@ -15,6 +16,9 @@ vi.mock('../eventRegistrations/eventRegistrationService', async (importOriginal)
 vi.mock('../meetingReports/meetingReportService', () => ({
   getMeetingReportCount: vi.fn(),
   getMeetingReports: vi.fn(),
+}))
+vi.mock('../meetingReports/meetingReportAttachmentService', () => ({
+  listMeetingReportPageAttachments: vi.fn(),
 }))
 
 const contactId = '11111111-1111-1111-1111-111111111111'
@@ -55,6 +59,16 @@ beforeEach(() => {
     nextLink: null,
   })
   vi.mocked(getMeetingReportCount).mockResolvedValue(7)
+  vi.mocked(listMeetingReportPageAttachments).mockResolvedValue(new Map([[
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    [{
+      attachmentId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      fileName: 'District briefing.pdf',
+      fileUrl: 'https://example.sharepoint.com/District%20briefing.pdf',
+      contentType: 'application/pdf',
+      size: 2048,
+    }],
+  ]]))
   vi.mocked(getEventRegistrations).mockResolvedValue([
     {
       id: 'aaaaaaaa-1111-1111-1111-111111111111',
@@ -113,6 +127,13 @@ test('loads live report KPIs and only unique Registered events for the signed-in
 
   expect(result.current.reportCount).toBe(7)
   expect(result.current.reports).toHaveLength(1)
+  const attachmentData = result.current as typeof result.current & {
+    readonly attachmentsByReport: ReadonlyMap<string, readonly { readonly fileName: string }[]>
+    readonly attachmentStatus: 'loading' | 'ready' | 'error'
+  }
+  expect(attachmentData.attachmentStatus).toBe('ready')
+  expect(attachmentData.attachmentsByReport.get('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')?.[0].fileName)
+    .toBe('District briefing.pdf')
   expect(result.current.registeredEventCount).toBe(2)
   expect(result.current.upcomingEvents.map((item) => item.id)).toEqual([activeEventId, secondEventId])
   expect(getMeetingReports).toHaveBeenCalledWith({ limit: 5 }, expect.any(AbortSignal))

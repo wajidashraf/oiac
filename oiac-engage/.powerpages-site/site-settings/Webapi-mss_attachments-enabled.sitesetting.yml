@@ -1,0 +1,4 @@
+description: Enable Web API access for Meeting Report attachment metadata
+id: abb5822d-4c27-4d80-9a5f-b91e2ca65649
+name: Webapi/mss_attachments/enabled
+value: true

@@ -78,7 +78,7 @@ test('renders existing attachments with safe links and delete actions', async ()
 
   expect(screen.getByRole('link', { name: 'Open Existing Report.pdf' })).toHaveAttribute(
     'href',
-    existingAttachment.fileUrl,
+    'https://contoso.sharepoint.com/Existing%20Report.pdf?web=1',
   )
   expect(screen.getByText('2 KB')).toBeInTheDocument()
   await actor.click(screen.getByRole('button', { name: 'Delete Existing Report.pdf' }))

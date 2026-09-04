@@ -251,7 +251,11 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
     setDeletingAttachmentIds((current) => new Set(current).add(attachment.attachmentId))
     setFormError(null)
     try {
-      await deleteMeetingReportAttachment(persistedReportId, attachment.attachmentId)
+      await deleteMeetingReportAttachment(
+        persistedReportId,
+        attachment.attachmentId,
+        attachment.duplicateAttachmentIds,
+      )
       setExistingAttachments((current) => current.filter((item) => item.attachmentId !== attachment.attachmentId))
     } catch {
       setFormError(`${attachment.fileName} could not be deleted. Try again.`)

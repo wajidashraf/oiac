@@ -1,4 +1,5 @@
 import { MEETING_REPORT_ATTACHMENT_FLOW_URL } from '../../config/flowUrl.js'
+import { powerPagesFetch } from '../../shared/powerPagesApi'
 import { normalizeGuid } from './meetingReportService'
 
 export { MEETING_REPORT_ATTACHMENT_FLOW_URL }
@@ -12,6 +13,7 @@ const INVALID_FILE_NAME_MESSAGE = 'File names can contain only letters, numbers,
 
 export type MeetingReportAttachment = {
   readonly attachmentId: string
+  readonly duplicateAttachmentIds?: readonly string[]
   readonly fileName: string
   readonly fileUrl: string | null
   readonly contentType: string | null
@@ -27,6 +29,28 @@ export type AttachmentBatchUploadResult = {
   readonly succeededAttachments: readonly MeetingReportAttachment[]
   readonly failedFiles: readonly File[]
 }
+
+type DataverseAttachmentRecord = {
+  readonly mss_attachmentsid?: unknown
+  readonly mss_attachmentname?: unknown
+  readonly mss_filesize?: unknown
+  readonly mss_filetype?: unknown
+  readonly _mss_meetingreport_value?: unknown
+  readonly mss_sharepointfileid?: unknown
+  readonly mss_sharepointfilepath?: unknown
+  readonly mss_sharepointfileurl?: unknown
+}
+
+const ATTACHMENT_LIST_SELECT = [
+  'mss_attachmentsid',
+  'mss_attachmentname',
+  'mss_filesize',
+  'mss_filetype',
+  '_mss_meetingreport_value',
+  'mss_sharepointfileid',
+  'mss_sharepointfilepath',
+  'mss_sharepointfileurl',
+] as const
 
 const clientFileIds = new WeakMap<File, string>()
 
@@ -155,6 +179,103 @@ function normalizeAttachment(value: unknown): MeetingReportAttachment {
   }
 }
 
+function normalizeDataverseAttachment(record: DataverseAttachmentRecord): {
+  readonly reportId: string
+  readonly attachment: MeetingReportAttachment
+  readonly fileKeys: readonly string[]
+} {
+  const reportId = requiredGuid(String(record._mss_meetingreport_value ?? ''), 'Meeting Report identifier')
+  const attachmentId = requiredGuid(String(record.mss_attachmentsid ?? ''), 'Attachment identifier')
+  const fileName = optionalText(record.mss_attachmentname)
+  if (!fileName) throw new Error('Dataverse returned an attachment without a file name.')
+  const fileUrl = optionalHttpsUrl(record.mss_sharepointfileurl)
+  const sharePointFileId = optionalText(record.mss_sharepointfileid)
+  const sharePointFilePath = optionalText(record.mss_sharepointfilepath)
+  const fileKeys = [
+    sharePointFileId ? `id:${sharePointFileId.toLowerCase()}` : null,
+    fileUrl ? `url:${fileUrl.toLowerCase()}` : null,
+    sharePointFilePath ? `path:${sharePointFilePath.toLowerCase()}` : null,
+  ].filter((key): key is string => key !== null)
+  if (fileKeys.length === 0) fileKeys.push(`attachment:${attachmentId}`)
+  return {
+    reportId,
+    fileKeys,
+    attachment: {
+      attachmentId,
+      fileName,
+      fileUrl,
+      contentType: optionalText(record.mss_filetype),
+      size: optionalSize(record.mss_filesize),
+    },
+  }
+}
+
+export async function listMeetingReportPageAttachments(
+  meetingReportIds: readonly string[],
+  signal?: AbortSignal,
+): Promise<ReadonlyMap<string, readonly MeetingReportAttachment[]>> {
+  const normalizedReportIds = [...new Set(
+    meetingReportIds.map((id) => requiredGuid(id, 'Meeting Report identifier')),
+  )]
+  if (normalizedReportIds.length === 0) return new Map()
+
+  const params = new URLSearchParams()
+  params.set('$select', ATTACHMENT_LIST_SELECT.join(','))
+  params.set('$filter', normalizedReportIds
+    .map((id) => `_mss_meetingreport_value eq ${id}`)
+    .join(' or '))
+  params.set('$orderby', 'mss_attachmentname asc,mss_attachmentsid asc')
+  const response = await powerPagesFetch<{ readonly value?: readonly DataverseAttachmentRecord[] }>(
+    `/_api/mss_attachmentses?${params.toString()}`,
+    { signal },
+  )
+  if (!Array.isArray(response.value)) throw new Error('Dataverse returned an invalid attachment list.')
+
+  const groupsByReport = new Map(normalizedReportIds.map((id) => [id, [] as Array<{
+    readonly attachment: MeetingReportAttachment
+    readonly attachmentIds: string[]
+    readonly keys: Set<string>
+  }>]))
+  for (const record of response.value) {
+    const normalized = normalizeDataverseAttachment(record)
+    const reportGroups = groupsByReport.get(normalized.reportId)
+    if (!reportGroups) continue
+
+    const matchingIndexes: number[] = []
+    for (let index = 0; index < reportGroups.length; index += 1) {
+      if (normalized.fileKeys.some((key) => reportGroups[index].keys.has(key))) matchingIndexes.push(index)
+    }
+    if (matchingIndexes.length === 0) {
+      reportGroups.push({
+        attachment: normalized.attachment,
+        attachmentIds: [normalized.attachment.attachmentId],
+        keys: new Set(normalized.fileKeys),
+      })
+      continue
+    }
+
+    const primaryGroup = reportGroups[matchingIndexes[0]]
+    for (const key of normalized.fileKeys) primaryGroup.keys.add(key)
+    for (let index = matchingIndexes.length - 1; index > 0; index -= 1) {
+      const mergedGroup = reportGroups[matchingIndexes[index]]
+      for (const key of mergedGroup.keys) primaryGroup.keys.add(key)
+      for (const attachmentId of mergedGroup.attachmentIds) {
+        if (!primaryGroup.attachmentIds.includes(attachmentId)) primaryGroup.attachmentIds.push(attachmentId)
+      }
+      reportGroups.splice(matchingIndexes[index], 1)
+    }
+    if (!primaryGroup.attachmentIds.includes(normalized.attachment.attachmentId)) {
+      primaryGroup.attachmentIds.push(normalized.attachment.attachmentId)
+    }
+  }
+  return new Map([...groupsByReport].map(([reportId, groups]) => [
+    reportId,
+    groups.map((group) => group.attachmentIds.length > 1
+      ? { ...group.attachment, duplicateAttachmentIds: group.attachmentIds.slice(1) }
+      : group.attachment),
+  ]))
+}
+
 async function callAttachmentFlow(
   payload: Record<string, unknown>,
   acceptedStatuses: readonly number[],
@@ -172,7 +293,7 @@ async function callAttachmentFlow(
     throw new MeetingReportAttachmentFlowError()
   }
 
-  if (!response.ok || !acceptedStatuses.includes(response.status)) {
+  if (!acceptedStatuses.includes(response.status)) {
     throw new MeetingReportAttachmentFlowError(response.status)
   }
   if (response.status === 204) return { status: response.status, body: null }
@@ -189,14 +310,15 @@ export async function listMeetingReportAttachments(
   signal?: AbortSignal,
 ): Promise<readonly MeetingReportAttachment[]> {
   const normalizedReportId = requiredGuid(meetingReportId, 'Meeting Report identifier')
-  const response = object((await callAttachmentFlow({
-    operation: 'list',
-    meetingReportId: normalizedReportId,
-  }, [200], signal)).body)
-  if (!response || !Array.isArray(response.attachments)) {
-    throw new Error('The attachment flow returned an invalid response.')
-  }
-  return response.attachments.map(normalizeAttachment)
+  const attachmentsByReport = await listMeetingReportPageAttachments([normalizedReportId], signal)
+  return attachmentsByReport.get(normalizedReportId) ?? []
+}
+
+export function buildMeetingReportAttachmentPreviewUrl(fileUrl: string): string {
+  const previewUrl = new URL(fileUrl)
+  previewUrl.searchParams.delete('download')
+  previewUrl.searchParams.set('web', '1')
+  return previewUrl.href
 }
 
 function clientFileId(file: File): string {
@@ -269,17 +391,22 @@ export async function uploadMeetingReportAttachments(
 export async function deleteMeetingReportAttachment(
   meetingReportId: string,
   attachmentId: string,
+  duplicateAttachmentIds: readonly string[] = [],
 ): Promise<void> {
   const normalizedReportId = requiredGuid(meetingReportId, 'Meeting Report identifier')
-  const normalizedAttachmentId = requiredGuid(attachmentId, 'Attachment identifier')
-  const response = await callAttachmentFlow({
-    operation: 'delete',
-    meetingReportId: normalizedReportId,
-    attachmentId: normalizedAttachmentId,
-  }, [200, 204])
-  if (response.status === 204) return
-  const body = object(response.body)
-  if (body?.deleted !== true || normalizeGuid(body.attachmentId) !== normalizedAttachmentId) {
-    throw new Error('The attachment flow returned an invalid response.')
+  const normalizedAttachmentIds = [...new Set([attachmentId, ...duplicateAttachmentIds].map(
+    (id) => requiredGuid(id, 'Attachment identifier'),
+  ))]
+  for (const normalizedAttachmentId of normalizedAttachmentIds) {
+    const response = await callAttachmentFlow({
+      operation: 'delete',
+      meetingReportId: normalizedReportId,
+      attachmentId: normalizedAttachmentId,
+    }, [200, 204, 404])
+    if (response.status === 204 || response.status === 404) continue
+    const body = object(response.body)
+    if (body?.deleted !== true || normalizeGuid(body.attachmentId) !== normalizedAttachmentId) {
+      throw new Error('The attachment flow returned an invalid response.')
+    }
   }
 }

@@ -1,0 +1,14 @@
+adx_entitypermission_webrole:
+- 0353acdd-7b95-4c07-8997-ae95dafd978d
+append: false
+appendto: false
+create: false
+delete: false
+entitylogicalname: mss_attachments
+entityname: Authenticated Owned Meeting Report Attachments Read
+id: 9696822e-e875-496d-be50-8fece1455596
+parententitypermission: 9fa264f2-84d6-4a68-98ca-b4b4b663dd60
+parentrelationship: mss_attachments_MeetingReport_mss_meetingreport
+read: true
+scope: 756150003
+write: false

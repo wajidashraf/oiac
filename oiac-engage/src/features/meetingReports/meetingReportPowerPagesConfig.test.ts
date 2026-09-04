@@ -8,9 +8,13 @@ import districtFilter from '../../../.powerpages-site/site-settings/Webapi-mss_d
 import reportEnabled from '../../../.powerpages-site/site-settings/Webapi-mss_meetingreport-enabled.sitesetting.yml?raw'
 import reportFields from '../../../.powerpages-site/site-settings/Webapi-mss_meetingreport-fields.sitesetting.yml?raw'
 import reportFilter from '../../../.powerpages-site/site-settings/Webapi-mss_meetingreport-disableodatafilter.sitesetting.yml?raw'
+import attachmentEnabled from '../../../.powerpages-site/site-settings/Webapi-mss_attachments-enabled.sitesetting.yml?raw'
+import attachmentFields from '../../../.powerpages-site/site-settings/Webapi-mss_attachments-fields.sitesetting.yml?raw'
+import attachmentFilter from '../../../.powerpages-site/site-settings/Webapi-mss_attachments-disableodatafilter.sitesetting.yml?raw'
 import contactDirectory from '../../../.powerpages-site/table-permissions/Authenticated-Contact-Directory-Read-Append.tablepermission.yml?raw'
 import districtDirectory from '../../../.powerpages-site/table-permissions/Authenticated-District-Global-Read.tablepermission.yml?raw'
 import ownedReports from '../../../.powerpages-site/table-permissions/Authenticated-Owned-Meeting-Report-Manage.tablepermission.yml?raw'
+import ownedReportAttachments from '../../../.powerpages-site/table-permissions/Authenticated-Owned-Meeting-Report-Attachments-Read.tablepermission.yml?raw'
 
 const authenticatedUsersRoleId = '0353acdd-7b95-4c07-8997-ae95dafd978d'
 const anonymousUsersRoleId = '0a919c57-3065-4cd3-aaa8-aec59acbbe67'
@@ -89,4 +93,27 @@ test('limits report management to reports related to the authenticated Contact',
   expect(ownedReports).toContain('append: true')
   expect(ownedReports).toContain('appendto: true')
   expect(ownedReports).toContain('delete: false')
+})
+
+test('allows authenticated users to read attachment metadata only through their owned Meeting Reports', () => {
+  expect(attachmentEnabled).toContain('name: Webapi/mss_attachments/enabled')
+  expect(attachmentEnabled).toContain('value: true')
+  expect(attachmentFields).toContain('name: Webapi/mss_attachments/fields')
+  for (const field of [
+    'mss_attachmentsid', 'mss_attachmentname', 'mss_filesize', 'mss_filetype',
+    'mss_meetingreport', '_mss_meetingreport_value', 'mss_sharepointfileid',
+    'mss_sharepointfilepath', 'mss_sharepointfileurl',
+  ]) expect(attachmentFields).toContain(field)
+  expect(attachmentFilter).toContain('name: Webapi/mss_attachments/disableodatafilter')
+  expect(attachmentFilter).toContain('value: false')
+
+  expectAuthenticatedOnly(ownedReportAttachments)
+  expect(ownedReportAttachments).toContain('entitylogicalname: mss_attachments')
+  expect(ownedReportAttachments).toContain('scope: 756150003')
+  expect(ownedReportAttachments).toContain('parententitypermission: 9fa264f2-84d6-4a68-98ca-b4b4b663dd60')
+  expect(ownedReportAttachments).toContain('parentrelationship: mss_attachments_MeetingReport_mss_meetingreport')
+  expect(ownedReportAttachments).toContain('read: true')
+  expect(ownedReportAttachments).toContain('create: false')
+  expect(ownedReportAttachments).toContain('write: false')
+  expect(ownedReportAttachments).toContain('delete: false')
 })

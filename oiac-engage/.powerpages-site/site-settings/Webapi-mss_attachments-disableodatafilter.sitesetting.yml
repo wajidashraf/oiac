@@ -1,0 +1,4 @@
+description: Allow OData filtering for Meeting Report attachment metadata
+id: 1e09e886-4cba-4482-b64a-2cd9292a1bb3
+name: Webapi/mss_attachments/disableodatafilter
+value: false

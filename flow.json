@@ -1,0 +1,1370 @@
+{
+  "$schema": "https://power-automate-tools.local/flow-editor.json#",
+  "connectionReferences": {
+    "shared_sharepointonline": {
+      "connectionName": "shared-sharepointonl-a2fb50f4-506e-4b65-ad23-554abf970079",
+      "connectionReferenceLogicalName": "mss_sharedsharepointonline_afea2",
+      "source": "Embedded",
+      "id": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+      "displayName": "SharePoint",
+      "tier": "Standard",
+      "apiName": "sharepointonline"
+    },
+    "shared_commondataserviceforapps": {
+      "connectionName": "shared-commondataser-d77022fe-eb6c-46ce-9c4a-693cba624985",
+      "connectionReferenceLogicalName": "mss_sharedcommondataserviceforapps_ef7bc",
+      "source": "Embedded",
+      "id": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
+      "displayName": "Microsoft Dataverse",
+      "tier": "Premium",
+      "apiName": "commondataserviceforapps"
+    }
+  },
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "$authentication": {
+        "defaultValue": {},
+        "type": "SecureObject"
+      },
+      "$connections": {
+        "defaultValue": {},
+        "type": "Object"
+      }
+    },
+    "triggers": {
+      "manual": {
+        "type": "Request",
+        "kind": "Http",
+        "runtimeConfiguration": {
+          "concurrency": {
+            "runs": 1,
+            "maximumWaitingRuns": 10
+          }
+        },
+        "inputs": {
+          "triggerAuthenticationType": "All",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "operation": {
+                "type": "string",
+                "enum": [
+                  "upload",
+                  "delete"
+                ]
+              },
+              "meetingReportId": {
+                "type": "string"
+              },
+              "attachmentId": {
+                "type": "string"
+              },
+              "files": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 10,
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "clientFileId": {
+                      "type": "string"
+                    },
+                    "fileName": {
+                      "type": "string"},
+                    "contentType": {
+                      "type": "string"
+                    },
+                    "size": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10485760
+                    },
+                    "contentBase64": {
+                      "type": "string",
+                      "minLength": 1 }
+                  },
+                  "required": [
+                    "clientFileId",
+                    "fileName",
+                    "contentType",
+                    "size",
+                    "contentBase64"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "operation",
+              "meetingReportId"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    "actions": {
+      "Compose_Request": {
+        "runAfter": {},
+        "type": "Compose",
+        "inputs": "@triggerBody()"
+      },
+      "Initialize_Results": {
+        "runAfter": {
+          "Compose_Request": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable",
+        "inputs": {
+          "variables": [
+            {
+              "name": "results",
+              "type": "array",
+              "value": []
+            }
+          ]
+        }
+      },
+      "Initialize_Total_Size": {
+        "runAfter": {
+          "Initialize_Results": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable",
+        "inputs": {
+          "variables": [
+            {
+              "name": "totalSize",
+              "type": "integer",
+              "value": 0
+            }
+          ]
+        }
+      },
+      "Initialize_Request_Is_Valid": {
+        "runAfter": {
+          "Initialize_Total_Size": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable",
+        "inputs": {
+          "variables": [
+            {
+              "name": "requestIsValid",
+              "type": "boolean",
+              "value": true
+            }
+          ]
+        }
+      },
+      "Initialize_Seen_Client_File_IDs": {
+        "runAfter": {
+          "Initialize_Request_Is_Valid": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable",
+        "inputs": {
+          "variables": [
+            {
+              "name": "seenClientFileIds",
+              "type": "array",
+              "value": []
+            }
+          ]
+        }
+      },
+      "Initialize_Seen_File_Names": {
+        "runAfter": {
+          "Initialize_Seen_Client_File_IDs": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable",
+        "inputs": {
+          "variables": [
+            {
+              "name": "seenFileNames",
+              "type": "array",
+              "value": []
+            }
+          ]
+        }
+      },
+      "Initialize_Delete_Status_Code": {
+        "runAfter": {
+          "Initialize_Reconciliation_Found": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable",
+        "inputs": {
+          "variables": [
+            {
+              "name": "deleteStatusCode",
+              "type": "integer",
+              "value": 500
+            }
+          ]
+        }
+      },
+      "Initialize_Reconciliation_Found": {
+        "runAfter": {
+          "Initialize_Seen_File_Names": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable",
+        "inputs": {
+          "variables": [
+            {
+              "name": "reconciliationFound",
+              "type": "boolean",
+              "value": false
+            }
+          ]
+        }
+      },
+      "Initialize_Delete_Response_Body": {
+        "runAfter": {
+          "Initialize_Delete_Status_Code": [
+            "Succeeded"
+          ]
+        },
+        "type": "InitializeVariable",
+        "inputs": {
+          "variables": [
+            {
+              "name": "deleteResponseBody",
+              "type": "object",
+              "value": {
+                "error": {
+                  "code": "AttachmentDeleteFailed",
+                  "message": "The attachment could not be deleted."
+                }
+              }
+            }
+          ]
+        }
+      },
+      "Switch_Operation": {
+        "runAfter": {
+          "Initialize_Delete_Response_Body": [
+            "Succeeded"
+          ]
+        },
+        "type": "Switch",
+        "expression": "@triggerBody()?['operation']",
+        "cases": {
+          "Case_Upload": {
+            "case": "upload",
+            "actions": {
+              "Validate_Each_File": {
+                "runAfter": {},
+                "type": "Foreach",
+                "foreach": "@coalesce(triggerBody()?['files'], json('[]'))",
+                "runtimeConfiguration": {
+                  "concurrency": {
+                    "repetitions": 1
+                  }
+                },
+                "actions": {
+                  "Increment_Total_Size": {
+                    "runAfter": {},
+                    "type": "IncrementVariable",
+                    "inputs": {
+                      "name": "totalSize",
+                      "value": "@length(base64ToBinary(items('Validate_Each_File')?['contentBase64']))"
+                    }
+                  },
+                  "Condition_Duplicate_File": {
+                    "runAfter": {
+                      "Increment_Total_Size": [
+                        "Succeeded"
+                      ]
+                    },
+                    "type": "If",
+                    "expression": "@or(contains(variables('seenClientFileIds'), toLower(items('Validate_Each_File')?['clientFileId'])), contains(variables('seenFileNames'), toLower(items('Validate_Each_File')?['fileName'])), not(equals(length(base64ToBinary(items('Validate_Each_File')?['contentBase64'])), int(items('Validate_Each_File')?['size']))), greater(length(base64ToBinary(items('Validate_Each_File')?['contentBase64'])), 10485760))",
+                    "actions": {
+                      "Mark_Request_Invalid": {
+                        "runAfter": {},
+                        "type": "SetVariable",
+                        "inputs": {
+                          "name": "requestIsValid",
+                          "value": false
+                        }
+                      }
+                    },
+                    "else": {
+                      "actions": {
+                        "Remember_Client_File_ID": {
+                          "runAfter": {},
+                          "type": "AppendToArrayVariable",
+                          "inputs": {
+                            "name": "seenClientFileIds",
+                            "value": "@toLower(items('Validate_Each_File')?['clientFileId'])"
+                          }
+                        },
+                        "Remember_File_Name": {
+                          "runAfter": {
+                            "Remember_Client_File_ID": [
+                              "Succeeded"
+                            ]
+                          },
+                          "type": "AppendToArrayVariable",
+                          "inputs": {
+                            "name": "seenFileNames",
+                            "value": "@toLower(items('Validate_Each_File')?['fileName'])"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "Condition_Upload_Request_Valid": {
+                "runAfter": {
+                  "Validate_Each_File": [
+                    "Succeeded"
+                  ]
+                },
+                "type": "If",
+                "expression": "@and(not(empty(triggerBody()?['files'])), greaterOrEquals(length(triggerBody()?['files']), 1), lessOrEquals(length(triggerBody()?['files']), 10), equals(variables('requestIsValid'), true), lessOrEquals(variables('totalSize'), 73400320))",
+                "actions": {
+                  "Scope_Folder_Try": {
+                    "runAfter": {},
+                    "type": "Scope",
+                    "actions": {
+                      "Get_Meeting_Report_Folder": {
+                        "runAfter": {},
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_sharepointonline",
+                            "operationId": "GetFolderMetadataByPath",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                          },
+                          "parameters": {
+                            "dataset": "https://orgiac.sharepoint.com/sites/OIACEngage",
+                            "path": "@concat('/Shared Documents/Meeting Reports Attachments/', triggerBody()?['meetingReportId'])"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "Scope_Folder_Catch": {
+                    "runAfter": {
+                      "Scope_Folder_Try": [
+                        "Failed",
+                        "TimedOut"
+                      ]
+                    },
+                    "type": "Scope",
+                    "actions": {
+                      "Create_Meeting_Report_Folder": {
+                        "runAfter": {},
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_sharepointonline",
+                            "operationId": "CreateNewFolder",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                          },
+                          "parameters": {
+                            "dataset": "https://orgiac.sharepoint.com/sites/OIACEngage",
+                            "table": "Documents",
+                            "parameters/path": "@concat('Meeting Reports Attachments/', triggerBody()?['meetingReportId'])"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "Compose_Folder_Path": {
+                    "runAfter": {
+                      "Scope_Folder_Try": [
+                        "Succeeded",
+                        "Failed",
+                        "TimedOut"
+                      ],
+                      "Scope_Folder_Catch": [
+                        "Succeeded",
+                        "Skipped"
+                      ]
+                    },
+                    "type": "Compose",
+                    "inputs": "@concat('/Shared Documents/Meeting Reports Attachments/', triggerBody()?['meetingReportId'])"
+                  },
+                  "Apply_to_each_File": {
+                    "runAfter": {
+                      "Compose_Folder_Path": [
+                        "Succeeded"
+                      ]
+                    },
+                    "type": "Foreach",
+                    "foreach": "@triggerBody()?['files']",
+                    "runtimeConfiguration": {
+                      "concurrency": {
+                        "repetitions": 1
+                      }
+                    },
+                    "actions": {
+                      "Scope_File_Try": {
+                        "runAfter": {},
+                        "type": "Scope",
+                        "actions": {
+                          "List_Existing_Attachment": {
+                            "runAfter": {},
+                            "type": "OpenApiConnection",
+                            "inputs": {
+                              "host": {
+                                "connectionName": "shared_commondataserviceforapps",
+                                "operationId": "ListRecords",
+                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                              },
+                              "parameters": {
+                                "entityName": "mss_attachmentses",
+                                "$select": "mss_attachmentsid,mss_attachmentname,mss_clientfileid,mss_filesize,mss_filetype,mss_sharepointfileid,mss_sharepointfilepath,mss_sharepointfileurl",
+                                "$filter": "@concat('mss_clientfileid eq ''', items('Apply_to_each_File')?['clientFileId'], ''' and _mss_meetingreport_value eq ', triggerBody()?['meetingReportId'])",
+                                "$top": 1
+                              }
+                            }
+                          },
+                          "Condition_Attachment_Already_Exists": {
+                            "runAfter": {
+                              "List_Existing_Attachment": [
+                                "Succeeded"
+                              ]
+                            },
+                            "type": "If",
+                            "expression": "@greater(length(outputs('List_Existing_Attachment')?['body/value']), 0)",
+                            "actions": {
+                              "Append_Existing_Success_Result": {
+                                "runAfter": {},
+                                "type": "AppendToArrayVariable",
+                                "inputs": {
+                                  "name": "results",
+                                  "value": {
+                                    "clientFileId": "@items('Apply_to_each_File')?['clientFileId']",
+                                    "fileName": "@items('Apply_to_each_File')?['fileName']",
+                                    "status": "succeeded",
+                                    "attachment": {
+                                      "attachmentId": "@first(outputs('List_Existing_Attachment')?['body/value'])?['mss_attachmentsid']",
+                                      "fileName": "@first(outputs('List_Existing_Attachment')?['body/value'])?['mss_attachmentname']",
+                                      "fileUrl": "@first(outputs('List_Existing_Attachment')?['body/value'])?['mss_sharepointfileurl']",
+                                      "contentType": "@first(outputs('List_Existing_Attachment')?['body/value'])?['mss_filetype']",
+                                      "size": "@first(outputs('List_Existing_Attachment')?['body/value'])?['mss_filesize']"
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "else": {
+                              "actions": {
+                                "Create_File": {
+                                  "runAfter": {},
+                                  "type": "OpenApiConnection",
+                                  "inputs": {
+                                    "host": {
+                                      "connectionName": "shared_sharepointonline",
+                                      "operationId": "CreateFile",
+                                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                                    },
+                                    "retryPolicy": {
+                                      "type": "none"
+                                    },
+                                    "parameters": {
+                                      "dataset": "https://orgiac.sharepoint.com/sites/OIACEngage",
+                                      "folderPath": "@outputs('Compose_Folder_Path')",
+                                      "name": "@concat(items('Apply_to_each_File')?['clientFileId'], '_', items('Apply_to_each_File')?['fileName'])",
+                                      "body": "@base64ToBinary(items('Apply_to_each_File')?['contentBase64'])"
+                                    }
+                                  },
+                                  "runtimeConfiguration": {
+                                    "contentTransfer": {
+                                      "transferMode": "Chunked"
+                                    }
+                                  }
+                                },
+                                "Compose_SharePoint_File_URL": {
+                                  "runAfter": {
+                                    "Create_File": [
+                                      "Succeeded"
+                                    ]
+                                  },
+                                  "type": "Compose",
+                                  "inputs": "@concat('https://orgiac.sharepoint.com/sites/OIACEngage', replace(outputs('Create_File')?['body/Path'], ' ', '%20'))"
+                                },
+                                "Create_Attachment_Row": {
+                                  "runAfter": {
+                                    "Compose_SharePoint_File_URL": [
+                                      "Succeeded"
+                                    ]
+                                  },
+                                  "type": "OpenApiConnection",
+                                  "inputs": {
+                                    "host": {
+                                      "connectionName": "shared_commondataserviceforapps",
+                                      "operationId": "CreateRecord",
+                                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                                    },
+                                    "retryPolicy": {
+                                      "type": "none"
+                                    },
+                                    "parameters": {
+                                      "entityName": "mss_attachmentses",
+                                      "item/mss_attachmentsid": "@items('Apply_to_each_File')?['clientFileId']",
+                                      "item/mss_attachmentname": "@items('Apply_to_each_File')?['fileName']",
+                                      "item/mss_clientfileid": "@items('Apply_to_each_File')?['clientFileId']",
+                                      "item/mss_filesize": "@items('Apply_to_each_File')?['size']",
+                                      "item/mss_filetype": "@items('Apply_to_each_File')?['contentType']",
+                                      "item/mss_MeetingReport@odata.bind": "@concat('mss_meetingreports(', triggerBody()?['meetingReportId'], ')')",
+                                      "item/mss_sharepointfileid": "@outputs('Create_File')?['body/Id']",
+                                      "item/mss_sharepointfilepath": "@outputs('Create_File')?['body/Path']",
+                                      "item/mss_sharepointfileurl": "@outputs('Compose_SharePoint_File_URL')"
+                                    }
+                                  }
+                                },
+                                "Append_New_Success_Result": {
+                                  "runAfter": {
+                                    "Create_Attachment_Row": [
+                                      "Succeeded"
+                                    ]
+                                  },
+                                  "type": "AppendToArrayVariable",
+                                  "inputs": {
+                                    "name": "results",
+                                    "value": {
+                                      "clientFileId": "@items('Apply_to_each_File')?['clientFileId']",
+                                      "fileName": "@items('Apply_to_each_File')?['fileName']",
+                                      "status": "succeeded",
+                                      "attachment": {
+                                        "attachmentId": "@outputs('Create_Attachment_Row')?['body/mss_attachmentsid']",
+                                        "fileName": "@items('Apply_to_each_File')?['fileName']",
+                                        "fileUrl": "@outputs('Compose_SharePoint_File_URL')",
+                                        "contentType": "@items('Apply_to_each_File')?['contentType']",
+                                        "size": "@items('Apply_to_each_File')?['size']"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "Scope_File_Catch": {
+                        "runAfter": {
+                          "Scope_File_Try": [
+                            "Failed",
+                            "TimedOut"
+                          ]
+                        },
+                        "type": "Scope",
+                        "actions": {
+                          "Reset_Reconciliation_Found": {
+                            "runAfter": {},
+                            "type": "SetVariable",
+                            "inputs": {
+                              "name": "reconciliationFound",
+                              "value": false
+                            }
+                          },
+                          "Until_Attachment_Reconciled": {
+                            "runAfter": {
+                              "Reset_Reconciliation_Found": [
+                                "Succeeded"
+                              ]
+                            },
+                            "type": "Until",
+                            "expression": "@equals(variables('reconciliationFound'), true)",
+                            "limit": {
+                              "count": 5,
+                              "timeout": "PT45S"
+                            },
+                            "actions": {
+                              "Delay_Before_Attachment_Recheck": {
+                                "runAfter": {},
+                                "type": "Wait",
+                                "inputs": {
+                                  "interval": {
+                                    "count": 3,
+                                    "unit": "Second"
+                                  }
+                                }
+                              },
+                              "List_Attachment_After_Failure": {
+                                "runAfter": {
+                                  "Delay_Before_Attachment_Recheck": [
+                                    "Succeeded"
+                                  ]
+                                },
+                                "type": "OpenApiConnection",
+                                "inputs": {
+                                  "host": {
+                                    "connectionName": "shared_commondataserviceforapps",
+                                    "operationId": "ListRecords",
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                                  },
+                                  "retryPolicy": {
+                                    "type": "none"
+                                  },
+                                  "parameters": {
+                                    "entityName": "mss_attachmentses",
+                                    "$select": "mss_attachmentsid,mss_attachmentname,mss_clientfileid,mss_filesize,mss_filetype,mss_sharepointfileid,mss_sharepointfilepath,mss_sharepointfileurl",
+                                    "$filter": "@concat('mss_clientfileid eq ''', items('Apply_to_each_File')?['clientFileId'], ''' and _mss_meetingreport_value eq ', triggerBody()?['meetingReportId'])",
+                                    "$top": 1
+                                  }
+                                }
+                              },
+                              "Set_Reconciliation_Found": {
+                                "runAfter": {
+                                  "List_Attachment_After_Failure": [
+                                    "Succeeded"
+                                  ]
+                                },
+                                "type": "SetVariable",
+                                "inputs": {
+                                  "name": "reconciliationFound",
+                                  "value": "@greater(length(outputs('List_Attachment_After_Failure')?['body/value']), 0)"
+                                }
+                              }
+                            }
+                          },
+                          "Condition_Attachment_Was_Committed": {
+                            "runAfter": {
+                              "Until_Attachment_Reconciled": [
+                                "Succeeded",
+                                "Failed",
+                                "TimedOut"
+                              ]
+                            },
+                            "type": "If",
+                            "expression": "@greater(length(coalesce(outputs('List_Attachment_After_Failure')?['body/value'], json('[]'))), 0)",
+                            "actions": {
+                              "Append_Reconciled_Success_Result": {
+                                "runAfter": {},
+                                "type": "AppendToArrayVariable",
+                                "inputs": {
+                                  "name": "results",
+                                  "value": {
+                                    "clientFileId": "@items('Apply_to_each_File')?['clientFileId']",
+                                    "fileName": "@items('Apply_to_each_File')?['fileName']",
+                                    "status": "succeeded",
+                                    "attachment": {
+                                      "attachmentId": "@first(outputs('List_Attachment_After_Failure')?['body/value'])?['mss_attachmentsid']",
+                                      "fileName": "@first(outputs('List_Attachment_After_Failure')?['body/value'])?['mss_attachmentname']",
+                                      "fileUrl": "@first(outputs('List_Attachment_After_Failure')?['body/value'])?['mss_sharepointfileurl']",
+                                      "contentType": "@first(outputs('List_Attachment_After_Failure')?['body/value'])?['mss_filetype']",
+                                      "size": "@first(outputs('List_Attachment_After_Failure')?['body/value'])?['mss_filesize']"
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "else": {
+                              "actions": {
+                                "Condition_SharePoint_Reconciliation_Safe": {
+                                  "runAfter": {},
+                                  "type": "If",
+                                  "expression": "@and(equals(actions('Create_Attachment_Row')?['status'], 'Skipped'), or(equals(actions('Create_File')?['status'], 'Succeeded'), equals(actions('Create_File')?['status'], 'Failed'), equals(actions('Create_File')?['status'], 'TimedOut')))",
+                                  "actions": {
+                                    "Scope_Get_File_After_Failure_Try": {
+                                      "runAfter": {},
+                                      "type": "Scope",
+                                      "actions": {
+                                        "Get_File_After_Failure": {
+                                          "runAfter": {},
+                                          "type": "OpenApiConnection",
+                                          "inputs": {
+                                            "host": {
+                                              "connectionName": "shared_sharepointonline",
+                                              "operationId": "GetFileMetadataByPath",
+                                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                                            },
+                                            "retryPolicy": {
+                                              "type": "none"
+                                            },
+                                            "parameters": {
+                                              "dataset": "https://orgiac.sharepoint.com/sites/OIACEngage",
+                                              "path": "@concat(outputs('Compose_Folder_Path'), '/', items('Apply_to_each_File')?['clientFileId'], '_', items('Apply_to_each_File')?['fileName'])"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "Scope_Get_File_After_Failure_Catch": {
+                                      "runAfter": {
+                                        "Scope_Get_File_After_Failure_Try": [
+                                          "Failed",
+                                          "TimedOut"
+                                        ]
+                                      },
+                                      "type": "Scope",
+                                      "actions": {
+                                        "Compose_File_Not_Found_After_Failure": {
+                                          "runAfter": {},
+                                          "type": "Compose",
+                                          "inputs": "No SharePoint file was confirmed after the failed create path."
+                                        }
+                                      }
+                                    },
+                                    "Condition_Reconciled_File_Exists": {
+                                      "runAfter": {
+                                        "Scope_Get_File_After_Failure_Try": [
+                                          "Succeeded",
+                                          "Failed",
+                                          "TimedOut"
+                                        ],
+                                        "Scope_Get_File_After_Failure_Catch": [
+                                          "Succeeded",
+                                          "Skipped"
+                                        ]
+                                      },
+                                      "type": "If",
+                                      "expression": "@equals(actions('Get_File_After_Failure')?['status'], 'Succeeded')",
+                                      "actions": {
+                                        "Create_Reconciled_Attachment_Row": {
+                                          "runAfter": {},
+                                          "type": "OpenApiConnection",
+                                          "inputs": {
+                                            "host": {
+                                              "connectionName": "shared_commondataserviceforapps",
+                                              "operationId": "CreateRecord",
+                                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                                            },
+                                            "retryPolicy": {
+                                              "type": "none"
+                                            },
+                                            "parameters": {
+                                              "entityName": "mss_attachmentses",
+                                              "item/mss_attachmentsid": "@items('Apply_to_each_File')?['clientFileId']",
+                                              "item/mss_attachmentname": "@items('Apply_to_each_File')?['fileName']",
+                                              "item/mss_clientfileid": "@items('Apply_to_each_File')?['clientFileId']",
+                                              "item/mss_filesize": "@items('Apply_to_each_File')?['size']",
+                                              "item/mss_filetype": "@items('Apply_to_each_File')?['contentType']",
+                                              "item/mss_MeetingReport@odata.bind": "@concat('mss_meetingreports(', triggerBody()?['meetingReportId'], ')')",
+                                              "item/mss_sharepointfileid": "@outputs('Get_File_After_Failure')?['body/Id']",
+                                              "item/mss_sharepointfilepath": "@outputs('Get_File_After_Failure')?['body/Path']",
+                                              "item/mss_sharepointfileurl": "@concat('https://orgiac.sharepoint.com/sites/OIACEngage', replace(outputs('Get_File_After_Failure')?['body/Path'], ' ', '%20'))"
+                                            }
+                                          }
+                                        },
+                                        "Append_Reconciled_File_Success_Result": {
+                                          "runAfter": {
+                                            "Create_Reconciled_Attachment_Row": [
+                                              "Succeeded"
+                                            ]
+                                          },
+                                          "type": "AppendToArrayVariable",
+                                          "inputs": {
+                                            "name": "results",
+                                            "value": {
+                                              "clientFileId": "@items('Apply_to_each_File')?['clientFileId']",
+                                              "fileName": "@items('Apply_to_each_File')?['fileName']",
+                                              "status": "succeeded",
+                                              "attachment": {
+                                                "attachmentId": "@outputs('Create_Reconciled_Attachment_Row')?['body/mss_attachmentsid']",
+                                                "fileName": "@items('Apply_to_each_File')?['fileName']",
+                                                "fileUrl": "@concat('https://orgiac.sharepoint.com/sites/OIACEngage', replace(outputs('Get_File_After_Failure')?['body/Path'], ' ', '%20'))",
+                                                "contentType": "@items('Apply_to_each_File')?['contentType']",
+                                                "size": "@items('Apply_to_each_File')?['size']"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      },
+                                      "else": {
+                                        "actions": {
+                                          "Append_Failed_Result_File_Not_Found": {
+                                            "runAfter": {},
+                                            "type": "AppendToArrayVariable",
+                                            "inputs": {
+                                              "name": "results",
+                                              "value": {
+                                                "clientFileId": "@items('Apply_to_each_File')?['clientFileId']",
+                                                "fileName": "@items('Apply_to_each_File')?['fileName']",
+                                                "status": "failed",
+                                                "errorCode": "AttachmentUploadFailed"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "else": {
+                                    "actions": {
+                                      "Condition_Dataverse_Failure_Definitive": {
+                                        "runAfter": {},
+                                        "type": "If",
+                                        "expression": "@and(equals(actions('Create_Attachment_Row')?['status'], 'Failed'), greaterOrEquals(int(coalesce(outputs('Create_Attachment_Row')?['statusCode'], 0)), 400), less(int(coalesce(outputs('Create_Attachment_Row')?['statusCode'], 0)), 500), not(contains(createArray(408, 409, 429), int(coalesce(outputs('Create_Attachment_Row')?['statusCode'], 0)))))",
+                                        "actions": {
+                                          "Delete_File_After_Definitive_Dataverse_Rejection": {
+                                            "runAfter": {},
+                                            "type": "OpenApiConnection",
+                                            "inputs": {
+                                              "host": {
+                                                "connectionName": "shared_sharepointonline",
+                                                "operationId": "DeleteFile",
+                                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                                              },
+                                              "parameters": {
+                                                "dataset": "https://orgiac.sharepoint.com/sites/OIACEngage",
+                                                "id": "@outputs('Create_File')?['body/Id']"
+                                              }
+                                            }
+                                          },
+                                          "Append_Failed_Result_After_Definitive_Cleanup": {
+                                            "runAfter": {
+                                              "Delete_File_After_Definitive_Dataverse_Rejection": [
+                                                "Succeeded",
+                                                "Failed",
+                                                "TimedOut"
+                                              ]
+                                            },
+                                            "type": "AppendToArrayVariable",
+                                            "inputs": {
+                                              "name": "results",
+                                              "value": {
+                                                "clientFileId": "@items('Apply_to_each_File')?['clientFileId']",
+                                                "fileName": "@items('Apply_to_each_File')?['fileName']",
+                                                "status": "failed",
+                                                "errorCode": "AttachmentUploadRejected"
+                                              }
+                                            }
+                                          }
+                                        },
+                                        "else": {
+                                          "actions": {
+                                            "Condition_Global_Client_File_ID_Conflict": {
+                                              "runAfter": {},
+                                              "type": "If",
+                                              "expression": "@and(equals(actions('Create_Attachment_Row')?['status'], 'Failed'), equals(int(coalesce(outputs('Create_Attachment_Row')?['statusCode'], 0)), 409))",
+                                              "actions": {
+                                                "List_Attachment_By_Global_ID": {
+                                                  "runAfter": {},
+                                                  "type": "OpenApiConnection",
+                                                  "inputs": {
+                                                    "host": {
+                                                      "connectionName": "shared_commondataserviceforapps",
+                                                      "operationId": "ListRecords",
+                                                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                                                    },
+                                                    "parameters": {
+                                                      "entityName": "mss_attachmentses",
+                                                      "$select": "mss_attachmentsid,mss_attachmentname,mss_clientfileid,mss_filesize,mss_filetype,mss_sharepointfileid,mss_sharepointfilepath,mss_sharepointfileurl,_mss_meetingreport_value",
+                                                      "$filter": "@concat('mss_attachmentsid eq ', items('Apply_to_each_File')?['clientFileId'])",
+                                                      "$top": 1
+                                                    }
+                                                  }
+                                                },
+                                                "Condition_Global_ID_Row_Found": {
+                                                  "runAfter": {
+                                                    "List_Attachment_By_Global_ID": [
+                                                      "Succeeded"
+                                                    ]
+                                                  },
+                                                  "type": "If",
+                                                  "expression": "@greater(length(outputs('List_Attachment_By_Global_ID')?['body/value']), 0)",
+                                                  "actions": {
+                                                    "Condition_Global_ID_Belongs_To_Report": {
+                                                      "runAfter": {},
+                                                      "type": "If",
+                                                      "expression": "@equals(toLower(string(first(outputs('List_Attachment_By_Global_ID')?['body/value'])?['_mss_meetingreport_value'])), toLower(triggerBody()?['meetingReportId']))",
+                                                      "actions": {
+                                                        "Append_Global_ID_Reconciled_Success_Result": {
+                                                          "runAfter": {},
+                                                          "type": "AppendToArrayVariable",
+                                                          "inputs": {
+                                                            "name": "results",
+                                                            "value": {
+                                                              "clientFileId": "@items('Apply_to_each_File')?['clientFileId']",
+                                                              "fileName": "@items('Apply_to_each_File')?['fileName']",
+                                                              "status": "succeeded",
+                                                              "attachment": {
+                                                                "attachmentId": "@first(outputs('List_Attachment_By_Global_ID')?['body/value'])?['mss_attachmentsid']",
+                                                                "fileName": "@first(outputs('List_Attachment_By_Global_ID')?['body/value'])?['mss_attachmentname']",
+                                                                "fileUrl": "@first(outputs('List_Attachment_By_Global_ID')?['body/value'])?['mss_sharepointfileurl']",
+                                                                "contentType": "@first(outputs('List_Attachment_By_Global_ID')?['body/value'])?['mss_filetype']",
+                                                                "size": "@first(outputs('List_Attachment_By_Global_ID')?['body/value'])?['mss_filesize']"
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      },
+                                                      "else": {
+                                                        "actions": {
+                                                          "Delete_File_After_Global_ID_Conflict": {
+                                                            "runAfter": {},
+                                                            "type": "OpenApiConnection",
+                                                            "inputs": {
+                                                              "host": {
+                                                                "connectionName": "shared_sharepointonline",
+                                                                "operationId": "DeleteFile",
+                                                                "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                                                              },
+                                                              "parameters": {
+                                                                "dataset": "https://orgiac.sharepoint.com/sites/OIACEngage",
+                                                                "id": "@outputs('Create_File')?['body/Id']"
+                                                              }
+                                                            }
+                                                          },
+                                                          "Append_Global_ID_Conflict_Result": {
+                                                            "runAfter": {
+                                                              "Delete_File_After_Global_ID_Conflict": [
+                                                                "Succeeded",
+                                                                "Failed",
+                                                                "TimedOut"
+                                                              ]
+                                                            },
+                                                            "type": "AppendToArrayVariable",
+                                                            "inputs": {
+                                                              "name": "results",
+                                                              "value": {
+                                                                "clientFileId": "@items('Apply_to_each_File')?['clientFileId']",
+                                                                "fileName": "@items('Apply_to_each_File')?['fileName']",
+                                                                "status": "failed",
+                                                                "errorCode": "ClientFileIdConflict"
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                  },
+                                                  "else": {
+                                                    "actions": {
+                                                      "Append_Global_ID_Conflict_Pending_Result": {
+                                                        "runAfter": {},
+                                                        "type": "AppendToArrayVariable",
+                                                        "inputs": {
+                                                          "name": "results",
+                                                          "value": {
+                                                            "clientFileId": "@items('Apply_to_each_File')?['clientFileId']",
+                                                            "fileName": "@items('Apply_to_each_File')?['fileName']",
+                                                            "status": "failed",
+                                                            "errorCode": "AttachmentUploadPendingReconciliation"
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              },
+                                              "else": {
+                                                "actions": {
+                                                  "Append_Failed_Result_Ambiguous_Dataverse_Create": {
+                                                    "runAfter": {},
+                                                    "type": "AppendToArrayVariable",
+                                                    "inputs": {
+                                                      "name": "results",
+                                                      "value": {
+                                                        "clientFileId": "@items('Apply_to_each_File')?['clientFileId']",
+                                                        "fileName": "@items('Apply_to_each_File')?['fileName']",
+                                                        "status": "failed",
+                                                        "errorCode": "AttachmentUploadPendingReconciliation"
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "Condition_Batch_Result_Complete": {
+                    "runAfter": {
+                      "Apply_to_each_File": [
+                        "Succeeded",
+                        "Failed",
+                        "TimedOut"
+                      ]
+                    },
+                    "type": "If",
+                    "expression": "@equals(length(variables('results')), length(triggerBody()?['files']))",
+                    "actions": {
+                      "Response_Upload": {
+                        "runAfter": {},
+                        "type": "Response",
+                        "kind": "Http",
+                        "inputs": {
+                          "statusCode": 200,
+                          "headers": {
+                            "Content-Type": "application/json"
+                          },
+                          "body": {
+                            "results": "@variables('results')"
+                          }
+                        }
+                      }
+                    },
+                    "else": {
+                      "actions": {
+                        "Response_Upload_Incomplete": {
+                          "runAfter": {},
+                          "type": "Response",
+                          "kind": "Http",
+                          "inputs": {
+                            "statusCode": 500,
+                            "headers": {
+                              "Content-Type": "application/json"
+                            },
+                            "body": {
+                              "error": {
+                                "code": "UploadBatchIncomplete",
+                                "message": "The upload batch did not produce a result for every file. Retry the complete request with the same client file identifiers."
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "Response_Folder_Creation_Failed": {
+                    "runAfter": {
+                      "Scope_Folder_Catch": [
+                        "Failed",
+                        "TimedOut"
+                      ]
+                    },
+                    "type": "Response",
+                    "kind": "Http",
+                    "inputs": {
+                      "statusCode": 500,
+                      "headers": {
+                        "Content-Type": "application/json"
+                      },
+                      "body": {
+                        "error": {
+                          "code": "SharePointFolderCreationFailed",
+                          "message": "The attachment folder could not be prepared."
+                        }
+                      }
+                    }
+                  }
+                },
+                "else": {
+                  "actions": {
+                    "Response_Invalid_Upload_Request": {
+                      "runAfter": {},
+                      "type": "Response",
+                      "kind": "Http",
+                      "inputs": {
+                        "statusCode": 400,
+                        "headers": {
+                          "Content-Type": "application/json"
+                        },
+                        "body": {
+                          "error": {
+                            "code": "InvalidUploadRequest",
+                            "message": "The upload request is invalid or exceeds the allowed limits."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "Case_Delete": {
+            "case": "delete",
+            "actions": {
+              "Condition_Delete_Request_Valid": {
+                "runAfter": {},
+                "type": "If",
+                "expression": "@not(empty(triggerBody()?['attachmentId']))",
+                "actions": {
+                  "Scope_Delete_Try": {
+                    "runAfter": {},
+                    "type": "Scope",
+                    "actions": {
+                      "List_Attachment_For_Delete": {
+                        "runAfter": {},
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "host": {
+                            "connectionName": "shared_commondataserviceforapps",
+                            "operationId": "ListRecords",
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                          },
+                          "parameters": {
+                            "entityName": "mss_attachmentses",
+                            "$select": "mss_attachmentsid,mss_sharepointfileid,mss_sharepointfilepath",
+                            "$filter": "@concat('mss_attachmentsid eq ', triggerBody()?['attachmentId'], ' and _mss_meetingreport_value eq ', triggerBody()?['meetingReportId'])",
+                            "$top": 1
+                          }
+                        }
+                      },
+                      "Condition_Attachment_Found": {
+                        "runAfter": {
+                          "List_Attachment_For_Delete": [
+                            "Succeeded"
+                          ]
+                        },
+                        "type": "If",
+                        "expression": "@greater(length(outputs('List_Attachment_For_Delete')?['body/value']), 0)",
+                        "actions": {
+                          "Scope_Delete_SharePoint_Try": {
+                            "runAfter": {},
+                            "type": "Scope",
+                            "actions": {
+                              "Delete_SharePoint_File": {
+                                "runAfter": {},
+                                "type": "OpenApiConnection",
+                                "inputs": {
+                                  "host": {
+                                    "connectionName": "shared_sharepointonline",
+                                    "operationId": "DeleteFile",
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                                  },
+                                  "parameters": {
+                                    "dataset": "https://orgiac.sharepoint.com/sites/OIACEngage",
+                                    "id": "@first(outputs('List_Attachment_For_Delete')?['body/value'])?['mss_sharepointfileid']"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "Scope_Delete_SharePoint_Catch": {
+                            "runAfter": {
+                              "Scope_Delete_SharePoint_Try": [
+                                "Failed",
+                                "TimedOut"
+                              ]
+                            },
+                            "type": "Scope",
+                            "actions": {
+                              "Compose_SharePoint_Delete_Status": {
+                                "runAfter": {},
+                                "type": "Compose",
+                                "inputs": "@outputs('Delete_SharePoint_File')?['statusCode']"
+                              }
+                            }
+                          },
+                          "Condition_SharePoint_Deleted_Or_Missing": {
+                            "runAfter": {
+                              "Scope_Delete_SharePoint_Try": [
+                                "Succeeded",
+                                "Failed",
+                                "TimedOut"
+                              ],
+                              "Scope_Delete_SharePoint_Catch": [
+                                "Succeeded",
+                                "Skipped"
+                              ]
+                            },
+                            "type": "If",
+                            "expression": "@or(equals(actions('Delete_SharePoint_File')?['status'], 'Succeeded'), equals(outputs('Delete_SharePoint_File')?['statusCode'], 404))",
+                            "actions": {
+                              "Delete_Attachment_Row": {
+                                "runAfter": {},
+                                "type": "OpenApiConnection",
+                                "inputs": {
+                                  "host": {
+                                    "connectionName": "shared_commondataserviceforapps",
+                                    "operationId": "DeleteRecord",
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                                  },
+                                  "parameters": {
+                                    "entityName": "mss_attachmentses",
+                                    "recordId": "@first(outputs('List_Attachment_For_Delete')?['body/value'])?['mss_attachmentsid']"
+                                  }
+                                }
+                              },
+                              "Set_Delete_Status_Success": {
+                                "runAfter": {
+                                  "Delete_Attachment_Row": [
+                                    "Succeeded"
+                                  ]
+                                },
+                                "type": "SetVariable",
+                                "inputs": {
+                                  "name": "deleteStatusCode",
+                                  "value": 200
+                                }
+                              },
+                              "Set_Delete_Body_Success": {
+                                "runAfter": {
+                                  "Set_Delete_Status_Success": [
+                                    "Succeeded"
+                                  ]
+                                },
+                                "type": "SetVariable",
+                                "inputs": {
+                                  "name": "deleteResponseBody",
+                                  "value": {
+                                    "deleted": true,
+                                    "attachmentId": "@triggerBody()?['attachmentId']"
+                                  }
+                                }
+                              }
+                            },
+                            "else": {
+                              "actions": {
+                                "Set_Delete_Status_SharePoint_Failed": {
+                                  "runAfter": {},
+                                  "type": "SetVariable",
+                                  "inputs": {
+                                    "name": "deleteStatusCode",
+                                    "value": 502
+                                  }
+                                },
+                                "Set_Delete_Body_SharePoint_Failed": {
+                                  "runAfter": {
+                                    "Set_Delete_Status_SharePoint_Failed": [
+                                      "Succeeded"
+                                    ]
+                                  },
+                                  "type": "SetVariable",
+                                  "inputs": {
+                                    "name": "deleteResponseBody",
+                                    "value": {
+                                      "error": {
+                                        "code": "SharePointDeleteFailed",
+                                        "message": "The SharePoint file could not be deleted."
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "else": {
+                          "actions": {
+                            "Set_Delete_Status_Not_Found": {
+                              "runAfter": {},
+                              "type": "SetVariable",
+                              "inputs": {
+                                "name": "deleteStatusCode",
+                                "value": 404
+                              }
+                            },
+                            "Set_Delete_Body_Not_Found": {
+                              "runAfter": {
+                                "Set_Delete_Status_Not_Found": [
+                                  "Succeeded"
+                                ]
+                              },
+                              "type": "SetVariable",
+                              "inputs": {
+                                "name": "deleteResponseBody",
+                                "value": {
+                                  "error": {
+                                    "code": "AttachmentNotFound",
+                                    "message": "The attachment was not found for this Meeting Report."
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "Scope_Delete_Catch": {
+                    "runAfter": {
+                      "Scope_Delete_Try": [
+                        "Failed",
+                        "TimedOut"
+                      ]
+                    },
+                    "type": "Scope",
+                    "actions": {
+                      "Compose_Delete_Failure": {
+                        "runAfter": {},
+                        "type": "Compose",
+                        "inputs": "Delete processing completed through the catch path."
+                      }
+                    }
+                  },
+                  "Response_Delete": {
+                    "runAfter": {
+                      "Scope_Delete_Try": [
+                        "Succeeded",
+                        "Failed",
+                        "TimedOut"
+                      ],
+                      "Scope_Delete_Catch": [
+                        "Succeeded",
+                        "Skipped"
+                      ]
+                    },
+                    "type": "Response",
+                    "kind": "Http",
+                    "inputs": {
+                      "statusCode": "@variables('deleteStatusCode')",
+                      "headers": {
+                        "Content-Type": "application/json"
+                      },
+                      "body": "@variables('deleteResponseBody')"
+                    }
+                  }
+                },
+                "else": {
+                  "actions": {
+                    "Response_Invalid_Delete_Request": {
+                      "runAfter": {},
+                      "type": "Response",
+                      "kind": "Http",
+                      "inputs": {
+                        "statusCode": 400,
+                        "headers": {
+                          "Content-Type": "application/json"
+                        },
+                        "body": {
+                          "error": {
+                            "code": "InvalidDeleteRequest",
+                            "message": "A valid attachment identifier is required."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "default": {
+          "actions": {
+            "Response_Invalid_Operation": {
+              "runAfter": {},
+              "type": "Response",
+              "kind": "Http",
+              "inputs": {
+                "statusCode": 400,
+                "headers": {
+                  "Content-Type": "application/json"
+                },
+                "body": {
+                  "error": {
+                    "code": "InvalidOperation",
+                    "message": "The requested operation is not supported."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "outputs": {}
+  }
+}

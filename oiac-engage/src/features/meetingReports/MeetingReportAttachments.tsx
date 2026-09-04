@@ -1,6 +1,9 @@
 import { useId, type ChangeEvent } from 'react'
 import { LuExternalLink, LuFile, LuTrash2, LuUpload, LuX } from 'react-icons/lu'
-import type { MeetingReportAttachment } from './meetingReportAttachmentService'
+import {
+  buildMeetingReportAttachmentPreviewUrl,
+  type MeetingReportAttachment,
+} from './meetingReportAttachmentService'
 
 export type MeetingReportAttachmentsProps = {
   readonly selectedFiles: readonly File[]
@@ -117,7 +120,7 @@ export function MeetingReportAttachments({
                     <span className="meeting-report-attachments__actions">
                       {attachment.fileUrl ? (
                         <a
-                          href={attachment.fileUrl}
+                          href={buildMeetingReportAttachmentPreviewUrl(attachment.fileUrl)}
                           target="_blank"
                           rel="noreferrer"
                           aria-label={`Open ${attachment.fileName}`}

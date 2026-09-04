@@ -5,6 +5,7 @@ import type { PortalUser } from '../auth/powerPagesSession'
 import {
   deleteMeetingReportAttachment,
   listMeetingReportAttachments,
+  listMeetingReportPageAttachments,
   uploadMeetingReportAttachments,
 } from '../features/meetingReports/meetingReportAttachmentService'
 import {
@@ -43,6 +44,7 @@ vi.mock('../features/meetingReports/meetingReportAttachmentService', async (impo
     ...original,
     deleteMeetingReportAttachment: vi.fn(),
     listMeetingReportAttachments: vi.fn(),
+    listMeetingReportPageAttachments: vi.fn(),
     uploadMeetingReportAttachments: vi.fn(),
   }
 })
@@ -75,6 +77,7 @@ const volunteer = {
 const staffSaidLabel = 'Write Down What the Staff Said, Not What You Said'
 const existingAttachment = {
   attachmentId: '77777777-7777-7777-7777-777777777777',
+  duplicateAttachmentIds: ['99999999-9999-4999-8999-999999999999'],
   fileName: 'Existing notes.pdf',
   fileUrl: 'https://example.sharepoint.com/existing-notes.pdf',
   contentType: 'application/pdf',
@@ -147,6 +150,7 @@ beforeEach(() => {
   vi.mocked(updateMeetingReport).mockResolvedValue()
   vi.mocked(runRelationshipOperations).mockResolvedValue([])
   vi.mocked(listMeetingReportAttachments).mockResolvedValue([])
+  vi.mocked(listMeetingReportPageAttachments).mockResolvedValue(new Map([[reportId, []]]))
   vi.mocked(uploadMeetingReportAttachments).mockImplementation(async (_id, files) => ({
     succeededAttachments: files.map((file) => ({
       attachmentId: '88888888-8888-8888-8888-888888888888',
@@ -169,6 +173,80 @@ test('lists Dataverse meeting reports with real record-specific edit actions', a
   expect(within(table).getByRole('link', { name: `Edit ${existingReport.subject}` }))
     .toHaveAttribute('href', `/report/${reportId}/edit`)
   expect(table.querySelector('time')).toHaveTextContent(/\d{1,2}:\d{2} (AM|PM)/)
+})
+
+test('shows up to two report files with separate open and download controls', async () => {
+  vi.mocked(listMeetingReportPageAttachments).mockResolvedValue(new Map([[reportId, [
+    existingAttachment,
+    {
+      ...existingAttachment,
+      attachmentId: '88888888-8888-4888-8888-888888888888',
+      fileName: 'District data.xlsx',
+      fileUrl: 'https://example.sharepoint.com/district-data.xlsx?view=1',
+      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    },
+  ]]]))
+
+  renderReportRoute('/report')
+
+  const table = await screen.findByRole('table', { name: 'Meeting Reports' })
+  expect(within(table).getByRole('columnheader', { name: 'Files' })).toBeInTheDocument()
+  const fileCell = within(table).getByRole('cell', { name: `Files for ${existingReport.subject}` })
+  const inlineFiles = within(fileCell).getByRole('group', { name: 'First 2 files' })
+  expect(within(inlineFiles).getByRole('link', { name: 'Open Existing notes.pdf' })).toHaveAttribute(
+    'href', 'https://example.sharepoint.com/existing-notes.pdf?web=1',
+  )
+  expect(within(inlineFiles).getByRole('link', { name: 'Download Existing notes.pdf' })).toHaveAttribute(
+    'href', 'https://example.sharepoint.com/existing-notes.pdf?download=1',
+  )
+  expect(within(inlineFiles).getByRole('link', { name: 'Open District data.xlsx' })).toHaveAttribute(
+    'href', 'https://example.sharepoint.com/district-data.xlsx?view=1&web=1',
+  )
+  expect(within(inlineFiles).getByText('District data.xlsx', { selector: '.report-file__tooltip' }))
+    .toHaveAttribute('aria-hidden', 'true')
+  expect(within(inlineFiles).getByRole('link', { name: 'Download District data.xlsx' })).toHaveAttribute(
+    'href', 'https://example.sharepoint.com/district-data.xlsx?view=1&download=1',
+  )
+  expect(within(fileCell).queryByText(/more/i)).not.toBeInTheDocument()
+})
+
+test('shows all report files in a disclosure when more than two unique files exist', async () => {
+  const attachments = [
+    existingAttachment,
+    {
+      ...existingAttachment,
+      attachmentId: '88888888-8888-4888-8888-888888888888',
+      fileName: 'District data.xlsx',
+      fileUrl: 'https://example.sharepoint.com/district-data.xlsx',
+      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    },
+    {
+      ...existingAttachment,
+      attachmentId: '99999999-9999-4999-8999-999999999999',
+      fileName: 'Meeting photo.png',
+      fileUrl: 'https://example.sharepoint.com/meeting-photo.png',
+      contentType: 'image/png',
+    },
+  ]
+  vi.mocked(listMeetingReportPageAttachments).mockResolvedValue(new Map([[reportId, attachments]]))
+  const actor = userEvent.setup()
+
+  renderReportRoute('/report')
+
+  const table = await screen.findByRole('table', { name: 'Meeting Reports' })
+  const fileCell = within(table).getByRole('cell', { name: `Files for ${existingReport.subject}` })
+  const more = within(fileCell).getByText('+1 more')
+  await actor.click(more)
+  const allFiles = within(fileCell).getByRole('list', { name: `All files for ${existingReport.subject}` })
+  expect(within(allFiles).getByText('Existing notes.pdf')).toBeInTheDocument()
+  expect(within(allFiles).getByText('District data.xlsx')).toBeInTheDocument()
+  expect(within(allFiles).getByText('Meeting photo.png')).toBeInTheDocument()
+  expect(within(allFiles).getByRole('link', { name: 'Open Meeting photo.png' })).toHaveAttribute(
+    'href', 'https://example.sharepoint.com/meeting-photo.png?web=1',
+  )
+  expect(within(allFiles).getByRole('link', { name: 'Download Meeting photo.png' })).toHaveAttribute(
+    'href', 'https://example.sharepoint.com/meeting-photo.png?download=1',
+  )
 })
 
 test('paginates Meeting Reports with fifteen-record server pages', async () => {
@@ -421,10 +499,14 @@ test('lists and deletes existing files only on an edit form', async () => {
   await actor.click(screen.getByRole('button', { name: 'Next: Report Content' }))
 
   const link = await screen.findByRole('link', { name: 'Open Existing notes.pdf' })
-  expect(link).toHaveAttribute('href', existingAttachment.fileUrl)
+  expect(link).toHaveAttribute('href', 'https://example.sharepoint.com/existing-notes.pdf?web=1')
   expect(listMeetingReportAttachments).toHaveBeenCalledWith(reportId, expect.any(AbortSignal))
   await actor.click(screen.getByRole('button', { name: 'Delete Existing notes.pdf' }))
-  expect(deleteMeetingReportAttachment).toHaveBeenCalledWith(reportId, existingAttachment.attachmentId)
+  expect(deleteMeetingReportAttachment).toHaveBeenCalledWith(
+    reportId,
+    existingAttachment.attachmentId,
+    existingAttachment.duplicateAttachmentIds,
+  )
   expect(screen.queryByRole('link', { name: 'Open Existing notes.pdf' })).not.toBeInTheDocument()
 })
 

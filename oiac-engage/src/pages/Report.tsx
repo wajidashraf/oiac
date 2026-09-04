@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { LuChevronLeft } from 'react-icons/lu'
 import { Link, useLocation } from 'react-router-dom'
+import {
+  listMeetingReportPageAttachments,
+  type MeetingReportAttachment,
+} from '../features/meetingReports/meetingReportAttachmentService'
+import { ReportFilesCell } from '../features/meetingReports/ReportFilesCell'
 import { getMeetingReports } from '../features/meetingReports/meetingReportService'
 import type { MeetingReportSummary } from '../features/meetingReports/meetingReportTypes'
 
@@ -10,6 +15,10 @@ export default function Report() {
   const updated = Boolean((location.state as { reportUpdated?: boolean } | null)?.reportUpdated)
   const [reports, setReports] = useState<readonly MeetingReportSummary[]>([])
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [attachmentStatus, setAttachmentStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [attachmentsByReport, setAttachmentsByReport] = useState<ReadonlyMap<string, readonly MeetingReportAttachment[]>>(
+    () => new Map(),
+  )
   const [retry, setRetry] = useState(0)
   const [page, setPage] = useState(1)
   const [nextLink, setNextLink] = useState<string | null>(null)
@@ -23,14 +32,14 @@ export default function Report() {
     const controller = new AbortController()
     const currentNextLink = pageLinks.current[page - 1] ?? null
     setStatus('loading')
-    getMeetingReports({ nextLink: currentNextLink }, controller.signal)
-      .then((result) => {
-        if (controller.signal.aborted) return
-        setReports(result.reports)
-        setNextLink(result.nextLink)
-        setStatus('ready')
-      })
-      .catch((error: unknown) => {
+    setAttachmentStatus('loading')
+    setAttachmentsByReport(new Map())
+
+    async function loadReportPage() {
+      let result
+      try {
+        result = await getMeetingReports({ nextLink: currentNextLink }, controller.signal)
+      } catch (error: unknown) {
         if (controller.signal.aborted) return
         console.error('[Report] Meeting Reports request failed', {
           error,
@@ -38,8 +47,38 @@ export default function Report() {
           hasContinuation: Boolean(currentNextLink),
           signalAborted: controller.signal.aborted,
         })
+        setAttachmentStatus('ready')
         setStatus('error')
-      })
+        return
+      }
+
+      let pageAttachments: ReadonlyMap<string, readonly MeetingReportAttachment[]> = new Map()
+      let nextAttachmentStatus: 'ready' | 'error' = 'ready'
+      if (result.reports.length > 0) {
+        try {
+          pageAttachments = await listMeetingReportPageAttachments(
+            result.reports.map((report) => report.id),
+            controller.signal,
+          )
+        } catch (error: unknown) {
+          if (controller.signal.aborted) return
+          console.error('[Report] Meeting Report attachments request failed', {
+            error,
+            page,
+            reportCount: result.reports.length,
+          })
+          nextAttachmentStatus = 'error'
+        }
+      }
+      if (controller.signal.aborted) return
+      setReports(result.reports)
+      setNextLink(result.nextLink)
+      setAttachmentsByReport(pageAttachments)
+      setAttachmentStatus(nextAttachmentStatus)
+      setStatus('ready')
+    }
+
+    void loadReportPage()
     return () => controller.abort()
   }, [page, retry])
 
@@ -75,9 +114,15 @@ export default function Report() {
       {status === 'ready' && reports.length === 0 ? <p className="report-page__state" role="status">No meeting reports have been submitted yet.</p> : null}
       {status === 'ready' && reports.length > 0 ? (
         <>
+          {attachmentStatus === 'error' ? (
+            <div className="form-alert report-page__files-alert" role="alert">
+              <span>Report files could not be loaded.</span>
+              <button className="button button--quiet" type="button" onClick={() => setRetry((value) => value + 1)}>Try again</button>
+            </div>
+          ) : null}
           <div className="dashboard-table-scroll report-page__table" role="region" aria-label="Meeting Reports table, scroll horizontally" tabIndex={0}>
             <table className="dashboard-table" aria-label="Meeting Reports">
-              <thead><tr><th scope="col">Meeting</th><th scope="col">Representative</th><th scope="col">Start</th><th scope="col">Outcome</th><th scope="col" aria-label="Actions" /></tr></thead>
+              <thead><tr><th scope="col">Meeting</th><th scope="col">Representative</th><th scope="col">Start</th><th scope="col">Outcome</th><th scope="col">Files</th><th scope="col" aria-label="Actions" /></tr></thead>
               <tbody>
                 {reports.map((report) => (
                   <tr key={report.id}>
@@ -85,6 +130,13 @@ export default function Report() {
                     <td>{report.representativeName}</td>
                     <td><time dateTime={report.date}>{formatReportDate(report.date)}</time></td>
                     <td>{report.sentimentLabel}</td>
+                    <td aria-label={`Files for ${report.subject}`}>
+                      <ReportFilesCell
+                        attachments={attachmentsByReport.get(report.id) ?? []}
+                        reportSubject={report.subject}
+                        status={attachmentStatus}
+                      />
+                    </td>
                     <td><Link aria-label={`Edit ${report.subject}`} to={`/report/${report.id}/edit`}>Edit</Link></td>
                   </tr>
                 ))}

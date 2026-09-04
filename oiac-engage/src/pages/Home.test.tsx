@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { useHomeDashboardData, type HomeDashboardData } from '../features/dashboard/useHomeDashboardData'
@@ -37,6 +38,16 @@ const upcomingEvents: readonly EventItem[] = [
 }))
 
 const retry = vi.fn()
+const reportAttachments = new Map([[
+  reports[0].id,
+  [{
+    attachmentId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    fileName: 'Meeting notes.pdf',
+    fileUrl: 'https://example.sharepoint.com/Meeting%20notes.pdf',
+    contentType: 'application/pdf',
+    size: 2048,
+  }],
+]])
 
 function dashboardData(overrides: Partial<HomeDashboardData> = {}): HomeDashboardData {
   return {
@@ -44,7 +55,9 @@ function dashboardData(overrides: Partial<HomeDashboardData> = {}): HomeDashboar
     reportCount: 7,
     registeredEventCount: 2,
     upcomingEvents,
+    attachmentsByReport: reportAttachments,
     reportsStatus: 'ready',
+    attachmentStatus: 'ready',
     registrationsStatus: 'ready',
     retry,
     ...overrides,
@@ -142,6 +155,14 @@ test('renders both dashboard datasets as semantic tables', async () => {
   expect(within(reportsTable).getByRole('columnheader', { name: 'Representative' })).toBeInTheDocument()
   expect(within(reportsTable).getByRole('columnheader', { name: 'Start' })).toBeInTheDocument()
   expect(within(reportsTable).getByRole('columnheader', { name: 'Outcome' })).toBeInTheDocument()
+  expect(within(reportsTable).getByRole('columnheader', { name: 'Files' })).toBeInTheDocument()
+  const firstFiles = within(reportsTable).getByRole('cell', { name: 'Files for Meeting 1' })
+  expect(within(firstFiles).getByRole('link', { name: 'Open Meeting notes.pdf' })).toHaveAttribute(
+    'href', 'https://example.sharepoint.com/Meeting%20notes.pdf?web=1',
+  )
+  expect(within(firstFiles).getByRole('link', { name: 'Download Meeting notes.pdf' })).toHaveAttribute(
+    'href', 'https://example.sharepoint.com/Meeting%20notes.pdf?download=1',
+  )
 
   const submissionsTable = screen.getByRole('table', { name: 'Volunteer Submissions' })
   expect(within(submissionsTable).getByRole('columnheader', { name: 'Type' })).toBeInTheDocument()
@@ -181,6 +202,20 @@ test('shows an error state when latest reports cannot be loaded', async () => {
 
   expect(await screen.findByRole('alert')).toHaveTextContent('Meeting reports could not be loaded')
   expect(screen.queryByRole('table', { name: 'Meeting Reports' })).not.toBeInTheDocument()
+})
+
+test('keeps reports visible and retries when only report files cannot be loaded', async () => {
+  const actor = userEvent.setup()
+  vi.mocked(useHomeDashboardData).mockReturnValue(dashboardData({
+    attachmentsByReport: new Map(),
+    attachmentStatus: 'error',
+  }))
+  renderHome()
+
+  expect(screen.getByRole('table', { name: 'Meeting Reports' })).toBeInTheDocument()
+  expect(screen.getByRole('alert')).toHaveTextContent('Report files could not be loaded.')
+  await actor.click(screen.getByRole('button', { name: 'Try again' }))
+  expect(retry).toHaveBeenCalledTimes(1)
 })
 
 test('shows a friendly registration prompt when the user has no registered upcoming events', () => {
