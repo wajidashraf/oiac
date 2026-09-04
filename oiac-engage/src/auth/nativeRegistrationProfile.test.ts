@@ -64,7 +64,7 @@ describe('native Power Pages registration profile fields', () => {
   test('ships as a compiled public asset for registration paths with runtime suffixes', () => {
     expect(registrationScript()).toContain("var STORAGE_KEY = 'oiac.registrationProfile.pending.v1'")
     expect(header).toContain("auth_path contains '/account/login/register'")
-    expect(header).toContain('<script src="/registration-profile.js?v=3" defer></script>')
+    expect(header).toContain('<script src="/registration-profile.js?v=4" defer></script>')
   })
 
   test('inserts First Name and Last Name immediately before Email', () => {
