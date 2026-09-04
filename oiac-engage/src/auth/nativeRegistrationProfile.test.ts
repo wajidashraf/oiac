@@ -4,12 +4,11 @@ import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 import header from '../../.powerpages-site/web-templates/oiac-auth-header/OIAC-Auth-Header.webtemplate.source.html?raw'
 
 const registrationAssets = import.meta.glob(
-  '../../.powerpages-site/web-files/registration-profile.js/*',
+  '../../public/registration-profile.js',
   { eager: true, import: 'default', query: '?raw' },
 ) as Record<string, string>
 
-const scriptPath = '../../.powerpages-site/web-files/registration-profile.js/registration-profile.js'
-const metadataPath = `${scriptPath}.webfile.yml`
+const scriptPath = '../../public/registration-profile.js'
 const storageKey = 'oiac.registrationProfile.pending.v1'
 
 function registrationScript(): string {
@@ -62,12 +61,8 @@ afterEach(() => {
 })
 
 describe('native Power Pages registration profile fields', () => {
-  test('is deployed when the native registration path has runtime suffixes', () => {
-    const metadata = registrationAssets[metadataPath]
-
-    expect(metadata).toContain('filename: registration-profile.js')
-    expect(metadata).toContain('mimetype: application/javascript')
-    expect(metadata).toContain('partialurl: registration-profile.js')
+  test('ships as a compiled public asset for registration paths with runtime suffixes', () => {
+    expect(registrationScript()).toContain("var STORAGE_KEY = 'oiac.registrationProfile.pending.v1'")
     expect(header).toContain("auth_path contains '/account/login/register'")
     expect(header).toContain('<script src="/registration-profile.js?v=3" defer></script>')
   })
