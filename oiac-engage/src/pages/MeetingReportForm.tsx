@@ -14,7 +14,15 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import type { PortalUser } from '../auth/powerPagesSession'
 import { LoadingBackdrop } from '../components/LoadingBackdrop'
 import { ContactLookup, DistrictLookup } from '../features/meetingReports/ContactLookup'
+import { MeetingReportAttachments } from '../features/meetingReports/MeetingReportAttachments'
 import { MultiContactLookup } from '../features/meetingReports/MultiContactLookup'
+import {
+  deleteMeetingReportAttachment,
+  listMeetingReportAttachments,
+  uploadMeetingReportAttachment,
+  validateAndMergeAttachmentFiles,
+  type MeetingReportAttachment,
+} from '../features/meetingReports/meetingReportAttachmentService'
 import {
   buildRelationshipOperations,
   createMeetingReport,
@@ -73,7 +81,6 @@ const emptyDraft: MeetingReportDraft = {
   volunteerIds: [],
   issuesDiscussed: '',
   followUpActions: '',
-  documentsProvided: '',
   sentiment: null,
 }
 
@@ -99,6 +106,13 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
   const [pendingOperations, setPendingOperations] = useState<readonly RelationshipOperation[]>([])
   const [creationOutcomeUnknown, setCreationOutcomeUnknown] = useState(false)
   const [persistedReportId, setPersistedReportId] = useState<string | null>(reportId ?? null)
+  const [selectedFiles, setSelectedFiles] = useState<readonly File[]>([])
+  const [selectionErrors, setSelectionErrors] = useState<readonly string[]>([])
+  const [existingAttachments, setExistingAttachments] = useState<readonly MeetingReportAttachment[]>([])
+  const [attachmentListStatus, setAttachmentListStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
+  const [attachmentListRetry, setAttachmentListRetry] = useState(0)
+  const [deletingAttachmentIds, setDeletingAttachmentIds] = useState<ReadonlySet<string>>(new Set())
+  const [pendingUploadFiles, setPendingUploadFiles] = useState<readonly File[]>([])
   const sectionHeading = useRef<HTMLHeadingElement>(null)
   const endDateTimeInput = useRef<HTMLInputElement>(null)
   const originalRelationships = useRef<RelationshipSelection>({ staffIds: [], volunteerIds: [] })
@@ -141,7 +155,6 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
             volunteerIds: loadedReport.volunteerIds,
             issuesDiscussed: loadedReport.issuesDiscussed,
             followUpActions: loadedReport.followUpActions,
-            documentsProvided: loadedReport.documentsProvided,
             sentiment: loadedReport.sentiment,
           })
           setRepresentative(loadedReport.representative)
@@ -173,6 +186,25 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
     return () => controller.abort()
   }, [loadRetry, reportId, user.contactId])
 
+  useEffect(() => {
+    if (!isEdit || loadStatus !== 'ready' || !persistedReportId) {
+      setAttachmentListStatus('idle')
+      return
+    }
+    const controller = new AbortController()
+    setAttachmentListStatus('loading')
+    listMeetingReportAttachments(persistedReportId, controller.signal)
+      .then((attachments) => {
+        if (controller.signal.aborted) return
+        setExistingAttachments(attachments)
+        setAttachmentListStatus('ready')
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setAttachmentListStatus('error')
+      })
+    return () => controller.abort()
+  }, [attachmentListRetry, isEdit, loadStatus, persistedReportId])
+
   function updateTextField(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     const { name, value } = event.target
     setDraft((current) => ({ ...current, [name]: value }))
@@ -199,6 +231,59 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
   function chooseVolunteers(values: readonly ContactOption[]) {
     setVolunteers(values)
     setDraft((current) => ({ ...current, volunteerIds: values.map((value) => value.id) }))
+  }
+
+  function selectAttachmentFiles(files: readonly File[]) {
+    const result = validateAndMergeAttachmentFiles(selectedFiles, files)
+    setSelectedFiles(result.files)
+    setSelectionErrors(result.errors)
+  }
+
+  function removeSelectedFile(fileName: string) {
+    setSelectedFiles((current) => current.filter((file) => file.name.toLocaleLowerCase() !== fileName.toLocaleLowerCase()))
+    setSelectionErrors([])
+  }
+
+  async function deleteExistingAttachment(attachment: MeetingReportAttachment) {
+    if (!persistedReportId || !window.confirm(`Delete ${attachment.fileName}? This cannot be undone.`)) return
+    setDeletingAttachmentIds((current) => new Set(current).add(attachment.attachmentId))
+    setFormError(null)
+    try {
+      await deleteMeetingReportAttachment(persistedReportId, attachment.attachmentId)
+      setExistingAttachments((current) => current.filter((item) => item.attachmentId !== attachment.attachmentId))
+    } catch {
+      setFormError(`${attachment.fileName} could not be deleted. Try again.`)
+    } finally {
+      setDeletingAttachmentIds((current) => {
+        const next = new Set(current)
+        next.delete(attachment.attachmentId)
+        return next
+      })
+    }
+  }
+
+  async function uploadFiles(reportIdentifier: string, files: readonly File[]): Promise<readonly File[]> {
+    const failures: File[] = []
+    for (const file of files) {
+      try {
+        const attachment = await uploadMeetingReportAttachment(reportIdentifier, file)
+        setExistingAttachments((current) => [...current, attachment])
+      } catch {
+        failures.push(file)
+      }
+    }
+    setSelectedFiles(failures)
+    setPendingUploadFiles(failures)
+    return failures
+  }
+
+  async function finishUploadsOrShowRetry(reportIdentifier: string, files: readonly File[]): Promise<boolean> {
+    const failures = await uploadFiles(reportIdentifier, files)
+    if (failures.length > 0) {
+      setFormError('The report was saved, but some files could not be uploaded. Retry the file uploads without saving another report.')
+      return false
+    }
+    return true
   }
 
   function validateMeetingStep(): string | null {
@@ -268,6 +353,7 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
         setFormError('The report was saved, but some contact links could not be completed. Retry the contact links without creating another report.')
         return
       }
+      if (!await finishUploadsOrShowRetry(id, selectedFiles)) return
       finishSave()
     } catch (error) {
       if (error instanceof MeetingReportCreateOutcomeUnknownError) {
@@ -295,9 +381,24 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
         return
       }
       setPendingOperations([])
+      if (!await finishUploadsOrShowRetry(persistedReportId, selectedFiles)) return
       finishSave()
     } catch {
       setFormError('The contact links could not be completed. Try again.')
+    } finally {
+      submitLock.current = false
+      setIsSubmitting(false)
+    }
+  }
+
+  async function retryFileUploads() {
+    if (submitLock.current || !persistedReportId || pendingUploadFiles.length === 0) return
+    submitLock.current = true
+    setIsSubmitting(true)
+    setFormError(null)
+    try {
+      if (!await finishUploadsOrShowRetry(persistedReportId, pendingUploadFiles)) return
+      finishSave()
     } finally {
       submitLock.current = false
       setIsSubmitting(false)
@@ -308,7 +409,7 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
     navigate('/report', { state: isEdit ? { reportUpdated: true } : { reportSaved: true } })
   }
 
-  const formLocked = isSubmitting || pendingOperations.length > 0 || creationOutcomeUnknown
+  const formLocked = isSubmitting || pendingOperations.length > 0 || pendingUploadFiles.length > 0 || creationOutcomeUnknown
 
   return (
     <div className="page page--meeting-report page--report-form">
@@ -345,6 +446,9 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
                   <span>{formError}</span>
                   {pendingOperations.length > 0 ? (
                     <button type="button" className="button button--quiet" onClick={retryContactLinks} disabled={isSubmitting}>Retry contact links</button>
+                  ) : null}
+                  {pendingUploadFiles.length > 0 ? (
+                    <button type="button" className="button button--quiet" onClick={retryFileUploads} disabled={isSubmitting}>Retry file uploads</button>
                   ) : null}
                 </div>
               ) : null}
@@ -384,7 +488,18 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
                   <div className="form-grid report-form__grid">
                     <label className="field field--full"><span>Write Down What the Staff Said, Not What You Said <Required /></span><textarea aria-label="Write Down What the Staff Said, Not What You Said" name="issuesDiscussed" rows={5} placeholder="Describe what the staff said during the meeting..." value={draft.issuesDiscussed} onChange={updateTextField} required disabled={formLocked} /></label>
                     <label className="field field--full"><span>Follow-Up Note (Once the Meeting Ended)</span><textarea aria-label="Follow-Up Note (Once the Meeting Ended)" name="followUpActions" rows={3} placeholder="Materials to send, follow-up calls, commitments made..." value={draft.followUpActions} onChange={updateTextField} disabled={formLocked} /></label>
-                    <label className="field field--full"><span>Documents Provided</span><input aria-label="Documents Provided" name="documentsProvided" type="text" value={draft.documentsProvided} onChange={updateTextField} disabled={formLocked} /></label>
+                    <MeetingReportAttachments
+                      selectedFiles={selectedFiles}
+                      existingAttachments={existingAttachments}
+                      listStatus={attachmentListStatus}
+                      selectionErrors={selectionErrors}
+                      deletingAttachmentIds={deletingAttachmentIds}
+                      disabled={formLocked}
+                      onFilesSelected={selectAttachmentFiles}
+                      onSelectedFileRemoved={removeSelectedFile}
+                      onDeleteExisting={deleteExistingAttachment}
+                      onRetryList={() => setAttachmentListRetry((current) => current + 1)}
+                    />
                     <fieldset className="report-choice-field field--full"><legend>Overall Sentiment</legend><div className="report-choice-grid report-choice-grid--sentiments">
                       {sentiments.map((sentiment) => <label className={`report-choice report-choice--sentiment report-choice--${sentiment.label.toLowerCase().replace(/[^a-z]+/g, '-')}`} key={sentiment.value}><input type="radio" name="sentiment" value={sentiment.value} checked={draft.sentiment === sentiment.value} onChange={() => setDraft((current) => ({ ...current, sentiment: sentiment.value }))} disabled={formLocked} /><span className="report-choice__rating" aria-hidden="true">{sentiment.symbol}</span><strong>{sentiment.label}</strong></label>)}
                     </div></fieldset>
@@ -395,8 +510,8 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
 
               <div className="report-form__actions">
                 {step > 0 ? <button className="button button--quiet" type="button" onClick={() => { setFormError(null); setStep((current) => current - 1) }} disabled={formLocked}><LuArrowLeft aria-hidden="true" />Back</button> : <span />}
-                {step === 2 && (isSubmitting || pendingOperations.length > 0) ? <button className="button button--quiet report-form__cancel" type="button" disabled>Cancel</button> : null}
-                {step === 2 && !isSubmitting && pendingOperations.length === 0 ? <Link className="button button--quiet report-form__cancel" to="/report">{creationOutcomeUnknown ? 'Return to Meeting Reports' : 'Cancel'}</Link> : null}
+                {step === 2 && (isSubmitting || pendingOperations.length > 0 || pendingUploadFiles.length > 0) ? <button className="button button--quiet report-form__cancel" type="button" disabled>Cancel</button> : null}
+                {step === 2 && !isSubmitting && pendingOperations.length === 0 && pendingUploadFiles.length === 0 ? <Link className="button button--quiet report-form__cancel" to="/report">{creationOutcomeUnknown ? 'Return to Meeting Reports' : 'Cancel'}</Link> : null}
                 <button className="button button--primary" type="submit" disabled={formLocked}>
                   {isSubmitting ? 'Saving…' : step === 0 ? 'Next: Meeting Details' : step === 1 ? 'Next: Report Content' : isEdit ? 'Update Report' : 'Submit Report'}
                   {!isSubmitting && step < 2 ? <LuArrowRight aria-hidden="true" /> : null}

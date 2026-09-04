@@ -3,6 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import type { PortalUser } from '../auth/powerPagesSession'
 import {
+  deleteMeetingReportAttachment,
+  listMeetingReportAttachments,
+  uploadMeetingReportAttachment,
+} from '../features/meetingReports/meetingReportAttachmentService'
+import {
   createMeetingReport,
   getMeetingReport,
   getMeetingReportProfile,
@@ -32,6 +37,16 @@ vi.mock('../features/meetingReports/meetingReportService', async (importOriginal
   }
 })
 
+vi.mock('../features/meetingReports/meetingReportAttachmentService', async (importOriginal) => {
+  const original = await importOriginal<typeof import('../features/meetingReports/meetingReportAttachmentService')>()
+  return {
+    ...original,
+    deleteMeetingReportAttachment: vi.fn(),
+    listMeetingReportAttachments: vi.fn(),
+    uploadMeetingReportAttachment: vi.fn(),
+  }
+})
+
 const user: PortalUser = {
   userName: 'sara@example.com',
   contactId: '11111111-1111-1111-1111-111111111111',
@@ -58,6 +73,13 @@ const volunteer = {
   jobTitle: 'Volunteer',
 }
 const staffSaidLabel = 'Write Down What the Staff Said, Not What You Said'
+const existingAttachment = {
+  attachmentId: '77777777-7777-7777-7777-777777777777',
+  fileName: 'Existing notes.pdf',
+  fileUrl: 'https://example.sharepoint.com/existing-notes.pdf',
+  contentType: 'application/pdf',
+  size: 2048,
+}
 
 const profile: MeetingReportProfile = {
   contactId: user.contactId!,
@@ -85,7 +107,6 @@ const existingReport: MeetingReportDetails = {
   volunteers: [volunteer],
   issuesDiscussed: 'Existing issues',
   followUpActions: 'Existing follow up',
-  documentsProvided: 'Existing handout',
   sentiment: 2,
 }
 
@@ -125,6 +146,15 @@ beforeEach(() => {
   vi.mocked(createMeetingReport).mockResolvedValue(reportId)
   vi.mocked(updateMeetingReport).mockResolvedValue()
   vi.mocked(runRelationshipOperations).mockResolvedValue([])
+  vi.mocked(listMeetingReportAttachments).mockResolvedValue([])
+  vi.mocked(uploadMeetingReportAttachment).mockImplementation(async (_id, file) => ({
+    attachmentId: '88888888-8888-8888-8888-888888888888',
+    fileName: file.name,
+    fileUrl: `https://example.sharepoint.com/${encodeURIComponent(file.name)}`,
+    contentType: file.type || null,
+    size: file.size,
+  }))
+  vi.mocked(deleteMeetingReportAttachment).mockResolvedValue()
 })
 
 test('lists Dataverse meeting reports with real record-specific edit actions', async () => {
@@ -195,6 +225,7 @@ test('loads the authenticated profile as read-only volunteer information', async
   expect(screen.getByLabelText('District')).toHaveValue('DC')
   expect(screen.queryByLabelText('City')).not.toBeInTheDocument()
   expect(getMeetingReportProfile).toHaveBeenCalledWith(user.contactId, expect.any(AbortSignal))
+  expect(listMeetingReportAttachments).not.toHaveBeenCalled()
 })
 
 test('requires an end date and time later than the start date and time', async () => {
@@ -223,8 +254,12 @@ test('requires an end date and time later than the start date and time', async (
 test('creates a report and associates selected Staff and Volunteers', async () => {
   const actor = userEvent.setup()
   let finishRelationships: (() => void) | undefined
+  let finishFirstUpload: (() => void) | undefined
   vi.mocked(runRelationshipOperations).mockImplementationOnce(() => new Promise((resolve) => {
     finishRelationships = () => resolve([])
+  }))
+  vi.mocked(uploadMeetingReportAttachment).mockImplementationOnce((_id, file) => new Promise((resolve) => {
+    finishFirstUpload = () => resolve({ ...existingAttachment, fileName: file.name })
   }))
   renderReportRoute('/report/new')
   await screen.findByDisplayValue('Sara Rahimi')
@@ -246,7 +281,12 @@ test('creates a report and associates selected Staff and Volunteers', async () =
   expect(screen.queryByLabelText('Outcomes & Next Steps')).not.toBeInTheDocument()
   await actor.type(screen.getByLabelText(staffSaidLabel), 'Community priorities')
   await actor.type(screen.getByLabelText('Follow-Up Note (Once the Meeting Ended)'), 'Email the team')
-  await actor.type(screen.getByLabelText('Documents Provided'), 'Policy summary')
+  const document = new File(['policy'], 'Policy summary(1).pdf', { type: 'application/pdf' })
+  const appendix = new File(['appendix'], 'Appendix_2026.pdf', { type: 'application/pdf' })
+  const documentInput = screen.getByLabelText('Documents Provided')
+  expect(documentInput).toHaveAttribute('type', 'file')
+  expect(documentInput).toHaveAttribute('multiple')
+  await actor.upload(documentInput, [document, appendix])
   await actor.click(screen.getByRole('radio', { name: 'Neutral' }))
   await actor.click(screen.getByRole('button', { name: 'Submit Report' }))
 
@@ -256,13 +296,22 @@ test('creates a report and associates selected Staff and Volunteers', async () =
     startDateTime: '2026-09-01T09:30', endDateTime: '2026-09-01T10:45',
     meetingFormat: 2, staffIds: [staff.id], volunteerIds: [volunteer.id],
     issuesDiscussed: 'Community priorities', followUpActions: 'Email the team',
-    documentsProvided: 'Policy summary', sentiment: 3,
+    sentiment: 3,
   }), user.contactId)
   expect(runRelationshipOperations).toHaveBeenCalledWith(reportId, [
     { action: 'add', relationship: 'staff', contactId: staff.id },
     { action: 'add', relationship: 'volunteer', contactId: volunteer.id },
   ])
+  expect(uploadMeetingReportAttachment).not.toHaveBeenCalled()
   await act(async () => finishRelationships?.())
+  expect(uploadMeetingReportAttachment).toHaveBeenCalledWith(reportId, document)
+  expect(uploadMeetingReportAttachment).toHaveBeenCalledTimes(1)
+  expect(vi.mocked(createMeetingReport).mock.invocationCallOrder[0])
+    .toBeLessThan(vi.mocked(uploadMeetingReportAttachment).mock.invocationCallOrder[0])
+  expect(vi.mocked(runRelationshipOperations).mock.invocationCallOrder[0])
+    .toBeLessThan(vi.mocked(uploadMeetingReportAttachment).mock.invocationCallOrder[0])
+  await act(async () => finishFirstUpload?.())
+  expect(uploadMeetingReportAttachment).toHaveBeenNthCalledWith(2, reportId, appendix)
   expect(await screen.findByRole('status')).toHaveTextContent('Report saved.')
 })
 
@@ -279,18 +328,18 @@ test('hydrates and updates a report, removing deselected relationships', async (
   await actor.click(await screen.findByRole('checkbox', { name: /Neda Volunteer/ }))
   await actor.click(screen.getByRole('button', { name: 'Next: Report Content' }))
   expect(screen.getByLabelText(staffSaidLabel)).toHaveValue('Existing issues')
-  expect(screen.getByLabelText('Documents Provided')).toHaveValue('Existing handout')
+  expect(screen.getByLabelText('Documents Provided')).toHaveAttribute('type', 'file')
   await actor.click(screen.getByRole('button', { name: 'Update Report' }))
 
   expect(updateMeetingReport).toHaveBeenCalledWith(reportId, expect.objectContaining({
     startDateTime: '2026-08-18T09:30',
     endDateTime: '2026-08-18T10:45',
-    documentsProvided: 'Existing handout',
     volunteerIds: [],
   }))
   expect(runRelationshipOperations).toHaveBeenCalledWith(reportId, [
     { action: 'remove', relationship: 'volunteer', contactId: volunteer.id },
   ])
+  expect(uploadMeetingReportAttachment).not.toHaveBeenCalled()
   expect(await screen.findByRole('status')).toHaveTextContent('Report updated.')
 })
 
@@ -314,9 +363,12 @@ test('retries only failed relationships without creating a duplicate report', as
   await actor.click(await screen.findByRole('checkbox', { name: /Ali Staff/ }))
   await actor.click(screen.getByRole('button', { name: 'Next: Report Content' }))
   await actor.type(screen.getByLabelText(staffSaidLabel), 'Retry associations')
+  const afterLinks = new File(['links'], 'After links.pdf', { type: 'application/pdf' })
+  await actor.upload(screen.getByLabelText('Documents Provided'), afterLinks)
   await actor.click(screen.getByRole('button', { name: 'Submit Report' }))
 
   expect(await screen.findByRole('alert')).toHaveTextContent('report was saved')
+  expect(uploadMeetingReportAttachment).not.toHaveBeenCalled()
   expect(screen.getByLabelText(staffSaidLabel)).toBeDisabled()
   expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled()
   expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled()
@@ -325,5 +377,124 @@ test('retries only failed relationships without creating a duplicate report', as
   expect(createMeetingReport).toHaveBeenCalledTimes(1)
   expect(runRelationshipOperations).toHaveBeenCalledTimes(2)
   expect(runRelationshipOperations).toHaveBeenLastCalledWith(reportId, [failedOperation])
+  expect(uploadMeetingReportAttachment).toHaveBeenCalledWith(reportId, afterLinks)
+  expect(await screen.findByRole('status')).toHaveTextContent('Report saved.')
+})
+
+test('rejects invalid attachment names immediately without calling the upload flow', async () => {
+  const actor = userEvent.setup()
+  renderReportRoute(`/report/${reportId}/edit`)
+  await screen.findByDisplayValue('Sara Rahimi')
+  await actor.click(screen.getByRole('button', { name: 'Next: Meeting Details' }))
+  await actor.click(screen.getByRole('button', { name: 'Next: Report Content' }))
+
+  await actor.upload(screen.getByLabelText('Documents Provided'), new File(['x'], 'report&notes.pdf'))
+
+  expect(screen.getByRole('alert')).toHaveTextContent('report&notes.pdf')
+  expect(screen.getByRole('alert')).toHaveTextContent('letters, numbers, spaces, hyphens, underscores, and parentheses')
+  expect(screen.queryByText('report&notes.pdf', { selector: '.meeting-attachments__file-name' })).not.toBeInTheDocument()
+  expect(uploadMeetingReportAttachment).not.toHaveBeenCalled()
+})
+
+test('lists and deletes existing files only on an edit form', async () => {
+  const actor = userEvent.setup()
+  vi.mocked(listMeetingReportAttachments).mockResolvedValue([existingAttachment])
+  vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+  renderReportRoute(`/report/${reportId}/edit`)
+  await screen.findByDisplayValue('Sara Rahimi')
+  await actor.click(screen.getByRole('button', { name: 'Next: Meeting Details' }))
+  await actor.click(screen.getByRole('button', { name: 'Next: Report Content' }))
+
+  const link = await screen.findByRole('link', { name: 'Open Existing notes.pdf' })
+  expect(link).toHaveAttribute('href', existingAttachment.fileUrl)
+  expect(listMeetingReportAttachments).toHaveBeenCalledWith(reportId, expect.any(AbortSignal))
+  await actor.click(screen.getByRole('button', { name: 'Delete Existing notes.pdf' }))
+  expect(deleteMeetingReportAttachment).toHaveBeenCalledWith(reportId, existingAttachment.attachmentId)
+  expect(screen.queryByRole('link', { name: 'Open Existing notes.pdf' })).not.toBeInTheDocument()
+})
+
+test('keeps an existing file when deletion is cancelled', async () => {
+  const actor = userEvent.setup()
+  vi.mocked(listMeetingReportAttachments).mockResolvedValue([existingAttachment])
+  vi.spyOn(window, 'confirm').mockReturnValue(false)
+
+  renderReportRoute(`/report/${reportId}/edit`)
+  await screen.findByDisplayValue('Sara Rahimi')
+  await actor.click(screen.getByRole('button', { name: 'Next: Meeting Details' }))
+  await actor.click(screen.getByRole('button', { name: 'Next: Report Content' }))
+  await screen.findByRole('link', { name: 'Open Existing notes.pdf' })
+  await actor.click(screen.getByRole('button', { name: 'Delete Existing notes.pdf' }))
+
+  expect(deleteMeetingReportAttachment).not.toHaveBeenCalled()
+  expect(screen.getByRole('link', { name: 'Open Existing notes.pdf' })).toBeInTheDocument()
+})
+
+test('keeps an existing file visible when deletion fails', async () => {
+  const actor = userEvent.setup()
+  vi.mocked(listMeetingReportAttachments).mockResolvedValue([existingAttachment])
+  vi.mocked(deleteMeetingReportAttachment).mockRejectedValue(new Error('delete failed'))
+  vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+  renderReportRoute(`/report/${reportId}/edit`)
+  await screen.findByDisplayValue('Sara Rahimi')
+  await actor.click(screen.getByRole('button', { name: 'Next: Meeting Details' }))
+  await actor.click(screen.getByRole('button', { name: 'Next: Report Content' }))
+  await screen.findByRole('link', { name: 'Open Existing notes.pdf' })
+  await actor.click(screen.getByRole('button', { name: 'Delete Existing notes.pdf' }))
+
+  expect(await screen.findByRole('alert')).toHaveTextContent('Existing notes.pdf could not be deleted')
+  expect(screen.getByRole('link', { name: 'Open Existing notes.pdf' })).toBeInTheDocument()
+})
+
+test('allows retrying an attachment list failure without blocking edit', async () => {
+  const actor = userEvent.setup()
+  vi.mocked(listMeetingReportAttachments)
+    .mockRejectedValueOnce(new Error('unavailable'))
+    .mockResolvedValueOnce([existingAttachment])
+
+  renderReportRoute(`/report/${reportId}/edit`)
+  await screen.findByDisplayValue('Sara Rahimi')
+  await actor.click(screen.getByRole('button', { name: 'Next: Meeting Details' }))
+  await actor.click(screen.getByRole('button', { name: 'Next: Report Content' }))
+  expect(await screen.findByText('Uploaded documents could not be loaded.')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Update Report' })).toBeEnabled()
+
+  await actor.click(screen.getByRole('button', { name: 'Retry uploaded documents' }))
+  expect(await screen.findByRole('link', { name: 'Open Existing notes.pdf' })).toBeInTheDocument()
+  expect(listMeetingReportAttachments).toHaveBeenCalledTimes(2)
+})
+
+test('retries only failed uploads without saving a second report', async () => {
+  const actor = userEvent.setup()
+  vi.mocked(uploadMeetingReportAttachment)
+    .mockResolvedValueOnce({ ...existingAttachment, fileName: 'uploaded.pdf' })
+    .mockRejectedValueOnce(new Error('upload failed'))
+    .mockResolvedValueOnce({ ...existingAttachment, fileName: 'retry.pdf' })
+  renderReportRoute('/report/new')
+
+  await screen.findByDisplayValue('Sara Rahimi')
+  await actor.click(screen.getByRole('button', { name: 'Next: Meeting Details' }))
+  await actor.type(screen.getByLabelText('Subject'), 'Attachment retry')
+  fireEvent.change(screen.getByLabelText('Start Date and Time'), { target: { value: '2026-09-01T09:30' } })
+  fireEvent.change(screen.getByLabelText('End Date and Time'), { target: { value: '2026-09-01T10:45' } })
+  await actor.click(screen.getByRole('combobox', { name: 'Representative' }))
+  await actor.click(await screen.findByRole('option', { name: /Rep. Carter Office/ }))
+  await actor.click(screen.getByRole('combobox', { name: 'District' }))
+  await actor.click(await screen.findByRole('option', { name: 'DC' }))
+  await actor.click(screen.getByRole('radio', { name: /Phone/ }))
+  await actor.click(screen.getByRole('button', { name: 'Next: Report Content' }))
+  await actor.type(screen.getByLabelText(staffSaidLabel), 'Retry the document')
+  const uploadedFile = new File(['uploaded'], 'uploaded.pdf', { type: 'application/pdf' })
+  const retryFile = new File(['retry'], 'retry.pdf', { type: 'application/pdf' })
+  await actor.upload(screen.getByLabelText('Documents Provided'), [uploadedFile, retryFile])
+  await actor.click(screen.getByRole('button', { name: 'Submit Report' }))
+
+  expect(await screen.findByRole('alert')).toHaveTextContent('report was saved, but some files could not be uploaded')
+  await actor.click(screen.getByRole('button', { name: 'Retry file uploads' }))
+  expect(createMeetingReport).toHaveBeenCalledTimes(1)
+  expect(runRelationshipOperations).toHaveBeenCalledTimes(1)
+  expect(uploadMeetingReportAttachment).toHaveBeenCalledTimes(3)
+  expect(uploadMeetingReportAttachment).toHaveBeenLastCalledWith(reportId, retryFile)
   expect(await screen.findByRole('status')).toHaveTextContent('Report saved.')
 })
