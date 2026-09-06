@@ -1,1 +1,3 @@
+export const MEETING_REPORT_ATTACHMENT_FLOW_URL_Prod: string
+export const MEETING_REPORT_ATTACHMENT_FLOW_URL_Test: string
 export const MEETING_REPORT_ATTACHMENT_FLOW_URL: string
