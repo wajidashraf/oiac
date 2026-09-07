@@ -38,7 +38,7 @@ type DataverseAttachmentRecord = {
   readonly _mss_meetingreport_value?: unknown
   readonly mss_sharepointfileid?: unknown
   readonly mss_sharepointfilepath?: unknown
-  readonly mss_sharepointfileurl?: unknown
+  readonly mss_shareablelink?: unknown
 }
 
 const ATTACHMENT_LIST_SELECT = [
@@ -49,7 +49,7 @@ const ATTACHMENT_LIST_SELECT = [
   '_mss_meetingreport_value',
   'mss_sharepointfileid',
   'mss_sharepointfilepath',
-  'mss_sharepointfileurl',
+  'mss_shareablelink',
 ] as const
 
 const clientFileIds = new WeakMap<File, string>()
@@ -188,7 +188,7 @@ function normalizeDataverseAttachment(record: DataverseAttachmentRecord): {
   const attachmentId = requiredGuid(String(record.mss_attachmentsid ?? ''), 'Attachment identifier')
   const fileName = optionalText(record.mss_attachmentname)
   if (!fileName) throw new Error('Dataverse returned an attachment without a file name.')
-  const fileUrl = optionalHttpsUrl(record.mss_sharepointfileurl)
+  const fileUrl = optionalHttpsUrl(record.mss_shareablelink)
   const sharePointFileId = optionalText(record.mss_sharepointfileid)
   const sharePointFilePath = optionalText(record.mss_sharepointfilepath)
   const fileKeys = [

@@ -141,7 +141,8 @@ describe('attachment flow operations', () => {
           _mss_meetingreport_value: reportId,
           mss_sharepointfileid: 'different-connector-file-id',
           mss_sharepointfilepath: '/Shared Documents/report/Meeting Notes.pdf',
-          mss_sharepointfileurl: 'https://contoso.sharepoint.com/Shared%20Documents/report/Meeting%20Notes.pdf',
+          mss_shareablelink: 'https://contoso.sharepoint.com/:b:/r/sites/OIAC/Meeting%20Notes.pdf?e=abc123',
+          mss_sharepointfileurl: 'https://contoso.sharepoint.com/legacy/Meeting%20Notes.pdf',
         },
         {
           mss_attachmentsid: '44444444-4444-4444-8444-444444444444',
@@ -151,7 +152,7 @@ describe('attachment flow operations', () => {
           _mss_meetingreport_value: reportId,
           mss_sharepointfileid: 'shared-documents/report/meeting-notes.pdf',
           mss_sharepointfilepath: '/Shared Documents/report/Alias.pdf',
-          mss_sharepointfileurl: 'https://contoso.sharepoint.com/Shared%20Documents/report/Alias.pdf',
+          mss_shareablelink: 'https://contoso.sharepoint.com/:b:/r/sites/OIAC/Alias.pdf?e=def456',
         },
         {
           mss_attachmentsid: '66666666-6666-4666-8666-666666666666',
@@ -161,7 +162,7 @@ describe('attachment flow operations', () => {
           _mss_meetingreport_value: reportId,
           mss_sharepointfileid: 'shared-documents/report/meeting-notes.pdf',
           mss_sharepointfilepath: '/Shared Documents/report/Meeting Notes.pdf',
-          mss_sharepointfileurl: 'https://contoso.sharepoint.com/Shared%20Documents/report/Meeting%20Notes.pdf',
+          mss_shareablelink: 'https://contoso.sharepoint.com/:b:/r/sites/OIAC/Meeting%20Notes.pdf?e=abc123',
         },
         {
           mss_attachmentsid: '55555555-5555-4555-8555-555555555555',
@@ -171,7 +172,7 @@ describe('attachment flow operations', () => {
           _mss_meetingreport_value: secondReportId,
           mss_sharepointfileid: 'shared-documents/report/district-data.xlsx',
           mss_sharepointfilepath: '/Shared Documents/report/District data.xlsx',
-          mss_sharepointfileurl: 'javascript:alert(1)',
+          mss_shareablelink: 'javascript:alert(1)',
         },
       ],
     }))
@@ -185,7 +186,7 @@ describe('attachment flow operations', () => {
         '66666666-6666-4666-8666-666666666666',
       ],
       fileName: 'Meeting Notes.pdf',
-      fileUrl: 'https://contoso.sharepoint.com/Shared%20Documents/report/Meeting%20Notes.pdf',
+      fileUrl: 'https://contoso.sharepoint.com/:b:/r/sites/OIAC/Meeting%20Notes.pdf?e=abc123',
       contentType: 'application/pdf',
       size: 2048,
     }])
@@ -202,6 +203,8 @@ describe('attachment flow operations', () => {
     expect(parsedUrl.searchParams.get('$filter')).toBe(
       `_mss_meetingreport_value eq ${reportId} or _mss_meetingreport_value eq ${secondReportId}`,
     )
+    expect(parsedUrl.searchParams.get('$select')).toContain('mss_shareablelink')
+    expect(parsedUrl.searchParams.get('$select')).not.toContain('mss_sharepointfileurl')
     expect(requestInit).toEqual(expect.objectContaining({ credentials: 'same-origin' }))
   })
 
@@ -215,14 +218,14 @@ describe('attachment flow operations', () => {
         _mss_meetingreport_value: reportId,
         mss_sharepointfileid: 'meeting-notes-file-id',
         mss_sharepointfilepath: '/Shared Documents/Meeting Notes_2026.pdf',
-        mss_sharepointfileurl: 'https://contoso.sharepoint.com/Meeting%20Notes_2026.pdf',
+        mss_shareablelink: 'https://contoso.sharepoint.com/:b:/r/sites/OIAC/Meeting%20Notes_2026.pdf?e=ghi789',
       }],
     }))
 
     await expect(listMeetingReportAttachments(reportId)).resolves.toEqual([{
       attachmentId,
       fileName: 'Meeting Notes_2026.pdf',
-      fileUrl: 'https://contoso.sharepoint.com/Meeting%20Notes_2026.pdf',
+      fileUrl: 'https://contoso.sharepoint.com/:b:/r/sites/OIAC/Meeting%20Notes_2026.pdf?e=ghi789',
       contentType: null,
       size: null,
     }])
