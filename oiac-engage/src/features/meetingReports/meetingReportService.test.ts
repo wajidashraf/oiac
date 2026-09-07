@@ -241,6 +241,8 @@ describe('meeting report mutations', () => {
         mss_subject: 'Existing meeting',
         mss_startdateandtime: '2026-08-18T12:00:00Z',
         '_mss_representative_value@OData.Community.Display.V1.FormattedValue': 'Rep. Carter',
+        _mss_district_value: districtId,
+        '_mss_district_value@OData.Community.Display.V1.FormattedValue': 'DC',
         mss_overallsentiment: 2,
       }],
       '@odata.nextLink': nextLink,
@@ -251,6 +253,7 @@ describe('meeting report mutations', () => {
         id: reportId,
         subject: 'Existing meeting',
         representativeName: 'Rep. Carter',
+        districtName: 'DC',
         date: '2026-08-18T12:00:00Z',
         sentimentLabel: 'Supportive',
       }],
@@ -264,6 +267,8 @@ describe('meeting report mutations', () => {
       },
     })
     expect(decodeURIComponent(vi.mocked(fetchMock).mock.calls[0][0])).not.toContain('$top=100')
+    expect(new URL(vi.mocked(fetchMock).mock.calls[0][0], 'https://oiac-engage.powerappsportals.com')
+      .searchParams.get('$select')).toContain('_mss_district_value')
   })
 
   test('uses the legacy meeting date when a list record has no start date and time', async () => {
@@ -273,6 +278,8 @@ describe('meeting report mutations', () => {
         mss_subject: 'Legacy meeting',
         mss_dateofmeeting: '2026-08-18T12:00:00Z',
         '_mss_representative_value@OData.Community.Display.V1.FormattedValue': 'Rep. Carter',
+        _mss_district_value: districtId,
+        '_mss_district_value@OData.Community.Display.V1.FormattedValue': 'DC',
       }],
     })
 

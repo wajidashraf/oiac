@@ -92,7 +92,6 @@ export default function RegistrationProfileGate({
             <div className="registration-profile-gate__spinner" aria-hidden="true" />
             <p className="pending-approval-card__status">Account setup</p>
             <h1 id="registration-profile-title">Completing your profile</h1>
-            <p>We’re securely saving your First Name and Last Name to your account.</p>
           </article>
         </section>
       </PendingApprovalShell>

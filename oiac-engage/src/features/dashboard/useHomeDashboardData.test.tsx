@@ -52,6 +52,7 @@ beforeEach(() => {
       id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
       subject: 'District briefing',
       representativeName: 'Representative One',
+      districtName: 'DC',
       date: '2026-08-30T12:00:00Z',
       sentimentLabel: 'Supportive',
     }],
@@ -127,13 +128,8 @@ test('loads live report KPIs and only unique Registered events for the signed-in
 
   expect(result.current.reportCount).toBe(7)
   expect(result.current.reports).toHaveLength(1)
-  const attachmentData = result.current as typeof result.current & {
-    readonly attachmentsByReport: ReadonlyMap<string, readonly { readonly fileName: string }[]>
-    readonly attachmentStatus: 'loading' | 'ready' | 'error'
-  }
-  expect(attachmentData.attachmentStatus).toBe('ready')
-  expect(attachmentData.attachmentsByReport.get('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')?.[0].fileName)
-    .toBe('District briefing.pdf')
+  expect(result.current.reports[0].districtName).toBe('DC')
+  expect(listMeetingReportPageAttachments).not.toHaveBeenCalled()
   expect(result.current.registeredEventCount).toBe(2)
   expect(result.current.upcomingEvents.map((item) => item.id)).toEqual([activeEventId, secondEventId])
   expect(getMeetingReports).toHaveBeenCalledWith({ limit: 5 }, expect.any(AbortSignal))

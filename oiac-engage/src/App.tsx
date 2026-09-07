@@ -68,6 +68,7 @@ export default function App({ session: suppliedSession }: AppProps) {
               <Route path="/report/new" element={<MeetingReportForm user={completedSession.user} />} />
               <Route path="/report/:reportId/edit" element={<MeetingReportForm user={completedSession.user} />} />
               <Route path="/resources" element={<Resources />} />
+              <Route path="/pending-approval" element={<Navigate to="/" replace />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AppShell>

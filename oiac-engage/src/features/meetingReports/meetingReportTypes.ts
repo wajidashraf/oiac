@@ -51,6 +51,7 @@ export type MeetingReportSummary = {
   readonly id: string
   readonly subject: string
   readonly representativeName: string
+  readonly districtName: string
   readonly date: string
   readonly sentimentLabel: string
 }

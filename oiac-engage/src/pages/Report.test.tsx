@@ -5,7 +5,6 @@ import type { PortalUser } from '../auth/powerPagesSession'
 import {
   deleteMeetingReportAttachment,
   listMeetingReportAttachments,
-  listMeetingReportPageAttachments,
   uploadMeetingReportAttachments,
 } from '../features/meetingReports/meetingReportAttachmentService'
 import {
@@ -44,7 +43,6 @@ vi.mock('../features/meetingReports/meetingReportAttachmentService', async (impo
     ...original,
     deleteMeetingReportAttachment: vi.fn(),
     listMeetingReportAttachments: vi.fn(),
-    listMeetingReportPageAttachments: vi.fn(),
     uploadMeetingReportAttachments: vi.fn(),
   }
 })
@@ -134,6 +132,7 @@ beforeEach(() => {
       id: reportId,
       subject: existingReport.subject,
       representativeName: representative.name,
+      districtName: district.name,
       date: '2026-08-18T12:30:00Z',
       sentimentLabel: 'Supportive',
     }],
@@ -150,7 +149,6 @@ beforeEach(() => {
   vi.mocked(updateMeetingReport).mockResolvedValue()
   vi.mocked(runRelationshipOperations).mockResolvedValue([])
   vi.mocked(listMeetingReportAttachments).mockResolvedValue([])
-  vi.mocked(listMeetingReportPageAttachments).mockResolvedValue(new Map([[reportId, []]]))
   vi.mocked(uploadMeetingReportAttachments).mockImplementation(async (_id, files) => ({
     succeededAttachments: files.map((file) => ({
       attachmentId: '88888888-8888-8888-8888-888888888888',
@@ -170,83 +168,12 @@ test('lists Dataverse meeting reports with real record-specific edit actions', a
   expect(screen.getByRole('link', { name: '+ Submit Report' })).toHaveAttribute('href', '/report/new')
   const table = await screen.findByRole('table', { name: 'Meeting Reports' })
   expect(within(table).getAllByRole('row')).toHaveLength(2)
+  expect(within(table).getByRole('columnheader', { name: 'District' })).toBeInTheDocument()
+  expect(within(table).getByRole('cell', { name: 'DC' })).toBeInTheDocument()
+  expect(within(table).queryByRole('columnheader', { name: 'Files' })).not.toBeInTheDocument()
   expect(within(table).getByRole('link', { name: `Edit ${existingReport.subject}` }))
     .toHaveAttribute('href', `/report/${reportId}/edit`)
   expect(table.querySelector('time')).toHaveTextContent(/\d{1,2}:\d{2} (AM|PM)/)
-})
-
-test('shows up to two report files with separate open and download controls', async () => {
-  vi.mocked(listMeetingReportPageAttachments).mockResolvedValue(new Map([[reportId, [
-    existingAttachment,
-    {
-      ...existingAttachment,
-      attachmentId: '88888888-8888-4888-8888-888888888888',
-      fileName: 'District data.xlsx',
-      fileUrl: 'https://example.sharepoint.com/district-data.xlsx?view=1',
-      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    },
-  ]]]))
-
-  renderReportRoute('/report')
-
-  const table = await screen.findByRole('table', { name: 'Meeting Reports' })
-  expect(within(table).getByRole('columnheader', { name: 'Files' })).toBeInTheDocument()
-  const fileCell = within(table).getByRole('cell', { name: `Files for ${existingReport.subject}` })
-  const inlineFiles = within(fileCell).getByRole('group', { name: 'First 2 files' })
-  expect(within(inlineFiles).getByRole('link', { name: 'Open Existing notes.pdf' })).toHaveAttribute(
-    'href', 'https://example.sharepoint.com/existing-notes.pdf?web=1',
-  )
-  expect(within(inlineFiles).getByRole('link', { name: 'Download Existing notes.pdf' })).toHaveAttribute(
-    'href', 'https://example.sharepoint.com/existing-notes.pdf?download=1',
-  )
-  expect(within(inlineFiles).getByRole('link', { name: 'Open District data.xlsx' })).toHaveAttribute(
-    'href', 'https://example.sharepoint.com/district-data.xlsx?view=1&web=1',
-  )
-  expect(within(inlineFiles).getByText('District data.xlsx', { selector: '.report-file__tooltip' }))
-    .toHaveAttribute('aria-hidden', 'true')
-  expect(within(inlineFiles).getByRole('link', { name: 'Download District data.xlsx' })).toHaveAttribute(
-    'href', 'https://example.sharepoint.com/district-data.xlsx?view=1&download=1',
-  )
-  expect(within(fileCell).queryByText(/more/i)).not.toBeInTheDocument()
-})
-
-test('shows all report files in a disclosure when more than two unique files exist', async () => {
-  const attachments = [
-    existingAttachment,
-    {
-      ...existingAttachment,
-      attachmentId: '88888888-8888-4888-8888-888888888888',
-      fileName: 'District data.xlsx',
-      fileUrl: 'https://example.sharepoint.com/district-data.xlsx',
-      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    },
-    {
-      ...existingAttachment,
-      attachmentId: '99999999-9999-4999-8999-999999999999',
-      fileName: 'Meeting photo.png',
-      fileUrl: 'https://example.sharepoint.com/meeting-photo.png',
-      contentType: 'image/png',
-    },
-  ]
-  vi.mocked(listMeetingReportPageAttachments).mockResolvedValue(new Map([[reportId, attachments]]))
-  const actor = userEvent.setup()
-
-  renderReportRoute('/report')
-
-  const table = await screen.findByRole('table', { name: 'Meeting Reports' })
-  const fileCell = within(table).getByRole('cell', { name: `Files for ${existingReport.subject}` })
-  const more = within(fileCell).getByText('+1 more')
-  await actor.click(more)
-  const allFiles = within(fileCell).getByRole('list', { name: `All files for ${existingReport.subject}` })
-  expect(within(allFiles).getByText('Existing notes.pdf')).toBeInTheDocument()
-  expect(within(allFiles).getByText('District data.xlsx')).toBeInTheDocument()
-  expect(within(allFiles).getByText('Meeting photo.png')).toBeInTheDocument()
-  expect(within(allFiles).getByRole('link', { name: 'Open Meeting photo.png' })).toHaveAttribute(
-    'href', 'https://example.sharepoint.com/meeting-photo.png?web=1',
-  )
-  expect(within(allFiles).getByRole('link', { name: 'Download Meeting photo.png' })).toHaveAttribute(
-    'href', 'https://example.sharepoint.com/meeting-photo.png?download=1',
-  )
 })
 
 test('paginates Meeting Reports with fifteen-record server pages', async () => {
@@ -256,6 +183,7 @@ test('paginates Meeting Reports with fifteen-record server pages', async () => {
     id: `${String(index + 1).padStart(8, '0')}-1111-1111-1111-111111111111`,
     subject: `Meeting ${index + 1}`,
     representativeName: 'Representative',
+    districtName: 'DC',
     date: `2026-08-${String(28 - index).padStart(2, '0')}T12:00:00Z`,
     sentimentLabel: 'Neutral',
   }))
@@ -266,6 +194,7 @@ test('paginates Meeting Reports with fifteen-record server pages', async () => {
         id: '99999999-1111-1111-1111-111111111111',
         subject: 'Meeting 16',
         representativeName: 'Representative',
+        districtName: 'DC',
         date: '2026-08-01T12:00:00Z',
         sentimentLabel: 'Supportive',
       }],

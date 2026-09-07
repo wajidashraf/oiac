@@ -14,7 +14,6 @@ import ComingSoonBadge from '../components/ComingSoonBadge'
 import ContentCard from '../components/ContentCard'
 import StatusBadge from '../components/StatusBadge'
 import { useHomeDashboardData } from '../features/dashboard/useHomeDashboardData'
-import { ReportFilesCell } from '../features/meetingReports/ReportFilesCell'
 import {
   dashboardAnnouncements,
   dashboardMetrics,
@@ -89,9 +88,7 @@ export default function Home({ contactId }: HomeProps) {
     reportCount,
     registeredEventCount,
     upcomingEvents,
-    attachmentsByReport,
     reportsStatus,
-    attachmentStatus,
     registrationsStatus,
     retry,
   } = useHomeDashboardData(contactId)
@@ -162,12 +159,6 @@ export default function Home({ contactId }: HomeProps) {
         {reportsStatus === 'ready' && reports.length === 0 ? (
           <p className="dashboard-report-state" role="status">No meeting reports have been submitted yet.</p>
         ) : null}
-        {reportsStatus === 'ready' && reports.length > 0 && attachmentStatus === 'error' ? (
-          <div className="form-alert dashboard-report-state dashboard-report-state--error" role="alert">
-            <span>Report files could not be loaded.</span>
-            <button className="button button--quiet" type="button" onClick={retry}>Try again</button>
-          </div>
-        ) : null}
         {reportsStatus === 'ready' && reports.length > 0 ? (
           <DashboardTable label="Meeting Reports">
             <thead>
@@ -176,7 +167,7 @@ export default function Home({ contactId }: HomeProps) {
                 <th scope="col">Representative</th>
                 <th scope="col">Start</th>
                 <th scope="col">Outcome</th>
-                <th scope="col">Files</th>
+                <th scope="col">District</th>
                 <th scope="col" aria-label="Actions" />
               </tr>
             </thead>
@@ -187,13 +178,7 @@ export default function Home({ contactId }: HomeProps) {
                   <td>{report.representativeName}</td>
                   <td><time dateTime={report.date}>{formatReportDate(report.date)}</time></td>
                   <td>{report.sentimentLabel}</td>
-                  <td aria-label={`Files for ${report.subject}`}>
-                    <ReportFilesCell
-                      attachments={attachmentsByReport.get(report.id) ?? []}
-                      reportSubject={report.subject}
-                      status={attachmentStatus}
-                    />
-                  </td>
+                  <td>{report.districtName}</td>
                   <td><Link aria-label={`Edit ${report.subject}`} to={`/report/${report.id}/edit`}>Edit</Link></td>
                 </tr>
               ))}

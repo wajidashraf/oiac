@@ -408,6 +408,7 @@ function buildMeetingReportsQuery(limit?: number): string {
     'mss_startdateandtime',
     'mss_dateofmeeting',
     '_mss_representative_value',
+    '_mss_district_value',
     'mss_overallsentiment',
   ].join(','))
   params.set('$orderby', 'mss_startdateandtime desc,mss_meetingreportid asc')
@@ -465,6 +466,7 @@ export async function getMeetingReports(
       id: requiredGuid(record.mss_meetingreportid, 'Meeting Report'),
       subject: text(record.mss_subject) || 'Untitled meeting report',
       representativeName: text(record['_mss_representative_value@OData.Community.Display.V1.FormattedValue']) || 'Not available',
+      districtName: text(record['_mss_district_value@OData.Community.Display.V1.FormattedValue']) || 'Not available',
       date: text(record.mss_startdateandtime) || text(record.mss_dateofmeeting),
       sentimentLabel: sentiment ? SENTIMENT_LABELS[sentiment] : 'Not provided',
     }

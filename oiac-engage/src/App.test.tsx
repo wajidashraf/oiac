@@ -212,12 +212,16 @@ test.each(['Administrators', 'Staff', 'Volunteer', 'Applicant'])(
   },
 )
 
-test('does not show the pending page to an approved user', () => {
+test('redirects an approved user from the stale pending-approval URL to Home', async () => {
   renderApp('/pending-approval')
 
-  expect(screen.getByRole('heading', { name: 'Page not found', level: 1 })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Volunteer', level: 1 })).toBeInTheDocument()
   expect(screen.queryByRole('heading', { name: 'Your profile is under review' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Page not found' })).not.toBeInTheDocument()
   expect(screen.getByRole('navigation', { name: 'Primary navigation' })).toBeInTheDocument()
+  await waitFor(() => {
+    expect(screen.getByTestId('current-path')).toHaveTextContent('/')
+  })
 })
 
 test('does not start protected page requests before portal access is approved', () => {
