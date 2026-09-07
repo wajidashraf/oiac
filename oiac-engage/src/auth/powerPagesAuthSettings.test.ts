@@ -25,9 +25,9 @@ function settingValue(yaml: string): string | undefined {
 }
 
 describe('Power Pages authentication settings', () => {
-  test('keeps open local registration enabled without invitation registration', () => {
+  test('enables invitation redemption alongside open local registration', () => {
     expect(settingValue(registrationEnabled)).toBe('true')
-    expect(settingValue(invitationEnabled)).toBe('false')
+    expect(settingValue(invitationEnabled)).toBe('true')
     expect(settingValue(localLogin)).toBe('true')
     expect(settingValue(openRegistration)).toBe('true')
   })
