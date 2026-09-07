@@ -33,4 +33,3 @@ The old `mss_sharepointfileurl` value will not be used as a fallback. Missing, m
 - Update attachment-service tests to prove `mss_shareablelink` is requested and mapped to `fileUrl`.
 - Update the Power Pages attachment field-permission test to require `mss_shareablelink`.
 - Run focused authentication, attachment-service, attachment-form, and configuration tests, followed by the production build.
-
