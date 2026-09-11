@@ -115,3 +115,10 @@ test('keeps the pending profile experience isolated from the full portal shell',
   expect(css).toContain('.pending-approval-page')
   expect(css).toContain('.pending-approval-card')
 })
+
+test('renders form control values with normal font weight across the app', () => {
+  const formControlTypography = css.match(/input,\s*textarea,\s*select\s*\{([^}]*)\}/s)?.[1]
+
+  expect(formControlTypography).toBeDefined()
+  expect(formControlTypography).toMatch(/font-weight:\s*400/)
+})
