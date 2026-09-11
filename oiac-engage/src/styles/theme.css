@@ -50,7 +50,7 @@ body { min-width: 320px; min-height: 100vh; margin: 0; background: var(--color-b
 
 html, body { overflow-x: clip; }
 
-button, :is(input, textarea, select) { font: inherit; }
+button, input, textarea, select { font: inherit; }
 input, textarea, select { font-weight: 400; }
 
 button, a { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }

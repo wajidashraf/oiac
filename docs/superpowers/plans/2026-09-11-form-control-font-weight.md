@@ -33,7 +33,7 @@ Append this focused assertion to `oiac-engage/src/styles/designRegression.test.t
 
 ```ts
 test('renders form control values with normal font weight across the app', () => {
-  const formControlTypography = css.match(/input,\s*textarea,\s*select\s*\{([^}]*)\}/s)?.[1]
+  const formControlTypography = css.match(/^input,\s*textarea,\s*select\s*\{([^}]*)\}/m)?.[1]
 
   expect(formControlTypography).toBeDefined()
   expect(formControlTypography).toMatch(/font-weight:\s*400/)

@@ -117,7 +117,7 @@ test('keeps the pending profile experience isolated from the full portal shell',
 })
 
 test('renders form control values with normal font weight across the app', () => {
-  const formControlTypography = css.match(/input,\s*textarea,\s*select\s*\{([^}]*)\}/s)?.[1]
+  const formControlTypography = css.match(/^input,\s*textarea,\s*select\s*\{([^}]*)\}/m)?.[1]
 
   expect(formControlTypography).toBeDefined()
   expect(formControlTypography).toMatch(/font-weight:\s*400/)
