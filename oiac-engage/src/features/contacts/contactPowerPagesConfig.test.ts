@@ -11,6 +11,11 @@ import innerError from '../../../.powerpages-site/site-settings/Webapi-error-inn
 
 const authenticatedUsersRoleId = '0353acdd-7b95-4c07-8997-ae95dafd978d'
 const anonymousUsersRoleId = '0a919c57-3065-4cd3-aaa8-aec59acbbe67'
+const administratorsRoleId = '6ec72c3e-4f1b-420f-9565-d20047b12c1f'
+const tablePermissions = import.meta.glob(
+  '../../../.powerpages-site/table-permissions/*.tablepermission.yml',
+  { query: '?raw', import: 'default', eager: true },
+) as Record<string, string>
 
 function expectReadOnly(permission: string) {
   expect(permission).toContain('read: true')
@@ -27,11 +32,32 @@ test('enables only the required Contact Web API fields and secured filtering', (
   expect(contactEnabled).toContain('name: Webapi/contact/enabled')
   expect(contactEnabled).toContain('value: true')
   expect(contactFields).toContain('name: Webapi/contact/fields')
-  expect(contactFields).toContain('value: "contactid,firstname,lastname,fullname,emailaddress1,mobilephone,address1_city,address1_stateorprovince,jobtitle,mss_district,_mss_district_value"')
+  expect(contactFields).toContain('value: "contactid,firstname,lastname,fullname,emailaddress1,mobilephone,address1_city,address1_stateorprovince,address1_postalcode,jobtitle,mss_district,_mss_district_value"')
   expect(disableODataFilter).toContain('name: Webapi/contact/disableodatafilter')
   expect(disableODataFilter).toContain('value: false')
   expect(innerError).toContain('name: Webapi/error/innererror')
   expect(innerError).toContain('value: false')
+})
+
+test('grants only Administrators global Contact read and write access', () => {
+  const permissionPath = Object.keys(tablePermissions).find((path) => (
+    path.endsWith('/Administrators-Contact-Global-Update.tablepermission.yml')
+  ))
+  expect(permissionPath).toBeDefined()
+  const permission = permissionPath ? tablePermissions[permissionPath] : ''
+
+  expect(permission).toContain('entityname: Administrators Contact Global Update')
+  expect(permission).toContain('entitylogicalname: contact')
+  expect(permission).toContain('scope: 756150000')
+  expect(permission).toContain('read: true')
+  expect(permission).toContain('write: true')
+  expect(permission).toContain('create: false')
+  expect(permission).toContain('delete: false')
+  expect(permission).toContain('append: false')
+  expect(permission).toContain('appendto: false')
+  expect(permission).toContain(`- ${administratorsRoleId}`)
+  expect(permission).not.toContain(authenticatedUsersRoleId)
+  expect(permission).not.toContain(anonymousUsersRoleId)
 })
 
 test('allows Authenticated Users to read and update only their own Contact', () => {
