@@ -31,9 +31,9 @@ function jsonResponse(body: unknown, status = 200): Response {
 
 function attachmentResponse(overrides: Record<string, unknown> = {}) {
   return {
+    meetingReportId: reportId,
     attachmentId,
     fileName: 'Meeting Notes_2026.pdf',
-    fileUrl: 'https://contoso.sharepoint.com/Meeting%20Notes_2026.pdf',
     contentType: 'application/pdf',
     size: 5,
     ...overrides,
@@ -220,7 +220,7 @@ describe('attachment flow operations', () => {
     expect(String(networkError)).not.toContain('sig=secret')
   })
 
-  test('loads one page of Dataverse attachments grouped by report and collapses duplicate SharePoint files', async () => {
+  test('loads safe Dataverse attachment metadata and preserves each row independently', async () => {
     const secondReportId = '33333333-3333-4333-8333-333333333333'
     fetchMock.mockResolvedValue(jsonResponse({
       value: [
@@ -271,21 +271,33 @@ describe('attachment flow operations', () => {
 
     const result = await listMeetingReportPageAttachments([reportId, secondReportId])
 
-    expect(result.get(reportId)).toEqual([{
-      attachmentId,
-      duplicateAttachmentIds: [
-        '44444444-4444-4444-8444-444444444444',
-        '66666666-6666-4666-8666-666666666666',
-      ],
-      fileName: 'Meeting Notes.pdf',
-      fileUrl: 'https://contoso.sharepoint.com/Shared%20Documents/report/Meeting%20Notes.pdf',
-      contentType: 'application/pdf',
-      size: 2048,
-    }])
+    expect(result.get(reportId)).toEqual([
+      {
+        meetingReportId: reportId,
+        attachmentId,
+        fileName: 'Meeting Notes.pdf',
+        contentType: 'application/pdf',
+        size: 2048,
+      },
+      {
+        meetingReportId: reportId,
+        attachmentId: '44444444-4444-4444-8444-444444444444',
+        fileName: 'Duplicate row.pdf',
+        contentType: 'application/pdf',
+        size: 2048,
+      },
+      {
+        meetingReportId: reportId,
+        attachmentId: '66666666-6666-4666-8666-666666666666',
+        fileName: 'Third duplicate row.pdf',
+        contentType: 'application/pdf',
+        size: 2048,
+      },
+    ])
     expect(result.get(secondReportId)).toEqual([{
+      meetingReportId: secondReportId,
       attachmentId: '55555555-5555-4555-8555-555555555555',
       fileName: 'District data.xlsx',
-      fileUrl: null,
       contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       size: 4096,
     }])
@@ -295,8 +307,15 @@ describe('attachment flow operations', () => {
     expect(parsedUrl.searchParams.get('$filter')).toBe(
       `_mss_meetingreport_value eq ${reportId} or _mss_meetingreport_value eq ${secondReportId}`,
     )
-    expect(parsedUrl.searchParams.get('$select')).toContain('mss_sharepointfileurl')
-    expect(parsedUrl.searchParams.get('$select')).not.toContain('mss_shareablelink')
+    expect(parsedUrl.searchParams.get('$select')).toBe(
+      'mss_attachmentsid,mss_attachmentname,mss_filesize,mss_filetype,_mss_meetingreport_value',
+    )
+    for (const forbidden of [
+      'mss_sharepointfileurl',
+      'mss_sharepointfilepath',
+      'mss_sharepointfileid',
+      'mss_clientfileid',
+    ]) expect(parsedUrl.searchParams.get('$select')).not.toContain(forbidden)
     expect(requestInit).toEqual(expect.objectContaining({ credentials: 'same-origin' }))
   })
 
@@ -316,9 +335,9 @@ describe('attachment flow operations', () => {
     }))
 
     await expect(listMeetingReportAttachments(reportId)).resolves.toEqual([{
+      meetingReportId: reportId,
       attachmentId,
       fileName: 'Meeting Notes_2026.pdf',
-      fileUrl: 'https://contoso.sharepoint.com/Meeting%20Notes_2026.pdf',
       contentType: null,
       size: null,
     }])

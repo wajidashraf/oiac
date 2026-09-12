@@ -44,6 +44,7 @@ vi.mock('../features/meetingReports/meetingReportAttachmentService', async (impo
     deleteMeetingReportAttachment: vi.fn(),
     listMeetingReportAttachments: vi.fn(),
     uploadMeetingReportAttachments: vi.fn(),
+    viewAttachment: vi.fn(),
   }
 })
 
@@ -74,10 +75,9 @@ const volunteer = {
 }
 const staffSaidLabel = 'Write Down What the Staff Said, Not What You Said'
 const existingAttachment = {
+  meetingReportId: reportId,
   attachmentId: '77777777-7777-7777-7777-777777777777',
-  duplicateAttachmentIds: ['99999999-9999-4999-8999-999999999999'],
   fileName: 'Existing notes.pdf',
-  fileUrl: 'https://example.sharepoint.com/existing-notes.pdf',
   contentType: 'application/pdf',
   size: 2048,
 }
@@ -149,11 +149,11 @@ beforeEach(() => {
   vi.mocked(updateMeetingReport).mockResolvedValue()
   vi.mocked(runRelationshipOperations).mockResolvedValue([])
   vi.mocked(listMeetingReportAttachments).mockResolvedValue([])
-  vi.mocked(uploadMeetingReportAttachments).mockImplementation(async (_id, files) => ({
+  vi.mocked(uploadMeetingReportAttachments).mockImplementation(async (meetingReportId, files) => ({
     succeededAttachments: files.map((file) => ({
+      meetingReportId,
       attachmentId: '88888888-8888-8888-8888-888888888888',
       fileName: file.name,
-      fileUrl: `https://example.sharepoint.com/${encodeURIComponent(file.name)}`,
       contentType: file.type || null,
       size: file.size,
     })),
@@ -427,16 +427,14 @@ test('lists and deletes existing files only on an edit form', async () => {
   await actor.click(screen.getByRole('button', { name: 'Next: Meeting Details' }))
   await actor.click(screen.getByRole('button', { name: 'Next: Report Content' }))
 
-  const link = await screen.findByRole('link', { name: 'Open Existing notes.pdf' })
-  expect(link).toHaveAttribute('href', 'https://example.sharepoint.com/existing-notes.pdf?web=1')
+  await screen.findByRole('button', { name: 'View Existing notes.pdf' })
   expect(listMeetingReportAttachments).toHaveBeenCalledWith(reportId, expect.any(AbortSignal))
   await actor.click(screen.getByRole('button', { name: 'Delete Existing notes.pdf' }))
   expect(deleteMeetingReportAttachment).toHaveBeenCalledWith(
     reportId,
     existingAttachment.attachmentId,
-    existingAttachment.duplicateAttachmentIds,
   )
-  expect(screen.queryByRole('link', { name: 'Open Existing notes.pdf' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'View Existing notes.pdf' })).not.toBeInTheDocument()
 })
 
 test('keeps an existing file when deletion is cancelled', async () => {
@@ -448,11 +446,11 @@ test('keeps an existing file when deletion is cancelled', async () => {
   await screen.findByDisplayValue('Sara Rahimi')
   await actor.click(screen.getByRole('button', { name: 'Next: Meeting Details' }))
   await actor.click(screen.getByRole('button', { name: 'Next: Report Content' }))
-  await screen.findByRole('link', { name: 'Open Existing notes.pdf' })
+  await screen.findByRole('button', { name: 'View Existing notes.pdf' })
   await actor.click(screen.getByRole('button', { name: 'Delete Existing notes.pdf' }))
 
   expect(deleteMeetingReportAttachment).not.toHaveBeenCalled()
-  expect(screen.getByRole('link', { name: 'Open Existing notes.pdf' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'View Existing notes.pdf' })).toBeInTheDocument()
 })
 
 test('keeps an existing file visible when deletion fails', async () => {
@@ -465,11 +463,11 @@ test('keeps an existing file visible when deletion fails', async () => {
   await screen.findByDisplayValue('Sara Rahimi')
   await actor.click(screen.getByRole('button', { name: 'Next: Meeting Details' }))
   await actor.click(screen.getByRole('button', { name: 'Next: Report Content' }))
-  await screen.findByRole('link', { name: 'Open Existing notes.pdf' })
+  await screen.findByRole('button', { name: 'View Existing notes.pdf' })
   await actor.click(screen.getByRole('button', { name: 'Delete Existing notes.pdf' }))
 
   expect(await screen.findByRole('alert')).toHaveTextContent('Existing notes.pdf could not be deleted')
-  expect(screen.getByRole('link', { name: 'Open Existing notes.pdf' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'View Existing notes.pdf' })).toBeInTheDocument()
 })
 
 test('allows retrying an attachment list failure without blocking edit', async () => {
@@ -486,7 +484,7 @@ test('allows retrying an attachment list failure without blocking edit', async (
   expect(screen.getByRole('button', { name: 'Update Report' })).toBeEnabled()
 
   await actor.click(screen.getByRole('button', { name: 'Retry uploaded documents' }))
-  expect(await screen.findByRole('link', { name: 'Open Existing notes.pdf' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'View Existing notes.pdf' })).toBeInTheDocument()
   expect(listMeetingReportAttachments).toHaveBeenCalledTimes(2)
 })
 
@@ -584,8 +582,8 @@ test('reloads existing attachments when an edit upload fails while the original 
   await actor.click(screen.getByRole('button', { name: 'Update Report' }))
 
   expect(await screen.findByRole('alert')).toHaveTextContent('report was saved, but some files could not be uploaded')
-  expect(await screen.findByRole('link', { name: 'Open Existing notes.pdf' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'View Existing notes.pdf' })).toBeInTheDocument()
   expect(listMeetingReportAttachments).toHaveBeenCalledTimes(2)
   await act(async () => finishStaleList?.([]))
-  expect(screen.getByRole('link', { name: 'Open Existing notes.pdf' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'View Existing notes.pdf' })).toBeInTheDocument()
 })

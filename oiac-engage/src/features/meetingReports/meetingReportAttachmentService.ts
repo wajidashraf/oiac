@@ -24,12 +24,7 @@ export type AttachmentViewResult = {
   readonly contentType: string
 }
 
-export type MeetingReportAttachment = {
-  readonly attachmentId: string
-  readonly duplicateAttachmentIds?: readonly string[]
-  readonly fileName: string
-  readonly fileUrl: string | null
-  readonly contentType: string | null
+export type MeetingReportAttachment = AttachmentViewSource & {
   readonly size: number | null
 }
 
@@ -49,9 +44,6 @@ type DataverseAttachmentRecord = {
   readonly mss_filesize?: unknown
   readonly mss_filetype?: unknown
   readonly _mss_meetingreport_value?: unknown
-  readonly mss_sharepointfileid?: unknown
-  readonly mss_sharepointfilepath?: unknown
-  readonly mss_sharepointfileurl?: unknown
 }
 
 const ATTACHMENT_LIST_SELECT = [
@@ -60,9 +52,6 @@ const ATTACHMENT_LIST_SELECT = [
   'mss_filesize',
   'mss_filetype',
   '_mss_meetingreport_value',
-  'mss_sharepointfileid',
-  'mss_sharepointfilepath',
-  'mss_sharepointfileurl',
 ] as const
 
 const clientFileIds = new WeakMap<File, string>()
@@ -163,17 +152,6 @@ function optionalText(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null
 }
 
-function optionalHttpsUrl(value: unknown): string | null {
-  const candidate = optionalText(value)
-  if (!candidate) return null
-  try {
-    const parsed = new URL(candidate)
-    return parsed.protocol === 'https:' ? parsed.href : null
-  } catch {
-    return null
-  }
-}
-
 function optionalSize(value: unknown): number | null {
   return typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : null
 }
@@ -235,7 +213,7 @@ export async function viewAttachment(
   return { blob, fileName, contentType }
 }
 
-function normalizeAttachment(value: unknown): MeetingReportAttachment {
+function normalizeAttachment(value: unknown, meetingReportId: string): MeetingReportAttachment {
   const record = object(value)
   const attachmentId = normalizeGuid(record?.attachmentId)
   const fileName = optionalText(record?.fileName)
@@ -243,9 +221,9 @@ function normalizeAttachment(value: unknown): MeetingReportAttachment {
     throw new Error('The attachment flow returned an invalid response.')
   }
   return {
+    meetingReportId,
     attachmentId,
     fileName,
-    fileUrl: optionalHttpsUrl(record.fileUrl),
     contentType: optionalText(record.contentType),
     size: optionalSize(record.size),
   }
@@ -254,28 +232,17 @@ function normalizeAttachment(value: unknown): MeetingReportAttachment {
 function normalizeDataverseAttachment(record: DataverseAttachmentRecord): {
   readonly reportId: string
   readonly attachment: MeetingReportAttachment
-  readonly fileKeys: readonly string[]
 } {
   const reportId = requiredGuid(String(record._mss_meetingreport_value ?? ''), 'Meeting Report identifier')
   const attachmentId = requiredGuid(String(record.mss_attachmentsid ?? ''), 'Attachment identifier')
   const fileName = optionalText(record.mss_attachmentname)
   if (!fileName) throw new Error('Dataverse returned an attachment without a file name.')
-  const fileUrl = optionalHttpsUrl(record.mss_sharepointfileurl)
-  const sharePointFileId = optionalText(record.mss_sharepointfileid)
-  const sharePointFilePath = optionalText(record.mss_sharepointfilepath)
-  const fileKeys = [
-    sharePointFileId ? `id:${sharePointFileId.toLowerCase()}` : null,
-    fileUrl ? `url:${fileUrl.toLowerCase()}` : null,
-    sharePointFilePath ? `path:${sharePointFilePath.toLowerCase()}` : null,
-  ].filter((key): key is string => key !== null)
-  if (fileKeys.length === 0) fileKeys.push(`attachment:${attachmentId}`)
   return {
     reportId,
-    fileKeys,
     attachment: {
+      meetingReportId: reportId,
       attachmentId,
       fileName,
-      fileUrl,
       contentType: optionalText(record.mss_filetype),
       size: optionalSize(record.mss_filesize),
     },
@@ -303,49 +270,14 @@ export async function listMeetingReportPageAttachments(
   )
   if (!Array.isArray(response.value)) throw new Error('Dataverse returned an invalid attachment list.')
 
-  const groupsByReport = new Map(normalizedReportIds.map((id) => [id, [] as Array<{
-    readonly attachment: MeetingReportAttachment
-    readonly attachmentIds: string[]
-    readonly keys: Set<string>
-  }>]))
+  const attachmentsByReport = new Map(
+    normalizedReportIds.map((id) => [id, [] as MeetingReportAttachment[]]),
+  )
   for (const record of response.value) {
     const normalized = normalizeDataverseAttachment(record)
-    const reportGroups = groupsByReport.get(normalized.reportId)
-    if (!reportGroups) continue
-
-    const matchingIndexes: number[] = []
-    for (let index = 0; index < reportGroups.length; index += 1) {
-      if (normalized.fileKeys.some((key) => reportGroups[index].keys.has(key))) matchingIndexes.push(index)
-    }
-    if (matchingIndexes.length === 0) {
-      reportGroups.push({
-        attachment: normalized.attachment,
-        attachmentIds: [normalized.attachment.attachmentId],
-        keys: new Set(normalized.fileKeys),
-      })
-      continue
-    }
-
-    const primaryGroup = reportGroups[matchingIndexes[0]]
-    for (const key of normalized.fileKeys) primaryGroup.keys.add(key)
-    for (let index = matchingIndexes.length - 1; index > 0; index -= 1) {
-      const mergedGroup = reportGroups[matchingIndexes[index]]
-      for (const key of mergedGroup.keys) primaryGroup.keys.add(key)
-      for (const attachmentId of mergedGroup.attachmentIds) {
-        if (!primaryGroup.attachmentIds.includes(attachmentId)) primaryGroup.attachmentIds.push(attachmentId)
-      }
-      reportGroups.splice(matchingIndexes[index], 1)
-    }
-    if (!primaryGroup.attachmentIds.includes(normalized.attachment.attachmentId)) {
-      primaryGroup.attachmentIds.push(normalized.attachment.attachmentId)
-    }
+    attachmentsByReport.get(normalized.reportId)?.push(normalized.attachment)
   }
-  return new Map([...groupsByReport].map(([reportId, groups]) => [
-    reportId,
-    groups.map((group) => group.attachmentIds.length > 1
-      ? { ...group.attachment, duplicateAttachmentIds: group.attachmentIds.slice(1) }
-      : group.attachment),
-  ]))
+  return attachmentsByReport
 }
 
 async function callAttachmentFlow(
@@ -384,13 +316,6 @@ export async function listMeetingReportAttachments(
   const normalizedReportId = requiredGuid(meetingReportId, 'Meeting Report identifier')
   const attachmentsByReport = await listMeetingReportPageAttachments([normalizedReportId], signal)
   return attachmentsByReport.get(normalizedReportId) ?? []
-}
-
-export function buildMeetingReportAttachmentPreviewUrl(fileUrl: string): string {
-  const previewUrl = new URL(fileUrl)
-  previewUrl.searchParams.delete('download')
-  previewUrl.searchParams.set('web', '1')
-  return previewUrl.href
 }
 
 function clientFileId(file: File): string {
@@ -451,7 +376,7 @@ export async function uploadMeetingReportAttachments(
     if (result.status !== 'succeeded') {
       throw new Error('The attachment flow returned an invalid response.')
     }
-    const attachment = normalizeAttachment(result.attachment)
+    const attachment = normalizeAttachment(result.attachment, normalizedReportId)
     if (attachment.fileName !== request.fileName) {
       throw new Error('The attachment flow returned an invalid response.')
     }

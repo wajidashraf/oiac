@@ -1,4 +1,4 @@
 description: Allow only attachment metadata fields required by Meeting Report attachment displays
 id: 89aa2636-179e-4467-90ee-ef58535f80fc
 name: Webapi/mss_attachments/fields
-value: "mss_attachmentsid,mss_attachmentname,mss_filesize,mss_filetype,mss_meetingreport,_mss_meetingreport_value,mss_sharepointfileid,mss_sharepointfilepath,mss_sharepointfileurl"
+value: "mss_attachmentsid,mss_attachmentname,mss_filesize,mss_filetype,mss_meetingreport,_mss_meetingreport_value"

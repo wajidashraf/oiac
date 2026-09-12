@@ -1,9 +1,28 @@
-import { useId, type ChangeEvent } from 'react'
-import { LuExternalLink, LuFile, LuTrash2, LuUpload, LuX } from 'react-icons/lu'
+import { useCallback, useId, useRef, useState, type ChangeEvent, type MouseEvent } from 'react'
+import { LuEye, LuFile, LuTrash2, LuUpload, LuX } from 'react-icons/lu'
+import { AttachmentPreviewModal } from './AttachmentPreviewModal'
 import {
-  buildMeetingReportAttachmentPreviewUrl,
+  MeetingReportAttachmentFlowError,
+  viewAttachment,
+  type AttachmentViewResult,
   type MeetingReportAttachment,
 } from './meetingReportAttachmentService'
+
+type PreviewState = {
+  readonly result: AttachmentViewResult
+  readonly kind: 'pdf' | 'image'
+  readonly returnFocusTo: HTMLButtonElement | null
+}
+
+const VIEW_ERROR_MESSAGES: Readonly<Record<string, string>> = {
+  InvalidViewRequest: 'The file request is invalid. Refresh the page and try again.',
+  MeetingReportNotFound: 'This meeting report is unavailable or you do not have access to it.',
+  AttachmentNotFound: 'This attachment is unavailable or you do not have access to it.',
+  FileContentNotFound: 'The stored file content is unavailable.',
+  AttachmentLookupFailed: 'The attachment could not be retrieved. Try again.',
+}
+
+const DEFAULT_VIEW_ERROR = 'The attachment could not be viewed. Try again.'
 
 export type MeetingReportAttachmentsProps = {
   readonly selectedFiles: readonly File[]
@@ -33,11 +52,48 @@ export function MeetingReportAttachments({
   const inputId = useId()
   const helpId = useId()
   const errorId = useId()
+  const viewingIdsRef = useRef(new Set<string>())
+  const [viewingAttachmentIds, setViewingAttachmentIds] = useState<ReadonlySet<string>>(new Set())
+  const [preview, setPreview] = useState<PreviewState | null>(null)
+  const [viewError, setViewError] = useState<string | null>(null)
+
+  const closePreview = useCallback(() => setPreview(null), [])
 
   function handleSelection(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.currentTarget.files ?? [])
     if (files.length > 0) onFilesSelected(files)
     event.currentTarget.value = ''
+  }
+
+  async function handleView(
+    attachment: MeetingReportAttachment,
+    event: MouseEvent<HTMLButtonElement>,
+  ) {
+    if (viewingIdsRef.current.has(attachment.attachmentId)) return
+    const returnFocusTo = event.currentTarget
+    viewingIdsRef.current.add(attachment.attachmentId)
+    setViewingAttachmentIds((current) => new Set(current).add(attachment.attachmentId))
+    setViewError(null)
+    try {
+      const result = await viewAttachment(attachment)
+      if (result.contentType === 'application/pdf') {
+        setPreview({ result, kind: 'pdf', returnFocusTo })
+      } else if (result.contentType.startsWith('image/')) {
+        setPreview({ result, kind: 'image', returnFocusTo })
+      } else {
+        downloadAttachment(result)
+      }
+    } catch (error) {
+      const code = error instanceof MeetingReportAttachmentFlowError ? error.code : null
+      setViewError(code ? VIEW_ERROR_MESSAGES[code] ?? DEFAULT_VIEW_ERROR : DEFAULT_VIEW_ERROR)
+    } finally {
+      viewingIdsRef.current.delete(attachment.attachmentId)
+      setViewingAttachmentIds((current) => {
+        const next = new Set(current)
+        next.delete(attachment.attachmentId)
+        return next
+      })
+    }
   }
 
   return (
@@ -96,6 +152,7 @@ export function MeetingReportAttachments({
       {listStatus !== 'idle' ? (
         <div className="meeting-report-attachments__group">
           <h3>Uploaded documents</h3>
+          {viewError ? <div className="form-alert" role="alert">{viewError}</div> : null}
           {listStatus === 'loading' ? <p className="meeting-report-attachments__state" role="status">Loading uploaded documents…</p> : null}
           {listStatus === 'error' ? (
             <div className="meeting-report-attachments__state meeting-report-attachments__state--error" role="alert">
@@ -110,6 +167,7 @@ export function MeetingReportAttachments({
             <ul className="meeting-report-attachments__list" aria-label="Uploaded documents">
               {existingAttachments.map((attachment) => {
                 const deleting = deletingAttachmentIds.has(attachment.attachmentId)
+                const viewing = viewingAttachmentIds.has(attachment.attachmentId)
                 return (
                   <li className="meeting-report-attachments__item" key={attachment.attachmentId}>
                     <LuFile aria-hidden="true" />
@@ -118,17 +176,15 @@ export function MeetingReportAttachments({
                       {attachment.size === null ? null : <small>{formatFileSize(attachment.size)}</small>}
                     </span>
                     <span className="meeting-report-attachments__actions">
-                      {attachment.fileUrl ? (
-                        <a
-                          href={buildMeetingReportAttachmentPreviewUrl(attachment.fileUrl)}
-                          target="_blank"
-                          rel="noreferrer"
-                          aria-label={`Open ${attachment.fileName}`}
-                        >
-                          <LuExternalLink aria-hidden="true" />
-                          <span>Open</span>
-                        </a>
-                      ) : null}
+                      <button
+                        type="button"
+                        aria-label={`${viewing ? 'Loading' : 'View'} ${attachment.fileName}`}
+                        disabled={disabled || viewing}
+                        onClick={(event) => void handleView(attachment, event)}
+                      >
+                        <LuEye aria-hidden="true" />
+                        <span>{viewing ? 'Loading…' : 'View'}</span>
+                      </button>
                       <button
                         type="button"
                         aria-label={`${deleting ? 'Deleting' : 'Delete'} ${attachment.fileName}`}
@@ -146,8 +202,27 @@ export function MeetingReportAttachments({
           ) : null}
         </div>
       ) : null}
+      {preview ? (
+        <AttachmentPreviewModal
+          result={preview.result}
+          kind={preview.kind}
+          returnFocusTo={preview.returnFocusTo}
+          onClose={closePreview}
+        />
+      ) : null}
     </section>
   )
+}
+
+function downloadAttachment(result: AttachmentViewResult) {
+  const url = URL.createObjectURL(result.blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = result.fileName
+  document.body.append(anchor)
+  anchor.click()
+  anchor.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
 function formatFileSize(bytes: number): string {

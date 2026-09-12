@@ -101,10 +101,11 @@ test('allows authenticated users to read attachment metadata only through their 
   expect(attachmentFields).toContain('name: Webapi/mss_attachments/fields')
   for (const field of [
     'mss_attachmentsid', 'mss_attachmentname', 'mss_filesize', 'mss_filetype',
-    'mss_meetingreport', '_mss_meetingreport_value', 'mss_sharepointfileid',
-    'mss_sharepointfilepath', 'mss_sharepointfileurl',
+    'mss_meetingreport', '_mss_meetingreport_value',
   ]) expect(attachmentFields).toContain(field)
-  expect(attachmentFields).not.toContain('mss_shareablelink')
+  for (const forbidden of [
+    'mss_sharepointfileurl', 'mss_sharepointfilepath', 'mss_sharepointfileid', 'mss_clientfileid',
+  ]) expect(attachmentFields).not.toContain(forbidden)
   expect(attachmentFilter).toContain('name: Webapi/mss_attachments/disableodatafilter')
   expect(attachmentFilter).toContain('value: false')
 

@@ -1,17 +1,38 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { expect, test, vi } from 'vitest'
-import type { MeetingReportAttachment } from './meetingReportAttachmentService'
+import { beforeEach, expect, test, vi } from 'vitest'
+vi.mock('./meetingReportAttachmentService', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./meetingReportAttachmentService')>()
+  return { ...actual, viewAttachment: vi.fn() }
+})
+import {
+  MeetingReportAttachmentFlowError,
+  type AttachmentViewResult,
+  type MeetingReportAttachment,
+  viewAttachment,
+} from './meetingReportAttachmentService'
 import { MeetingReportAttachments, type MeetingReportAttachmentsProps } from './MeetingReportAttachments'
 
 const selectedFile = new File(['hello'], 'Meeting Notes.pdf', { type: 'application/pdf' })
 const existingAttachment: MeetingReportAttachment = {
+  meetingReportId: '11111111-1111-4111-8111-111111111111',
   attachmentId: '22222222-2222-4222-8222-222222222222',
   fileName: 'Existing Report.pdf',
-  fileUrl: 'https://contoso.sharepoint.com/Existing%20Report.pdf',
   contentType: 'application/pdf',
   size: 2048,
 }
+
+beforeEach(() => {
+  vi.mocked(viewAttachment).mockReset()
+  Object.defineProperty(URL, 'createObjectURL', {
+    configurable: true,
+    value: vi.fn(() => 'blob:attachment-view'),
+  })
+  Object.defineProperty(URL, 'revokeObjectURL', {
+    configurable: true,
+    value: vi.fn(),
+  })
+})
 
 function renderAttachments(overrides: Partial<MeetingReportAttachmentsProps> = {}) {
   const props: MeetingReportAttachmentsProps = {
@@ -67,7 +88,7 @@ test('associates immediate selection errors with the file input', () => {
   expect(screen.getByLabelText('Documents Provided')).toHaveAttribute('aria-describedby', expect.stringContaining(alert.id))
 })
 
-test('renders existing attachments with safe links and delete actions', async () => {
+test('replaces the existing Open link with a secure View button and keeps delete actions', async () => {
   const actor = userEvent.setup()
   const onDeleteExisting = vi.fn()
   renderAttachments({
@@ -76,14 +97,108 @@ test('renders existing attachments with safe links and delete actions', async ()
     onDeleteExisting,
   })
 
-  expect(screen.getByRole('link', { name: 'Open Existing Report.pdf' })).toHaveAttribute(
-    'href',
-    'https://contoso.sharepoint.com/Existing%20Report.pdf?web=1',
-  )
+  expect(screen.queryByRole('link', { name: 'Open Existing Report.pdf' })).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'View Existing Report.pdf' })).toBeInTheDocument()
   expect(screen.getByText('2 KB')).toBeInTheDocument()
   await actor.click(screen.getByRole('button', { name: 'Delete Existing Report.pdf' }))
 
   expect(onDeleteExisting).toHaveBeenCalledWith(existingAttachment)
+})
+
+test('disables repeat View clicks while the same attachment is loading', async () => {
+  let resolveView!: (result: AttachmentViewResult) => void
+  vi.mocked(viewAttachment).mockReturnValue(new Promise((resolve) => { resolveView = resolve }))
+  renderAttachments({ existingAttachments: [existingAttachment], listStatus: 'ready' })
+
+  const viewButton = screen.getByRole('button', { name: 'View Existing Report.pdf' })
+  fireEvent.click(viewButton)
+  fireEvent.click(viewButton)
+
+  expect(viewAttachment).toHaveBeenCalledTimes(1)
+  expect(screen.getByRole('button', { name: 'Loading Existing Report.pdf' })).toBeDisabled()
+
+  resolveView({
+    blob: new Blob(['pdf'], { type: 'application/pdf' }),
+    fileName: 'Returned Notes.pdf',
+    contentType: 'application/pdf',
+  })
+  expect(await screen.findByRole('dialog', { name: 'Preview Returned Notes.pdf' })).toBeInTheDocument()
+})
+
+test.each([
+  ['application/pdf', 'Returned Notes.pdf', 'PDF preview of Returned Notes.pdf'],
+  ['image/webp', 'Returned Photo.webp', 'Returned Photo.webp'],
+])('routes %s content to its browser preview', async (contentType, fileName, previewName) => {
+  const actor = userEvent.setup()
+  vi.mocked(viewAttachment).mockResolvedValue({
+    blob: new Blob(['content'], { type: contentType }),
+    fileName,
+    contentType,
+  })
+  renderAttachments({ existingAttachments: [existingAttachment], listStatus: 'ready' })
+
+  await actor.click(screen.getByRole('button', { name: 'View Existing Report.pdf' }))
+
+  expect(await screen.findByRole('dialog', { name: `Preview ${fileName}` })).toBeInTheDocument()
+  if (contentType === 'application/pdf') {
+    expect(screen.getByTitle(previewName)).toBeInTheDocument()
+  } else {
+    expect(screen.getByRole('img', { name: previewName })).toBeInTheDocument()
+  }
+})
+
+test('downloads unsupported content without opening a preview and revokes its temporary URL', async () => {
+  const actor = userEvent.setup()
+  const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
+  vi.mocked(viewAttachment).mockResolvedValue({
+    blob: new Blob(['document'], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }),
+    fileName: 'Returned Document.docx',
+    contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  })
+  renderAttachments({ existingAttachments: [existingAttachment], listStatus: 'ready' })
+
+  await actor.click(screen.getByRole('button', { name: 'View Existing Report.pdf' }))
+
+  expect(clickSpy).toHaveBeenCalledTimes(1)
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  expect(document.querySelector('a[download="Returned Document.docx"]')).not.toBeInTheDocument()
+  await waitFor(() => expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:attachment-view'))
+})
+
+test.each([
+  ['InvalidViewRequest', 'The file request is invalid. Refresh the page and try again.'],
+  ['MeetingReportNotFound', 'This meeting report is unavailable or you do not have access to it.'],
+  ['AttachmentNotFound', 'This attachment is unavailable or you do not have access to it.'],
+  ['FileContentNotFound', 'The stored file content is unavailable.'],
+  ['AttachmentLookupFailed', 'The attachment could not be retrieved. Try again.'],
+])('shows the existing error UI for the %s flow error', async (code, message) => {
+  const actor = userEvent.setup()
+  const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => undefined)
+  vi.mocked(viewAttachment).mockRejectedValue(new MeetingReportAttachmentFlowError(404, code))
+  renderAttachments({ existingAttachments: [existingAttachment], listStatus: 'ready' })
+
+  await actor.click(screen.getByRole('button', { name: 'View Existing Report.pdf' }))
+
+  expect(screen.getByRole('alert')).toHaveClass('form-alert')
+  expect(screen.getByRole('alert')).toHaveTextContent(message)
+  expect(alertSpy).not.toHaveBeenCalled()
+  expect(screen.getByRole('button', { name: 'View Existing Report.pdf' })).toBeEnabled()
+})
+
+test('returns focus to View after closing a preview', async () => {
+  const actor = userEvent.setup()
+  vi.mocked(viewAttachment).mockResolvedValue({
+    blob: new Blob(['pdf'], { type: 'application/pdf' }),
+    fileName: 'Returned Notes.pdf',
+    contentType: 'application/pdf',
+  })
+  renderAttachments({ existingAttachments: [existingAttachment], listStatus: 'ready' })
+  const viewButton = screen.getByRole('button', { name: 'View Existing Report.pdf' })
+
+  await actor.click(viewButton)
+  await actor.click(await screen.findByRole('button', { name: 'Close preview' }))
+
+  expect(viewButton).toHaveFocus()
 })
 
 test('shows attachment loading, empty, and retry states', async () => {
