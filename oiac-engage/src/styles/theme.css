@@ -436,15 +436,33 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 
 .dashboard-invite-list li { display: flex; min-height: var(--dashboard-row-height); align-items: center; justify-content: space-between; gap: var(--space-3); padding: 0.5rem 1rem; }
 
+.dashboard-invite-scroll { max-height: calc(var(--dashboard-row-height) * 5); overflow-y: auto; border-radius: var(--radius-md); scrollbar-width: none; }
+
+.dashboard-invite-scroll::-webkit-scrollbar { display: none; }
+
+.dashboard-invite-scroll:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+
+.dashboard-invite-scroll .dashboard-invite-list { border-radius: var(--radius-md); }
+
 .dashboard-invite-list li:last-child { border-bottom: 0; }
 
 .dashboard-invite-list li > div { display: grid; min-width: 0; gap: 0.25rem; }
 
 .dashboard-invite-list strong, .dashboard-announcement-list strong, .dashboard-team-list strong { color: var(--color-text); font-size: 0.76rem; line-height: 1.4; }
 
-.dashboard-invite-list li > div > span, .dashboard-announcement-list div > span, .dashboard-team-list div > span { color: var(--color-primary); font-size: 0.7rem; line-height: 1.4; }
+.dashboard-invite-list li > div > span, .dashboard-invite-list time, .dashboard-announcement-list div > span, .dashboard-team-list div > span { color: var(--color-primary); font-size: 0.7rem; line-height: 1.4; }
 
 .dashboard-invite-list .status-badge { margin-top: -0.15rem; }
+
+.dashboard-invite-accept { min-width: 4.75rem; min-height: 2.25rem; flex: none; border: 1px solid var(--color-primary); border-radius: 999px; background: var(--color-surface); color: var(--color-primary-strong); cursor: pointer; font: inherit; font-size: 0.74rem; font-weight: 700; padding: 0.35rem 0.75rem; }
+
+.dashboard-invite-accept:hover:not(:disabled) { background: var(--color-primary-soft); }
+
+.dashboard-invite-accept:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+
+.dashboard-invite-accept:disabled { cursor: wait; opacity: 0.65; }
+
+.dashboard-invite-error { margin: 0 0 var(--space-3); border-radius: var(--radius-sm); background: #fff8f9; color: var(--color-danger); font-size: 0.76rem; padding: 0.65rem 0.8rem; }
 
 .dashboard-announcement-list { display: grid; gap: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); padding: 1rem; }
 
@@ -3374,6 +3392,7 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   .dashboard-type-label,
   .page--dashboard .status-badge { font-size: 0.875rem; }
   .dashboard-invite-list li > div > span,
+  .dashboard-invite-list time,
   .dashboard-announcement-list div > span,
   .dashboard-team-list div > span { font-size: 0.875rem; }
   .dashboard-table thead th,
@@ -3381,6 +3400,7 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   .dashboard-date-tile span,
   .dashboard-admin-label { font-size: 0.875rem; }
   .dashboard-date-tile strong { font-size: 1rem; }
+  .dashboard-invite-accept { min-height: 2.75rem; font-size: 0.875rem; }
   .site-footer__inner { min-height: 8rem; align-items: flex-start; flex-direction: column; justify-content: center; gap: var(--space-4); }
   .site-footer__identity { align-items: flex-start; }
   .site-footer__identity span { max-width: 15rem; line-height: 1.5; }

@@ -14,10 +14,10 @@ import ComingSoonBadge from '../components/ComingSoonBadge'
 import ContentCard from '../components/ContentCard'
 import StatusBadge from '../components/StatusBadge'
 import { useHomeDashboardData } from '../features/dashboard/useHomeDashboardData'
+import { MEETING_INVITATION_STATUS } from '../features/meetingInvites/meetingInviteTypes'
 import {
   dashboardAnnouncements,
   dashboardMetrics,
-  meetingInvites,
   teamResourceGroups,
   trainingResources,
   volunteerSubmissions,
@@ -49,14 +49,24 @@ function DashboardTable({ label, children }: PropsWithChildren<{ label: string }
   )
 }
 
-function invitationTone(status: 'Pending' | 'Accepted') {
-  return status === 'Accepted' ? 'positive' : 'attention'
-}
-
 function submissionTone(status: 'Submitted' | 'Confirmed' | 'Completed') {
   if (status === 'Confirmed') return 'positive'
   if (status === 'Submitted') return 'attention'
   return 'neutral'
+}
+
+function formatInviteDate(value: string): string {
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return 'Date to be confirmed'
+  const formatted = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(parsed)
+  return `${formatted.replace(/, (?=\d{1,2}:\d{2})/, ' · ')} ET`
 }
 
 function formatReportDate(value: string): string {
@@ -90,6 +100,12 @@ export default function Home({ contactId }: HomeProps) {
     upcomingEvents,
     reportsStatus,
     registrationsStatus,
+    meetingInvites,
+    invitesStatus,
+    acceptingInviteIds,
+    inviteError,
+    acceptInvite,
+    retryInvites,
     retry,
   } = useHomeDashboardData(contactId)
 
@@ -225,24 +241,65 @@ export default function Home({ contactId }: HomeProps) {
           </Link>
         </ContentCard>
 
-        <ContentCard
-          title="Meeting Invites"
-          headingLevel="h2"
-          className="dashboard-panel dashboard-panel--coming-soon"
-          ariaDisabled
-          meta={<ComingSoonBadge />}
-        >
-          <ul className="dashboard-invite-list">
-            {meetingInvites.map((invite) => (
-              <li key={invite.id}>
-                <div>
-                  <strong>{invite.title}</strong>
-                  <span>{invite.schedule}</span>
-                </div>
-                <StatusBadge tone={invitationTone(invite.status)}>{invite.status}</StatusBadge>
-              </li>
-            ))}
-          </ul>
+        <ContentCard title="Meeting Invites" headingLevel="h2" className="dashboard-panel">
+          {invitesStatus === 'loading' ? (
+            <p className="dashboard-report-state" role="status">Loading meeting invites…</p>
+          ) : null}
+          {invitesStatus === 'error' ? (
+            <div className="form-alert dashboard-report-state dashboard-report-state--error" role="alert">
+              <span>Meeting invites could not be loaded.</span>
+              <button
+                className="button button--quiet"
+                type="button"
+                aria-label="Try loading meeting invites again"
+                onClick={retryInvites}
+              >
+                Try again
+              </button>
+            </div>
+          ) : null}
+          {inviteError ? (
+            <p className="dashboard-invite-error" role="alert">{inviteError}</p>
+          ) : null}
+          {invitesStatus === 'ready' && meetingInvites.length === 0 ? (
+            <p className="dashboard-report-state" role="status">You have no meeting invites.</p>
+          ) : null}
+          {invitesStatus === 'ready' && meetingInvites.length > 0 ? (
+            <div
+              className="dashboard-invite-scroll"
+              role="region"
+              aria-label="Meeting Invites list"
+              tabIndex={0}
+            >
+              <ul className="dashboard-invite-list">
+                {meetingInvites.map((invite) => {
+                  const isAccepted = invite.participant?.status === MEETING_INVITATION_STATUS.accepted
+                  const isAccepting = acceptingInviteIds.has(invite.id)
+                  return (
+                    <li key={invite.id}>
+                      <div>
+                        <strong>{invite.title}</strong>
+                        <time dateTime={invite.startDateTime}>{formatInviteDate(invite.startDateTime)}</time>
+                      </div>
+                      {isAccepted ? (
+                        <StatusBadge tone="positive">Accepted</StatusBadge>
+                      ) : (
+                        <button
+                          className="dashboard-invite-accept"
+                          type="button"
+                          disabled={isAccepting}
+                          aria-label={`${isAccepting ? 'Accepting' : 'Accept'} ${invite.title}`}
+                          onClick={() => void acceptInvite(invite.id)}
+                        >
+                          {isAccepting ? 'Accepting…' : 'Accept'}
+                        </button>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          ) : null}
         </ContentCard>
 
         <div className="dashboard-panel-stack">

@@ -4,13 +4,6 @@ export type DashboardMetric = {
   label: string
 }
 
-export type MeetingInvite = {
-  id: string
-  title: string
-  schedule: string
-  status: 'Pending' | 'Accepted'
-}
-
 export type DashboardAnnouncement = {
   id: string
   title: string
@@ -52,27 +45,6 @@ export const dashboardMetrics: readonly DashboardMetric[] = [
   { id: 'report-submitted', value: 0, label: 'Reports Submitted' },
   { id: 'events-registered', value: 0, label: 'Events Registered' },
   { id: 'hours-volunteered', value: 0, label: 'Hours Volunteered' },
-]
-
-export const meetingInvites: readonly MeetingInvite[] = [
-  {
-    id: 'fall-coordination',
-    title: 'Volunteer Coordination Briefing — Fall 2026',
-    schedule: 'Sep 10, 2026 · 10:00 AM ET',
-    status: 'Pending',
-  },
-  {
-    id: 'outreach-training',
-    title: 'Congressional Outreach Training Session',
-    schedule: 'Sep 18, 2026 · 2:00 PM ET',
-    status: 'Accepted',
-  },
-  {
-    id: 'dc-roundtable',
-    title: 'State Volunteer Roundtable — DC District',
-    schedule: 'Sep 25, 2026 · 11:00 AM ET',
-    status: 'Pending',
-  },
 ]
 
 export const dashboardAnnouncements: readonly DashboardAnnouncement[] = [

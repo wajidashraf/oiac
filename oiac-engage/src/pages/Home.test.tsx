@@ -1,8 +1,10 @@
 import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, expect, test, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
 import { useHomeDashboardData, type HomeDashboardData } from '../features/dashboard/useHomeDashboardData'
 import type { EventItem } from '../features/events/eventTypes'
+import { MEETING_INVITATION_STATUS, type MeetingInvite } from '../features/meetingInvites/meetingInviteTypes'
 import type { MeetingReportSummary } from '../features/meetingReports/meetingReportTypes'
 import css from '../styles/theme.css?raw'
 import Home from './Home'
@@ -38,6 +40,46 @@ const upcomingEvents: readonly EventItem[] = [
 }))
 
 const retry = vi.fn()
+const retryInvites = vi.fn()
+const acceptInvite = vi.fn().mockResolvedValue(undefined)
+const dashboardInvites: readonly MeetingInvite[] = [
+  {
+    id: '44444444-4444-4444-8444-444444444444',
+    title: 'Pending District Briefing',
+    startDateTime: '2026-09-18T18:00:00Z',
+    endDateTime: '2026-09-18T19:00:00Z',
+    participant: {
+      id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      contactId: '11111111-1111-1111-1111-111111111111',
+      meetingInviteId: '44444444-4444-4444-8444-444444444444',
+      status: MEETING_INVITATION_STATUS.pending,
+      acceptedOn: null,
+      name: 'Pending District Briefing - Sara Rahimi',
+    },
+  },
+  {
+    id: '55555555-5555-4555-8555-555555555555',
+    title: 'Accepted Volunteer Briefing',
+    startDateTime: '2026-09-20T14:00:00Z',
+    endDateTime: null,
+    participant: {
+      id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      contactId: '11111111-1111-1111-1111-111111111111',
+      meetingInviteId: '55555555-5555-4555-8555-555555555555',
+      status: MEETING_INVITATION_STATUS.accepted,
+      acceptedOn: '2026-09-12T14:30:00Z',
+      name: 'Accepted Volunteer Briefing - Sara Rahimi',
+    },
+  },
+  {
+    id: '66666666-6666-4666-8666-666666666666',
+    title: 'New Volunteer Invitation',
+    startDateTime: '2026-09-21T15:00:00Z',
+    endDateTime: null,
+    participant: null,
+  },
+]
+
 function dashboardData(overrides: Partial<HomeDashboardData> = {}): HomeDashboardData {
   return {
     reports,
@@ -46,6 +88,12 @@ function dashboardData(overrides: Partial<HomeDashboardData> = {}): HomeDashboar
     upcomingEvents,
     reportsStatus: 'ready',
     registrationsStatus: 'ready',
+    meetingInvites: dashboardInvites,
+    invitesStatus: 'ready',
+    acceptingInviteIds: new Set(),
+    inviteError: null,
+    acceptInvite,
+    retryInvites,
     retry,
     ...overrides,
   }
@@ -57,6 +105,7 @@ function renderHome() {
 
 beforeEach(() => {
   vi.resetAllMocks()
+  acceptInvite.mockResolvedValue(undefined)
   vi.mocked(useHomeDashboardData).mockReturnValue(dashboardData())
 })
 
@@ -100,9 +149,9 @@ test('keeps unfinished dashboard features visible without navigation behavior', 
   const teams = screen.getByRole('heading', { name: 'Teams & Resources' }).closest('section')!
   const submissions = screen.getByRole('heading', { name: 'Volunteer Submissions' }).closest('section')!
 
-  expect(within(meetingInvites).getByText('Coming Soon')).toBeInTheDocument()
-  expect(meetingInvites).toHaveClass('dashboard-panel--coming-soon')
-  expect(meetingInvites).toHaveAttribute('aria-disabled', 'true')
+  expect(within(meetingInvites).queryByText('Coming Soon')).not.toBeInTheDocument()
+  expect(meetingInvites).not.toHaveClass('dashboard-panel--coming-soon')
+  expect(meetingInvites).not.toHaveAttribute('aria-disabled')
   expect(within(announcements).getByText('Coming Soon')).toBeInTheDocument()
   expect(announcements).toHaveClass('dashboard-panel--coming-soon')
   expect(announcements).toHaveAttribute('aria-disabled', 'true')
@@ -122,6 +171,51 @@ test('keeps unfinished dashboard features visible without navigation behavior', 
   expect(upcomingEvents).not.toHaveClass('dashboard-panel--coming-soon')
   expect(upcomingEvents).not.toHaveAttribute('aria-disabled')
   expect(within(upcomingEvents).getByRole('link', { name: /My Calendar/ })).toHaveAttribute('href', '/my-calendar')
+})
+
+test('renders live meeting invites with Accepted read-only and Accept for every actionable status', async () => {
+  renderHome()
+  const panel = screen.getByRole('heading', { name: 'Meeting Invites' }).closest('article')!
+  const inviteRegion = within(panel).getByRole('region', { name: 'Meeting Invites list' })
+
+  expect(inviteRegion).toHaveAttribute('tabindex', '0')
+  expect(within(panel).getByText('Sep 18, 2026 · 2:00 PM ET')).toBeInTheDocument()
+  expect(within(panel).getByText('Accepted')).toBeInTheDocument()
+  expect(within(panel).getAllByRole('button', { name: /^Accept / })).toHaveLength(2)
+
+  await userEvent.click(within(panel).getByRole('button', { name: 'Accept Pending District Briefing' }))
+  expect(acceptInvite).toHaveBeenCalledWith('44444444-4444-4444-8444-444444444444')
+})
+
+test('disables the Accept button while its invitation is being saved', () => {
+  vi.mocked(useHomeDashboardData).mockReturnValue(dashboardData({
+    acceptingInviteIds: new Set(['44444444-4444-4444-8444-444444444444']),
+  }))
+  renderHome()
+
+  const button = screen.getByRole('button', { name: 'Accepting Pending District Briefing' })
+  expect(button).toBeDisabled()
+  expect(button).toHaveTextContent('Accepting…')
+})
+
+test('shows invitation load and accept errors through inline dashboard UI', async () => {
+  vi.mocked(useHomeDashboardData).mockReturnValue(dashboardData({
+    meetingInvites: [],
+    invitesStatus: 'error',
+    inviteError: 'District Briefing could not be accepted. Try again.',
+  }))
+  renderHome()
+
+  expect(screen.getByText('Meeting invites could not be loaded.')).toBeInTheDocument()
+  expect(screen.getByText('District Briefing could not be accepted. Try again.')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Try loading meeting invites again' }))
+  expect(retryInvites).toHaveBeenCalledOnce()
+})
+
+test('limits the invite viewport to five rows and hides only the scrollbar chrome', () => {
+  expect(css).toMatch(/\.dashboard-invite-scroll\s*\{[^}]*max-height:\s*calc\(var\(--dashboard-row-height\)\s*\*\s*5\)/s)
+  expect(css).toMatch(/\.dashboard-invite-scroll\s*\{[^}]*overflow-y:\s*auto/s)
+  expect(css).toMatch(/\.dashboard-invite-scroll::-webkit-scrollbar\s*\{[^}]*display:\s*none/s)
 })
 
 test('renders the five latest authenticated-user reports from dashboard data', async () => {
