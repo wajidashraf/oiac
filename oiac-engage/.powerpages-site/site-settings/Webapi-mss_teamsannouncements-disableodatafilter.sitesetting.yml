@@ -1,0 +1,4 @@
+description: Keep OData filtering enabled for Teams announcements
+id: e644a789-e2fd-4a17-8c41-63081be2227c
+name: Webapi/mss_teamsannouncements/disableodatafilter
+value: false

@@ -1,0 +1,4 @@
+description: Enable Web API access for Teams announcements
+id: 6b40f05d-0cb0-4f82-a9a4-663e1a367212
+name: Webapi/mss_teamsannouncements/enabled
+value: true

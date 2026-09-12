@@ -1,0 +1,4 @@
+description: Allowed fields for Teams announcements Web API access
+id: ca559ec8-c53c-4ac9-8c1a-d40aa556ba04
+name: Webapi/mss_teamsannouncements/fields
+value: "mss_teamsannouncementsid,mss_announcementlink,mss_content,mss_enddate,mss_startdate,mss_title"
