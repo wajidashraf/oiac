@@ -450,7 +450,7 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 
 .dashboard-invite-list strong, .dashboard-announcement-list strong, .dashboard-team-list strong { color: var(--color-text); font-size: 0.76rem; line-height: 1.4; }
 
-.dashboard-invite-list li > div > span, .dashboard-invite-list time, .dashboard-announcement-list div > span, .dashboard-team-list div > span { color: var(--color-primary); font-size: 0.7rem; line-height: 1.4; }
+.dashboard-invite-list li > div > span, .dashboard-invite-list time, .dashboard-announcement-list time, .dashboard-team-list div > span { color: var(--color-primary); font-size: 0.7rem; line-height: 1.4; }
 
 .dashboard-invite-list .status-badge { margin-top: -0.15rem; }
 
@@ -464,13 +464,55 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 
 .dashboard-invite-error { margin: 0 0 var(--space-3); border-radius: var(--radius-sm); background: #fff8f9; color: var(--color-danger); font-size: 0.76rem; padding: 0.65rem 0.8rem; }
 
-.dashboard-announcement-list { display: grid; gap: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); padding: 1rem; }
+.dashboard-announcement-scroll { max-height: calc(var(--dashboard-row-height) * 5); overflow-y: auto; border-radius: var(--radius-md); scrollbar-width: none; }
 
-.dashboard-announcement-list li { display: grid; grid-template-columns: 0.45rem minmax(0, 1fr); align-items: start; gap: var(--space-2); }
+.dashboard-announcement-scroll::-webkit-scrollbar { display: none; }
 
-.dashboard-announcement-list li > div { display: grid; gap: 0.15rem; }
+.dashboard-announcement-scroll:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
 
-.dashboard-announcement-list__marker { width: 0.4rem; height: 0.4rem; margin-top: 0.38rem; border-radius: 50%; background: #526db2; }
+.dashboard-announcement-list { overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+
+.dashboard-announcement-list li { min-height: var(--dashboard-row-height); border-bottom: 1px solid var(--color-border); }
+
+.dashboard-announcement-list li:last-child { border-bottom: 0; }
+
+.dashboard-announcement-row { appearance: none; display: grid; width: 100%; min-height: var(--dashboard-row-height); grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); border: 0; background: transparent; color: inherit; cursor: pointer; font: inherit; padding: 0.5rem 1rem; text-align: left; }
+
+.dashboard-announcement-row:hover { background: var(--color-surface-muted); }
+
+.dashboard-announcement-row:focus-visible { position: relative; z-index: 1; outline: 2px solid var(--color-primary); outline-offset: -2px; }
+
+.dashboard-announcement-row__details { display: grid; min-width: 0; gap: 0.25rem; }
+
+.dashboard-announcement-row__details strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.dashboard-announcement-row__link { display: grid; width: 2rem; height: 2rem; place-items: center; border-radius: 50%; background: var(--color-primary-soft); color: var(--color-primary-strong); }
+
+.dashboard-announcement-row__link svg { width: 0.95rem; height: 0.95rem; }
+
+.team-announcement-modal { position: fixed; z-index: 210; inset: 0; display: grid; place-items: center; overflow-y: auto; background: rgb(15 31 28 / 72%); padding: 1rem; }
+
+.team-announcement-modal__dialog { display: grid; width: min(38rem, 100%); max-height: calc(100vh - 2rem); overflow: auto; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: 0 1.5rem 4rem rgb(15 31 28 / 24%); padding: clamp(1.25rem, 4vw, 2rem); }
+
+.team-announcement-modal__header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); }
+
+.team-announcement-modal__header h2 { margin: 0; color: var(--color-text); font-family: var(--font-display); font-size: clamp(1.35rem, 3vw, 1.75rem); line-height: 1.2; text-wrap: balance; }
+
+.team-announcement-modal__eyebrow { margin: 0 0 var(--space-2); color: var(--color-primary); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; }
+
+.team-announcement-modal__close { width: 2.75rem; min-width: 2.75rem; height: 2.75rem; padding: 0; }
+
+.team-announcement-modal__close svg { width: 1.2rem; height: 1.2rem; }
+
+.team-announcement-modal__date { margin-top: var(--space-4); color: var(--color-primary); font-size: 0.8rem; font-weight: 600; }
+
+.team-announcement-modal__content { margin-top: var(--space-5); color: var(--color-text); font-size: 0.94rem; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.team-announcement-modal__footer { display: flex; justify-content: flex-end; margin-top: var(--space-6); padding-top: var(--space-4); border-top: 1px solid var(--color-border); }
+
+.team-announcement-modal__footer .button { gap: var(--space-2); text-decoration: none; }
+
+.team-announcement-modal__footer svg { width: 1rem; height: 1rem; }
 
 .dashboard-training-list { display: grid; gap: 0.15rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); padding: 0.55rem 0.75rem; }
 
@@ -3393,7 +3435,7 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   .page--dashboard .status-badge { font-size: 0.875rem; }
   .dashboard-invite-list li > div > span,
   .dashboard-invite-list time,
-  .dashboard-announcement-list div > span,
+  .dashboard-announcement-list time,
   .dashboard-team-list div > span { font-size: 0.875rem; }
   .dashboard-table thead th,
   .dashboard-identity__eyebrow,
@@ -3401,6 +3443,9 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   .dashboard-admin-label { font-size: 0.875rem; }
   .dashboard-date-tile strong { font-size: 1rem; }
   .dashboard-invite-accept { min-height: 2.75rem; font-size: 0.875rem; }
+  .team-announcement-modal { align-items: end; padding: 0.75rem; }
+  .team-announcement-modal__dialog { width: 100%; max-height: calc(100vh - 1.5rem); border-radius: var(--radius-lg); }
+  .team-announcement-modal__footer .button { width: 100%; }
   .site-footer__inner { min-height: 8rem; align-items: flex-start; flex-direction: column; justify-content: center; gap: var(--space-4); }
   .site-footer__identity { align-items: flex-start; }
   .site-footer__identity span { max-width: 15rem; line-height: 1.5; }

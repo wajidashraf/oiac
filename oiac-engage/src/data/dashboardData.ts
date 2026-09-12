@@ -4,12 +4,6 @@ export type DashboardMetric = {
   label: string
 }
 
-export type DashboardAnnouncement = {
-  id: string
-  title: string
-  timestamp: string
-}
-
 export type DashboardResource = {
   id: string
   title: string
@@ -45,12 +39,6 @@ export const dashboardMetrics: readonly DashboardMetric[] = [
   { id: 'report-submitted', value: 0, label: 'Reports Submitted' },
   { id: 'events-registered', value: 0, label: 'Events Registered' },
   { id: 'hours-volunteered', value: 0, label: 'Hours Volunteered' },
-]
-
-export const dashboardAnnouncements: readonly DashboardAnnouncement[] = [
-  { id: 'channel-created', title: 'New channel created: #advocacy-2026', timestamp: '2h ago' },
-  { id: 'briefing-recording', title: 'Advocacy Day briefing recording posted', timestamp: 'Yesterday' },
-  { id: 'meeting-guide', title: 'Updated Meeting Guide now available', timestamp: '3 days ago' },
 ]
 
 export const trainingResources: readonly DashboardResource[] = [

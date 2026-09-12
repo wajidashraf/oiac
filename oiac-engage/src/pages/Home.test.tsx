@@ -6,6 +6,7 @@ import { useHomeDashboardData, type HomeDashboardData } from '../features/dashbo
 import type { EventItem } from '../features/events/eventTypes'
 import { MEETING_INVITATION_STATUS, type MeetingInvite } from '../features/meetingInvites/meetingInviteTypes'
 import type { MeetingReportSummary } from '../features/meetingReports/meetingReportTypes'
+import type { TeamAnnouncement } from '../features/teamAnnouncements/teamAnnouncementTypes'
 import css from '../styles/theme.css?raw'
 import Home from './Home'
 
@@ -41,6 +42,7 @@ const upcomingEvents: readonly EventItem[] = [
 
 const retry = vi.fn()
 const retryInvites = vi.fn()
+const retryAnnouncements = vi.fn()
 const acceptInvite = vi.fn().mockResolvedValue(undefined)
 const dashboardInvites: readonly MeetingInvite[] = [
   {
@@ -80,6 +82,25 @@ const dashboardInvites: readonly MeetingInvite[] = [
   },
 ]
 
+const dashboardAnnouncements: readonly TeamAnnouncement[] = [
+  {
+    id: '77777777-7777-4777-8777-777777777777',
+    title: 'Advocacy briefing materials',
+    content: 'Please review the latest briefing materials before the meeting.',
+    startDateTime: '2026-09-12T13:00:00Z',
+    endDateTime: '2026-09-13T13:00:00Z',
+    link: 'https://example.com/briefing',
+  },
+  {
+    id: '88888888-8888-4888-8888-888888888888',
+    title: 'Volunteer channel update',
+    content: 'A new volunteer channel is now available.',
+    startDateTime: '2026-09-11T13:00:00Z',
+    endDateTime: '2026-09-14T13:00:00Z',
+    link: null,
+  },
+]
+
 function dashboardData(overrides: Partial<HomeDashboardData> = {}): HomeDashboardData {
   return {
     reports,
@@ -90,10 +111,13 @@ function dashboardData(overrides: Partial<HomeDashboardData> = {}): HomeDashboar
     registrationsStatus: 'ready',
     meetingInvites: dashboardInvites,
     invitesStatus: 'ready',
+    teamAnnouncements: dashboardAnnouncements,
+    announcementsStatus: 'ready',
     acceptingInviteIds: new Set(),
     inviteError: null,
     acceptInvite,
     retryInvites,
+    retryAnnouncements,
     retry,
     ...overrides,
   }
@@ -152,9 +176,9 @@ test('keeps unfinished dashboard features visible without navigation behavior', 
   expect(within(meetingInvites).queryByText('Coming Soon')).not.toBeInTheDocument()
   expect(meetingInvites).not.toHaveClass('dashboard-panel--coming-soon')
   expect(meetingInvites).not.toHaveAttribute('aria-disabled')
-  expect(within(announcements).getByText('Coming Soon')).toBeInTheDocument()
-  expect(announcements).toHaveClass('dashboard-panel--coming-soon')
-  expect(announcements).toHaveAttribute('aria-disabled', 'true')
+  expect(within(announcements).queryByText('Coming Soon')).not.toBeInTheDocument()
+  expect(announcements).not.toHaveClass('dashboard-panel--coming-soon')
+  expect(announcements).not.toHaveAttribute('aria-disabled')
   expect(within(training).getByText('Coming Soon')).toBeInTheDocument()
   expect(training).toHaveClass('dashboard-panel--coming-soon')
   expect(training).toHaveAttribute('aria-disabled', 'true')
@@ -216,6 +240,66 @@ test('limits the invite viewport to five rows and hides only the scrollbar chrom
   expect(css).toMatch(/\.dashboard-invite-scroll\s*\{[^}]*max-height:\s*calc\(var\(--dashboard-row-height\)\s*\*\s*5\)/s)
   expect(css).toMatch(/\.dashboard-invite-scroll\s*\{[^}]*overflow-y:\s*auto/s)
   expect(css).toMatch(/\.dashboard-invite-scroll::-webkit-scrollbar\s*\{[^}]*display:\s*none/s)
+})
+
+test('renders live Teams announcements and opens row details in a modal', async () => {
+  const actor = userEvent.setup()
+  renderHome()
+  const panel = screen.getByRole('heading', { name: 'Teams Announcements' }).closest('article')!
+  const listRegion = within(panel).getByRole('region', { name: 'Teams Announcements list' })
+
+  expect(listRegion).toHaveAttribute('tabindex', '0')
+  expect(within(panel).getByRole('button', { name: 'View Advocacy briefing materials' })).toBeInTheDocument()
+  expect(within(panel).getByText('Sep 12, 2026 · 9:00 AM ET')).toBeInTheDocument()
+  expect(within(panel).getByLabelText('Advocacy briefing materials has an external link')).toBeInTheDocument()
+  expect(within(panel).queryByLabelText('Volunteer channel update has an external link')).not.toBeInTheDocument()
+
+  await actor.click(within(panel).getByRole('button', { name: 'View Advocacy briefing materials' }))
+
+  const dialog = screen.getByRole('dialog', { name: 'Advocacy briefing materials' })
+  expect(within(dialog).getByText('Please review the latest briefing materials before the meeting.')).toBeInTheDocument()
+  expect(within(dialog).getByText('Sep 12, 2026 · 9:00 AM ET')).toBeInTheDocument()
+  expect(within(dialog).getByRole('link', { name: 'Open announcement' })).toHaveAttribute(
+    'href',
+    'https://example.com/briefing',
+  )
+
+  await actor.click(within(dialog).getByRole('button', { name: 'Close announcement' }))
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  expect(within(panel).getByRole('button', { name: 'View Advocacy briefing materials' })).toHaveFocus()
+})
+
+test('shows independent loading, error, retry, and empty states for Teams announcements', async () => {
+  const actor = userEvent.setup()
+  vi.mocked(useHomeDashboardData).mockReturnValue(dashboardData({
+    teamAnnouncements: [],
+    announcementsStatus: 'error',
+  }))
+  const { rerender } = renderHome()
+
+  expect(screen.getByText('Teams announcements could not be loaded.')).toBeInTheDocument()
+  await actor.click(screen.getByRole('button', { name: 'Try loading Teams announcements again' }))
+  expect(retryAnnouncements).toHaveBeenCalledOnce()
+
+  vi.mocked(useHomeDashboardData).mockReturnValue(dashboardData({
+    teamAnnouncements: [],
+    announcementsStatus: 'loading',
+  }))
+  rerender(<MemoryRouter><Home contactId="11111111-1111-1111-1111-111111111111" /></MemoryRouter>)
+  expect(screen.getByText('Loading Teams announcements…')).toBeInTheDocument()
+
+  vi.mocked(useHomeDashboardData).mockReturnValue(dashboardData({
+    teamAnnouncements: [],
+    announcementsStatus: 'ready',
+  }))
+  rerender(<MemoryRouter><Home contactId="11111111-1111-1111-1111-111111111111" /></MemoryRouter>)
+  expect(screen.getByText('There are no active Teams announcements.')).toBeInTheDocument()
+})
+
+test('limits the announcement viewport to five rows and hides its scrollbar chrome', () => {
+  expect(css).toMatch(/\.dashboard-announcement-scroll\s*\{[^}]*max-height:\s*calc\(var\(--dashboard-row-height\)\s*\*\s*5\)/s)
+  expect(css).toMatch(/\.dashboard-announcement-scroll\s*\{[^}]*overflow-y:\s*auto/s)
+  expect(css).toMatch(/\.dashboard-announcement-scroll::-webkit-scrollbar\s*\{[^}]*display:\s*none/s)
 })
 
 test('renders the five latest authenticated-user reports from dashboard data', async () => {

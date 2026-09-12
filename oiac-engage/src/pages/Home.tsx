@@ -1,4 +1,4 @@
-import { useEffect, type PropsWithChildren } from 'react'
+import { useEffect, useState, type PropsWithChildren } from 'react'
 import {
   LuArrowRight,
   LuBookOpen,
@@ -8,6 +8,7 @@ import {
   LuGraduationCap,
   LuHandshake,
   LuHash,
+  LuExternalLink,
 } from 'react-icons/lu'
 import { Link } from 'react-router-dom'
 import ComingSoonBadge from '../components/ComingSoonBadge'
@@ -15,8 +16,9 @@ import ContentCard from '../components/ContentCard'
 import StatusBadge from '../components/StatusBadge'
 import { useHomeDashboardData } from '../features/dashboard/useHomeDashboardData'
 import { MEETING_INVITATION_STATUS } from '../features/meetingInvites/meetingInviteTypes'
+import { TeamAnnouncementModal } from '../features/teamAnnouncements/TeamAnnouncementModal'
+import type { TeamAnnouncement } from '../features/teamAnnouncements/teamAnnouncementTypes'
 import {
-  dashboardAnnouncements,
   dashboardMetrics,
   teamResourceGroups,
   trainingResources,
@@ -104,10 +106,17 @@ export default function Home({ contactId }: HomeProps) {
     invitesStatus,
     acceptingInviteIds,
     inviteError,
+    teamAnnouncements,
+    announcementsStatus,
     acceptInvite,
     retryInvites,
+    retryAnnouncements,
     retry,
   } = useHomeDashboardData(contactId)
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<{
+    readonly announcement: TeamAnnouncement
+    readonly trigger: HTMLButtonElement
+  } | null>(null)
 
   useEffect(() => {
     document.title = 'Volunteer Dashboard — OIAC Engage'
@@ -303,24 +312,67 @@ export default function Home({ contactId }: HomeProps) {
         </ContentCard>
 
         <div className="dashboard-panel-stack">
-          <ContentCard
-            title="Teams Announcements"
-            headingLevel="h2"
-            className="dashboard-panel dashboard-panel--coming-soon"
-            ariaDisabled
-            meta={<ComingSoonBadge />}
-          >
-            <ul className="dashboard-announcement-list">
-              {dashboardAnnouncements.map((announcement) => (
-                <li key={announcement.id}>
-                  <span className="dashboard-announcement-list__marker" aria-hidden="true" />
-                  <div>
-                    <strong>{announcement.title}</strong>
-                    <span>{announcement.timestamp}</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
+          <ContentCard title="Teams Announcements" headingLevel="h2" className="dashboard-panel">
+            {announcementsStatus === 'loading' ? (
+              <p className="dashboard-report-state" role="status">Loading Teams announcements…</p>
+            ) : null}
+            {announcementsStatus === 'error' ? (
+              <div className="form-alert dashboard-report-state dashboard-report-state--error" role="alert">
+                <span>Teams announcements could not be loaded.</span>
+                <button
+                  className="button button--quiet"
+                  type="button"
+                  aria-label="Try loading Teams announcements again"
+                  onClick={retryAnnouncements}
+                >
+                  Try again
+                </button>
+              </div>
+            ) : null}
+            {announcementsStatus === 'ready' && teamAnnouncements.length === 0 ? (
+              <p className="dashboard-report-state" role="status">
+                There are no active Teams announcements.
+              </p>
+            ) : null}
+            {announcementsStatus === 'ready' && teamAnnouncements.length > 0 ? (
+              <div
+                className="dashboard-announcement-scroll"
+                role="region"
+                aria-label="Teams Announcements list"
+                tabIndex={0}
+              >
+                <ul className="dashboard-announcement-list">
+                  {teamAnnouncements.map((announcement) => (
+                    <li key={announcement.id}>
+                      <button
+                        className="dashboard-announcement-row"
+                        type="button"
+                        aria-label={`View ${announcement.title}`}
+                        onClick={(event) => setSelectedAnnouncement({
+                          announcement,
+                          trigger: event.currentTarget,
+                        })}
+                      >
+                        <span className="dashboard-announcement-row__details">
+                          <strong>{announcement.title}</strong>
+                          <time dateTime={announcement.startDateTime}>
+                            {formatInviteDate(announcement.startDateTime)}
+                          </time>
+                        </span>
+                        {announcement.link ? (
+                          <span
+                            className="dashboard-announcement-row__link"
+                            aria-label={`${announcement.title} has an external link`}
+                          >
+                            <LuExternalLink aria-hidden="true" />
+                          </span>
+                        ) : null}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </ContentCard>
 
           <ContentCard
@@ -422,6 +474,14 @@ export default function Home({ contactId }: HomeProps) {
           </tbody>
         </DashboardTable>
       </section>
+      {selectedAnnouncement ? (
+        <TeamAnnouncementModal
+          announcement={selectedAnnouncement.announcement}
+          formattedStartDate={formatInviteDate(selectedAnnouncement.announcement.startDateTime)}
+          returnFocusTo={selectedAnnouncement.trigger}
+          onClose={() => setSelectedAnnouncement(null)}
+        />
+      ) : null}
     </div>
   )
 }
