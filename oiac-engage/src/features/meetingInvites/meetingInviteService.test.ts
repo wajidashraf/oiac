@@ -40,7 +40,7 @@ describe('meeting invite queries and mapping', () => {
     const resultPromise = getMeetingInvites(`{${CONTACT_ID.toUpperCase()}}`)
     expect(powerPagesFetch).toHaveBeenCalledTimes(3)
 
-    const urls = vi.mocked(powerPagesFetch).mock.calls.map(([url]) => decodeURIComponent(url).replaceAll('+', ' '))
+    const urls = vi.mocked(powerPagesFetch).mock.calls.map(([url]) => decodeURIComponent(url).replace(/\+/g, ' '))
     expect(urls[0]).toContain(`/_api/contacts(${CONTACT_ID})?$select=contactid,fullname,_mss_district_value`)
     expect(urls[1]).toContain('/_api/mss_meetinginviteses?')
     expect(urls[1]).toContain('$expand=mss_MeetingInvites_Contact_Contact($select=contactid),mss_MeetingInvites_mss_District_mss_District($select=mss_districtid)')
@@ -269,7 +269,7 @@ describe('accepting a meeting invite', () => {
       contactFullName: 'Sara Rahimi',
       invite: baseInvite,
     }, acceptedAt)).resolves.toMatchObject({ id: participantId, status: 1 })
-    expect(decodeURIComponent(vi.mocked(powerPagesFetch).mock.calls[0][0]).replaceAll('+', ' '))
+    expect(decodeURIComponent(vi.mocked(powerPagesFetch).mock.calls[0][0]).replace(/\+/g, ' '))
       .toContain(`$filter=_mss_contact_value eq ${CONTACT_ID} and _mss_meetinginvite_value eq ${baseInvite.id}`)
   })
 })
