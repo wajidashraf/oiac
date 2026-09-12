@@ -1,6 +1,7 @@
 import { useCallback, useId, useRef, useState, type ChangeEvent, type MouseEvent } from 'react'
 import { LuEye, LuFile, LuTrash2, LuUpload, LuX } from 'react-icons/lu'
 import { AttachmentPreviewModal } from './AttachmentPreviewModal'
+import { getAttachmentPreviewKind } from './attachmentPreviewKind'
 import {
   MeetingReportAttachmentFlowError,
   viewAttachment,
@@ -76,10 +77,9 @@ export function MeetingReportAttachments({
     setViewError(null)
     try {
       const result = await viewAttachment(attachment)
-      if (result.contentType === 'application/pdf') {
-        setPreview({ result, kind: 'pdf', returnFocusTo })
-      } else if (result.contentType.startsWith('image/')) {
-        setPreview({ result, kind: 'image', returnFocusTo })
+      const kind = getAttachmentPreviewKind(result)
+      if (kind === 'pdf' || kind === 'image') {
+        setPreview({ result, kind, returnFocusTo })
       } else {
         downloadAttachment(result)
       }

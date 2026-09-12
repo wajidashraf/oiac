@@ -77,6 +77,24 @@ describe('AttachmentPreviewModal', () => {
     )
   })
 
+  test.each([
+    ['pdf', 'application/pdf', 'Returned Notes.PDF'],
+    ['image', 'image/png', 'Returned Photo.PNG'],
+  ] as const)('assigns a viewable MIME type to generic %s content', async (kind, expectedType, fileName) => {
+    const result: AttachmentViewResult = {
+      blob: new Blob(['content'], { type: 'application/octet-stream' }),
+      fileName,
+      contentType: 'application/octet-stream',
+    }
+
+    render(<AttachmentPreviewModal result={result} kind={kind} returnFocusTo={null} onClose={vi.fn()} />)
+
+    expect(await screen.findByRole('dialog', { name: `Preview ${fileName}` })).toBeInTheDocument()
+    const previewBlob = vi.mocked(URL.createObjectURL).mock.calls[0][0] as Blob
+    expect(previewBlob.type).toBe(expectedType)
+    expect(previewBlob.size).toBe(result.blob.size)
+  })
+
   test('closes on Escape and revokes the active URL on unmount', async () => {
     const onClose = vi.fn()
     const { unmount } = render(

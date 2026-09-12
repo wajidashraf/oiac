@@ -128,7 +128,9 @@ test('disables repeat View clicks while the same attachment is loading', async (
 test.each([
   ['application/pdf', 'Returned Notes.pdf', 'PDF preview of Returned Notes.pdf'],
   ['image/webp', 'Returned Photo.webp', 'Returned Photo.webp'],
-])('routes %s content to its browser preview', async (contentType, fileName, previewName) => {
+  ['application/octet-stream', 'Returned Notes.PDF', 'PDF preview of Returned Notes.PDF'],
+  ['application/octet-stream', 'Returned Photo.PNG', 'Returned Photo.PNG'],
+])('routes %s content named %s to its browser preview', async (contentType, fileName, previewName) => {
   const actor = userEvent.setup()
   vi.mocked(viewAttachment).mockResolvedValue({
     blob: new Blob(['content'], { type: contentType }),
@@ -140,7 +142,7 @@ test.each([
   await actor.click(screen.getByRole('button', { name: 'View Existing Report.pdf' }))
 
   expect(await screen.findByRole('dialog', { name: `Preview ${fileName}` })).toBeInTheDocument()
-  if (contentType === 'application/pdf') {
+  if (previewName.startsWith('PDF preview')) {
     expect(screen.getByTitle(previewName)).toBeInTheDocument()
   } else {
     expect(screen.getByRole('img', { name: previewName })).toBeInTheDocument()
@@ -163,6 +165,22 @@ test('downloads unsupported content without opening a preview and revokes its te
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   expect(document.querySelector('a[download="Returned Document.docx"]')).not.toBeInTheDocument()
   await waitFor(() => expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:attachment-view'))
+})
+
+test('downloads an explicitly unsupported MIME type despite a previewable extension', async () => {
+  const actor = userEvent.setup()
+  const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
+  vi.mocked(viewAttachment).mockResolvedValue({
+    blob: new Blob(['text'], { type: 'text/plain' }),
+    fileName: 'Misleading.pdf',
+    contentType: 'text/plain',
+  })
+  renderAttachments({ existingAttachments: [existingAttachment], listStatus: 'ready' })
+
+  await actor.click(screen.getByRole('button', { name: 'View Existing Report.pdf' }))
+
+  expect(clickSpy).toHaveBeenCalledTimes(1)
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
 
 test.each([

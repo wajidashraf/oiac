@@ -37,7 +37,7 @@ An explicit, non-generic unsupported MIME type takes precedence over a misleadin
 
 - The pure classifier owns file-preview eligibility and returns `pdf`, `image`, or `unsupported`.
 - `MeetingReportAttachments` uses that result to choose between opening `AttachmentPreviewModal` and invoking the existing download helper.
-- `AttachmentPreviewModal` remains responsible only for displaying previewable content and modal interaction.
+- `AttachmentPreviewModal` assigns a browser-viewable MIME type to generic PDF and image blobs before creating their object URL, then displays the content and owns modal interaction.
 - `meetingReportAttachmentService` remains responsible for secure retrieval and response normalization.
 
 ## Error Handling
@@ -51,6 +51,7 @@ Focused tests will verify:
 - PDF and image MIME types open the correct preview.
 - MIME types with casing or parameters are normalized before classification.
 - Generic or absent MIME types fall back to case-insensitive filename extensions.
+- Generic preview blobs are assigned the correct PDF or image MIME type before their object URLs are created.
 - Explicit unsupported MIME types and unsupported extensions download instead of opening a modal.
 - Existing modal Download and Close behavior remains covered.
 - The TypeScript build and relevant Vitest suites pass after implementation.

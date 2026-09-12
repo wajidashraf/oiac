@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { LuDownload, LuX } from 'react-icons/lu'
+import { getAttachmentPreviewContentType } from './attachmentPreviewKind'
 import type { AttachmentViewResult } from './meetingReportAttachmentService'
 
 export type AttachmentPreviewModalProps = {
@@ -20,10 +21,14 @@ export function AttachmentPreviewModal({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
   useEffect(() => {
-    const objectUrl = URL.createObjectURL(result.blob)
+    const contentType = getAttachmentPreviewContentType(result, kind)
+    const previewBlob = result.blob.type === contentType
+      ? result.blob
+      : new Blob([result.blob], { type: contentType })
+    const objectUrl = URL.createObjectURL(previewBlob)
     setPreviewUrl(objectUrl)
     return () => URL.revokeObjectURL(objectUrl)
-  }, [result.blob])
+  }, [kind, result.blob, result.contentType, result.fileName])
 
   useEffect(() => {
     closeButtonRef.current?.focus()
