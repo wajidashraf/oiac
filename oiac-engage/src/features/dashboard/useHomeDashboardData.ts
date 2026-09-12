@@ -15,6 +15,8 @@ import {
   getMeetingInvites,
 } from '../meetingInvites/meetingInviteService'
 import type { MeetingInvite } from '../meetingInvites/meetingInviteTypes'
+import { getActiveTeamAnnouncements } from '../teamAnnouncements/teamAnnouncementService'
+import type { TeamAnnouncement } from '../teamAnnouncements/teamAnnouncementTypes'
 
 export type DashboardLoadStatus = 'loading' | 'ready' | 'error'
 
@@ -27,10 +29,13 @@ export type HomeDashboardData = {
   readonly registrationsStatus: DashboardLoadStatus
   readonly meetingInvites: readonly MeetingInvite[]
   readonly invitesStatus: DashboardLoadStatus
+  readonly teamAnnouncements: readonly TeamAnnouncement[]
+  readonly announcementsStatus: DashboardLoadStatus
   readonly acceptingInviteIds: ReadonlySet<string>
   readonly inviteError: string | null
   readonly acceptInvite: (inviteId: string) => Promise<void>
   readonly retryInvites: () => void
+  readonly retryAnnouncements: () => void
   readonly retry: () => void
 }
 
@@ -43,15 +48,22 @@ export function useHomeDashboardData(contactId?: string): HomeDashboardData {
   const [registrationsStatus, setRegistrationsStatus] = useState<DashboardLoadStatus>('loading')
   const [meetingInvites, setMeetingInvites] = useState<readonly MeetingInvite[]>([])
   const [invitesStatus, setInvitesStatus] = useState<DashboardLoadStatus>('loading')
+  const [teamAnnouncements, setTeamAnnouncements] = useState<readonly TeamAnnouncement[]>([])
+  const [announcementsStatus, setAnnouncementsStatus] = useState<DashboardLoadStatus>('loading')
   const [acceptingInviteIds, setAcceptingInviteIds] = useState<ReadonlySet<string>>(new Set())
   const [inviteError, setInviteError] = useState<string | null>(null)
   const [retryKey, setRetryKey] = useState(0)
   const [inviteRetryKey, setInviteRetryKey] = useState(0)
+  const [announcementRetryKey, setAnnouncementRetryKey] = useState(0)
   const meetingInvitesRef = useRef<readonly MeetingInvite[]>([])
   const contactFullNameRef = useRef('')
   const acceptingInviteIdsRef = useRef(new Set<string>())
   const retry = useCallback(() => setRetryKey((value) => value + 1), [])
   const retryInvites = useCallback(() => setInviteRetryKey((value) => value + 1), [])
+  const retryAnnouncements = useCallback(
+    () => setAnnouncementRetryKey((value) => value + 1),
+    [],
+  )
 
   useEffect(() => {
     const controller = new AbortController()
@@ -148,6 +160,25 @@ export function useHomeDashboardData(contactId?: string): HomeDashboardData {
     return () => controller.abort()
   }, [contactId, inviteRetryKey])
 
+  useEffect(() => {
+    const controller = new AbortController()
+    const { signal } = controller
+
+    setAnnouncementsStatus('loading')
+    setTeamAnnouncements([])
+    void getActiveTeamAnnouncements({ signal }).then((announcements) => {
+      if (signal.aborted) return
+      setTeamAnnouncements(announcements)
+      setAnnouncementsStatus('ready')
+    }).catch(() => {
+      if (signal.aborted) return
+      setTeamAnnouncements([])
+      setAnnouncementsStatus('error')
+    })
+
+    return () => controller.abort()
+  }, [announcementRetryKey])
+
   const acceptInvite = useCallback(async (inviteId: string): Promise<void> => {
     if (!contactId || acceptingInviteIdsRef.current.has(inviteId)) return
     const invite = meetingInvitesRef.current.find((item) => item.id === inviteId)
@@ -184,10 +215,13 @@ export function useHomeDashboardData(contactId?: string): HomeDashboardData {
     registrationsStatus,
     meetingInvites,
     invitesStatus,
+    teamAnnouncements,
+    announcementsStatus,
     acceptingInviteIds,
     inviteError,
     acceptInvite,
     retryInvites,
+    retryAnnouncements,
     retry,
   }
 }

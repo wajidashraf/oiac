@@ -12,6 +12,8 @@ import {
   MEETING_INVITATION_STATUS,
 } from '../meetingInvites/meetingInviteService'
 import type { MeetingInvite } from '../meetingInvites/meetingInviteTypes'
+import { getActiveTeamAnnouncements } from '../teamAnnouncements/teamAnnouncementService'
+import type { TeamAnnouncement } from '../teamAnnouncements/teamAnnouncementTypes'
 import { useHomeDashboardData } from './useHomeDashboardData'
 
 vi.mock('../events/eventService', () => ({ getCalendarEvents: vi.fn() }))
@@ -34,6 +36,9 @@ vi.mock('../meetingInvites/meetingInviteService', async (importOriginal) => {
     getMeetingInvites: vi.fn(),
   }
 })
+vi.mock('../teamAnnouncements/teamAnnouncementService', () => ({
+  getActiveTeamAnnouncements: vi.fn(),
+}))
 
 const contactId = '11111111-1111-1111-1111-111111111111'
 const activeEventId = '22222222-2222-2222-2222-222222222222'
@@ -42,6 +47,14 @@ const cancelledEventId = '44444444-4444-4444-4444-444444444444'
 const waitlistedEventId = '55555555-5555-5555-5555-555555555555'
 const inviteId = '66666666-6666-4666-8666-666666666666'
 const participantId = '77777777-7777-4777-8777-777777777777'
+const teamAnnouncement: TeamAnnouncement = {
+  id: '88888888-8888-4888-8888-888888888888',
+  title: 'Advocacy briefing update',
+  content: 'The latest materials are ready.',
+  startDateTime: '2026-09-12T12:00:00Z',
+  endDateTime: '2026-09-13T12:00:00Z',
+  link: 'https://example.com/briefing',
+}
 
 const meetingInvite: MeetingInvite = {
   id: inviteId,
@@ -152,6 +165,7 @@ beforeEach(() => {
     acceptedOn: '2026-09-12T14:30:00.000Z',
     name: 'District Briefing - Sara Rahimi',
   })
+  vi.mocked(getActiveTeamAnnouncements).mockResolvedValue([teamAnnouncement])
 })
 
 test('loads live report KPIs and only unique Registered events for the signed-in Contact', async () => {
@@ -214,6 +228,7 @@ test('aborts all dashboard requests when Home unmounts', () => {
   const reportCountSignal = vi.mocked(getMeetingReportCount).mock.calls[0][0]
   const registrationsSignal = vi.mocked(getEventRegistrations).mock.calls[0][1]
   const invitationsSignal = vi.mocked(getMeetingInvites).mock.calls[0][1]
+  const announcementsSignal = vi.mocked(getActiveTeamAnnouncements).mock.calls[0][0]?.signal
 
   unmount()
 
@@ -221,6 +236,49 @@ test('aborts all dashboard requests when Home unmounts', () => {
   expect(reportCountSignal?.aborted).toBe(true)
   expect(registrationsSignal?.aborted).toBe(true)
   expect(invitationsSignal?.aborted).toBe(true)
+  expect(announcementsSignal?.aborted).toBe(true)
+})
+
+test('loads Teams announcements independently of the signed-in Contact', async () => {
+  const { result } = renderHook(() => useHomeDashboardData())
+
+  await waitFor(() => expect(result.current.announcementsStatus).toBe('ready'))
+
+  expect(result.current.teamAnnouncements).toEqual([teamAnnouncement])
+  expect(getActiveTeamAnnouncements).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) })
+})
+
+test('keeps other dashboard data ready when Teams announcements fail', async () => {
+  vi.mocked(getActiveTeamAnnouncements).mockRejectedValue(new Error('announcements unavailable'))
+  const { result } = renderHook(() => useHomeDashboardData(contactId))
+
+  await waitFor(() => {
+    expect(result.current.announcementsStatus).toBe('error')
+    expect(result.current.reportsStatus).toBe('ready')
+    expect(result.current.invitesStatus).toBe('ready')
+  })
+
+  expect(result.current.teamAnnouncements).toEqual([])
+  expect(result.current.reports).toHaveLength(1)
+  expect(result.current.meetingInvites).toEqual([meetingInvite])
+})
+
+test('retries only Teams announcements without reloading other dashboard data', async () => {
+  vi.mocked(getActiveTeamAnnouncements)
+    .mockRejectedValueOnce(new Error('temporary failure'))
+    .mockResolvedValueOnce([teamAnnouncement])
+  const { result } = renderHook(() => useHomeDashboardData(contactId))
+  await waitFor(() => expect(result.current.announcementsStatus).toBe('error'))
+  const reportCalls = vi.mocked(getMeetingReports).mock.calls.length
+  const inviteCalls = vi.mocked(getMeetingInvites).mock.calls.length
+
+  act(() => result.current.retryAnnouncements())
+
+  await waitFor(() => expect(result.current.announcementsStatus).toBe('ready'))
+  expect(result.current.teamAnnouncements).toEqual([teamAnnouncement])
+  expect(getActiveTeamAnnouncements).toHaveBeenCalledTimes(2)
+  expect(getMeetingReports).toHaveBeenCalledTimes(reportCalls)
+  expect(getMeetingInvites).toHaveBeenCalledTimes(inviteCalls)
 })
 
 test('loads eligible meeting invites independently for the signed-in Contact', async () => {
