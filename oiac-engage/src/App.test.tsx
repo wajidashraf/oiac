@@ -5,8 +5,43 @@ import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import App from './App'
 import type { AuthSession } from './auth/powerPagesSession'
+import type { DistrictContactsState } from './features/contacts/useDistrictContacts'
+import { useDistrictContacts } from './features/contacts/useDistrictContacts'
 import { REGISTRATION_PROFILE_STORAGE_KEY } from './features/registrationProfile/registrationProfile'
 import { clearPowerPagesRequestVerificationToken } from './shared/powerPagesApi'
+
+vi.mock('./features/contacts/useDistrictContacts', () => ({
+  useDistrictContacts: vi.fn(),
+}))
+
+const useDistrictContactsMock = vi.mocked(useDistrictContacts)
+const appContactDirectoryState: DistrictContactsState = {
+  contacts: [{
+    id: '10000000-0000-0000-0000-000000000001',
+    fullName: 'Sara Rahimi',
+    firstName: 'Sara',
+    lastName: 'Rahimi',
+    email: 'sara@example.org',
+    jobTitle: 'Volunteer Coordinator',
+    mobilePhone: '202-555-0100',
+    city: 'Washington',
+    stateOrProvince: 'DC',
+    postalCode: '20001',
+    districtName: 'District 1',
+    districtId: '367d7420-d8a2-f111-b8da-7ced8d70f293',
+  }],
+  search: '',
+  setSearch: vi.fn(),
+  page: 1,
+  hasNext: false,
+  isLoading: false,
+  status: 'ready',
+  errorMessage: null,
+  nextPage: vi.fn(),
+  previousPage: vi.fn(),
+  retry: vi.fn(),
+  reload: vi.fn(),
+}
 
 const authenticatedSession: AuthSession = {
   status: 'authenticated',
@@ -49,6 +84,7 @@ const deniedSession: AuthSession = {
 beforeEach(() => {
   sessionStorage.clear()
   clearPowerPagesRequestVerificationToken()
+  useDistrictContactsMock.mockReturnValue(appContactDirectoryState)
 })
 
 afterEach(() => {
@@ -114,6 +150,22 @@ test.each([
 ])('renders %s as %s', (route, heading) => {
   renderApp(route)
   expect(screen.getByRole('heading', { name: heading, level: 1 })).toBeInTheDocument()
+})
+
+test('wires the exact Administrators role into the Contact directory', () => {
+  const adminSession: AuthSession = {
+    ...authenticatedSession,
+    user: { ...authenticatedSession.user, userRoles: ['Authenticated Users', 'Administrators'] },
+  }
+  const adminView = renderApp('/contact', adminSession)
+
+  expect(screen.getByText('Volunteer contacts across all districts.')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Edit Sara Rahimi' })).toBeInTheDocument()
+  adminView.unmount()
+
+  renderApp('/contact', authenticatedSession)
+  expect(screen.getByText('Contacts assigned to your district.')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Edit Sara Rahimi/ })).not.toBeInTheDocument()
 })
 
 test('moves keyboard focus to the page heading after client-side navigation', async () => {

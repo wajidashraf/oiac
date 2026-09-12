@@ -1,26 +1,32 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { LuChevronLeft } from 'react-icons/lu'
 import { Link } from 'react-router-dom'
 import type { PortalUser } from '../auth/powerPagesSession'
+import { AdminContactEditModal } from '../features/contacts/AdminContactEditModal'
+import type { DistrictContact } from '../features/contacts/contactTypes'
 import { useDistrictContacts } from '../features/contacts/useDistrictContacts'
 
 type ContactProps = {
   readonly user: PortalUser
+  readonly isAdmin: boolean
+}
+
+type EditSelection = {
+  readonly contact: DistrictContact
+  readonly trigger: HTMLButtonElement
 }
 
 function displayValue(value: string | null): string {
   return value?.trim() || '—'
 }
 
-export default function Contact({ user }: ContactProps) {
-  const directory = useDistrictContacts(user.contactId)
+export default function Contact({ user, isAdmin }: ContactProps) {
+  const directory = useDistrictContacts(user.contactId, { isAdmin })
+  const [editSelection, setEditSelection] = useState<EditSelection | null>(null)
   const hasContacts = directory.contacts.length > 0
-  const canSearch = ![
-    'loading-district',
-    'missing-session',
-    'missing-district',
-  ].includes(directory.status)
+  const canSearch = !['loading-district', 'missing-session', 'missing-district'].includes(directory.status)
   const showPagination = hasContacts || directory.page > 1
+  const tableLabel = isAdmin ? 'Volunteer contacts' : 'District contacts'
 
   useEffect(() => {
     document.title = 'Contacts — OIAC Engage'
@@ -35,7 +41,7 @@ export default function Contact({ user }: ContactProps) {
 
       <header className="contact-directory__header">
         <h1>Contacts</h1>
-        <p>Contacts assigned to your district.</p>
+        <p>{isAdmin ? 'Volunteer contacts across all districts.' : 'Contacts assigned to your district.'}</p>
       </header>
 
       {canSearch ? (
@@ -45,7 +51,9 @@ export default function Contact({ user }: ContactProps) {
             id="contact-search"
             type="search"
             value={directory.search}
-            placeholder="Search by name, email, phone, or city..."
+            placeholder={isAdmin
+              ? 'Search by name, email, phone, job title, or location...'
+              : 'Search by name, email, phone, or city...'}
             autoComplete="off"
             onChange={(event) => directory.setSearch(event.target.value)}
           />
@@ -53,29 +61,25 @@ export default function Contact({ user }: ContactProps) {
       ) : null}
 
       <div className="contact-directory__results" aria-busy={directory.isLoading}>
-        {directory.status === 'loading-district' ? (
+        {!isAdmin && directory.status === 'loading-district' ? (
           <p className="contact-directory__state-panel" role="status">Loading your district…</p>
         ) : null}
-
-        {directory.status === 'missing-session' ? (
+        {!isAdmin && directory.status === 'missing-session' ? (
           <p className="contact-directory__state-panel" role="status">
             Your Power Pages session could not identify your Contact. Sign in again to continue.
           </p>
         ) : null}
-
-        {directory.status === 'missing-district' ? (
+        {!isAdmin && directory.status === 'missing-district' ? (
           <p className="contact-directory__state-panel" role="status">
             No district is assigned to your profile. Contact an administrator to update your district.
           </p>
         ) : null}
-
         {directory.status === 'error' ? (
           <div className="contact-directory__error" role="alert">
             <p>{directory.errorMessage ?? 'Contacts could not be loaded. Try again.'}</p>
             <button className="contact-directory__retry" type="button" onClick={directory.retry}>Retry</button>
           </div>
         ) : null}
-
         {directory.status === 'loading-contacts' ? (
           <p className="contact-directory__loading" role="status">Loading contacts…</p>
         ) : null}
@@ -84,10 +88,13 @@ export default function Contact({ user }: ContactProps) {
           <div
             className="contact-directory__table-scroll"
             role="region"
-            aria-label="District contacts table, scroll horizontally"
+            aria-label={`${tableLabel} table, scroll horizontally`}
             tabIndex={0}
           >
-            <table className="contact-directory__table" aria-label="District contacts">
+            <table
+              className={`contact-directory__table${isAdmin ? ' contact-directory__table--admin' : ''}`}
+              aria-label={tableLabel}
+            >
               <thead>
                 <tr>
                   <th scope="col">Full Name</th>
@@ -95,6 +102,7 @@ export default function Contact({ user }: ContactProps) {
                   <th scope="col">Email</th>
                   <th scope="col">District</th>
                   <th scope="col">City</th>
+                  {isAdmin ? <th scope="col">Actions</th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -105,6 +113,18 @@ export default function Contact({ user }: ContactProps) {
                     <td>{displayValue(contact.email)}</td>
                     <td>{displayValue(contact.districtName)}</td>
                     <td>{displayValue(contact.city)}</td>
+                    {isAdmin ? (
+                      <td>
+                        <button
+                          className="contact-directory__edit"
+                          type="button"
+                          aria-label={`Edit ${contact.fullName ?? contact.email ?? 'volunteer contact'}`}
+                          onClick={(event) => setEditSelection({ contact, trigger: event.currentTarget })}
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    ) : null}
                   </tr>
                 ))}
               </tbody>
@@ -115,33 +135,35 @@ export default function Contact({ user }: ContactProps) {
         {directory.status === 'ready' && !hasContacts ? (
           <p className="contact-directory__empty" role="status">
             {directory.search
-              ? <>No contacts match “{directory.search}”.</>
-              : <>No contacts are available in your district.</>}
+              ? isAdmin
+                ? <>No volunteer contacts match “{directory.search}”.</>
+                : <>No contacts match “{directory.search}”.</>
+              : isAdmin
+                ? <>No volunteer contacts are available.</>
+                : <>No contacts are available in your district.</>}
           </p>
         ) : null}
 
         {showPagination ? (
           <nav className="contact-directory__pagination" aria-label="Contacts pagination">
-            <button
-              type="button"
-              aria-label="Previous page"
-              disabled={directory.page === 1 || directory.isLoading}
-              onClick={directory.previousPage}
-            >
-              Previous
-            </button>
+            <button type="button" aria-label="Previous page" disabled={directory.page === 1 || directory.isLoading} onClick={directory.previousPage}>Previous</button>
             <span className="contact-directory__page-indicator" aria-live="polite">Page {directory.page}</span>
-            <button
-              type="button"
-              aria-label="Next page"
-              disabled={!directory.hasNext || directory.isLoading}
-              onClick={directory.nextPage}
-            >
-              Next
-            </button>
+            <button type="button" aria-label="Next page" disabled={!directory.hasNext || directory.isLoading} onClick={directory.nextPage}>Next</button>
           </nav>
         ) : null}
       </div>
+
+      {isAdmin && editSelection ? (
+        <AdminContactEditModal
+          contact={editSelection.contact}
+          returnFocusTo={editSelection.trigger}
+          onClose={() => setEditSelection(null)}
+          onSaved={() => {
+            setEditSelection(null)
+            directory.reload()
+          }}
+        />
+      ) : null}
     </div>
   )
 }

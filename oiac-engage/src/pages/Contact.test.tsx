@@ -1,8 +1,9 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, expect, test, vi } from 'vitest'
 import type { PortalUser } from '../auth/powerPagesSession'
+import { updateAdminContact } from '../features/contacts/contactService'
 import type { DistrictContactsState } from '../features/contacts/useDistrictContacts'
 import { useDistrictContacts } from '../features/contacts/useDistrictContacts'
 import Contact from './Contact'
@@ -11,11 +12,17 @@ vi.mock('../features/contacts/useDistrictContacts', () => ({
   useDistrictContacts: vi.fn(),
 }))
 
+vi.mock('../features/contacts/contactService', () => ({
+  updateAdminContact: vi.fn(),
+}))
+
 const useDistrictContactsMock = vi.mocked(useDistrictContacts)
 const setSearch = vi.fn()
 const nextPage = vi.fn()
 const previousPage = vi.fn()
 const retry = vi.fn()
+const reload = vi.fn()
+const updateAdminContactMock = vi.mocked(updateAdminContact)
 const user: PortalUser = {
   userName: 'member@oiac.org',
   contactId: '20f9c936-6740-451e-9470-28a3c83c9909',
@@ -26,9 +33,14 @@ const readyState: DistrictContactsState = {
   contacts: [{
     id: '10000000-0000-0000-0000-000000000001',
     fullName: 'Sara Rahimi',
+    firstName: 'Sara',
+    lastName: 'Rahimi',
     email: 'sara.rahimi@oiac.org',
+    jobTitle: 'Volunteer Coordinator',
     mobilePhone: '+1 (202) 555-0142',
     city: 'Washington',
+    stateOrProvince: 'DC',
+    postalCode: '20001',
     districtName: 'District 1',
     districtId: '367d7420-d8a2-f111-b8da-7ced8d70f293',
   }],
@@ -42,21 +54,23 @@ const readyState: DistrictContactsState = {
   nextPage,
   previousPage,
   retry,
+  reload,
 }
 
-function renderContact() {
-  return render(<MemoryRouter><Contact user={user} /></MemoryRouter>)
+function renderContact(isAdmin = false) {
+  return render(<MemoryRouter><Contact user={user} isAdmin={isAdmin} /></MemoryRouter>)
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
   useDistrictContactsMock.mockReturnValue(readyState)
+  updateAdminContactMock.mockResolvedValue(undefined)
 })
 
 test('renders a district Contact table without record actions or record links', () => {
   renderContact()
 
-  expect(useDistrictContactsMock).toHaveBeenCalledWith(user.contactId)
+  expect(useDistrictContactsMock).toHaveBeenCalledWith(user.contactId, { isAdmin: false })
   expect(screen.getByRole('heading', { name: 'Contacts', level: 1 })).toBeInTheDocument()
   expect(screen.getByText('Contacts assigned to your district.')).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Back' })).toHaveAttribute('href', '/')
@@ -72,6 +86,8 @@ test('renders a district Contact table without record actions or record links', 
   expect(within(table).getByRole('rowheader', { name: 'Sara Rahimi' })).toBeInTheDocument()
   expect(within(table).getByText('District 1')).toBeInTheDocument()
   expect(within(table).queryByRole('button', { name: /View/i })).not.toBeInTheDocument()
+  expect(within(table).queryByRole('columnheader', { name: 'Actions' })).not.toBeInTheDocument()
+  expect(within(table).queryByRole('button', { name: /Edit/i })).not.toBeInTheDocument()
   expect(within(table).queryByRole('link')).not.toBeInTheDocument()
   expect(screen.queryByRole('form', { name: /Contact details/i })).not.toBeInTheDocument()
 })
@@ -82,9 +98,14 @@ test('shows missing values as em dashes without failing the row', () => {
     contacts: [{
       id: '10000000-0000-0000-0000-000000000002',
       fullName: null,
+      firstName: null,
+      lastName: null,
       email: null,
+      jobTitle: null,
       mobilePhone: null,
       city: null,
+      stateOrProvince: null,
+      postalCode: null,
       districtName: null,
       districtId: '367d7420-d8a2-f111-b8da-7ced8d70f293',
     }],
@@ -116,7 +137,7 @@ test('renders page controls and respects first, last, and loading boundaries', a
   expect(nextPage).toHaveBeenCalledTimes(1)
 
   useDistrictContactsMock.mockReturnValue({ ...readyState, page: 2, hasNext: false, isLoading: true, status: 'loading-contacts' })
-  rerender(<MemoryRouter><Contact user={user} /></MemoryRouter>)
+  rerender(<MemoryRouter><Contact user={user} isAdmin={false} /></MemoryRouter>)
   expect(screen.getByText('Page 2')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Previous page' })).toBeDisabled()
   expect(screen.getByRole('button', { name: 'Next page' })).toBeDisabled()
@@ -148,7 +169,7 @@ test('distinguishes an empty district from a search with no matches', () => {
   expect(screen.getByRole('status')).toHaveTextContent('No contacts are available in your district.')
 
   useDistrictContactsMock.mockReturnValue({ ...readyState, contacts: [], search: 'Nobody', hasNext: false })
-  rerender(<MemoryRouter><Contact user={user} /></MemoryRouter>)
+  rerender(<MemoryRouter><Contact user={user} isAdmin={false} /></MemoryRouter>)
   expect(screen.getByRole('status')).toHaveTextContent('No contacts match “Nobody”.')
 })
 
@@ -166,4 +187,72 @@ test('renders a non-sensitive error and retries the current request', async () =
   expect(screen.getByRole('alert')).toHaveTextContent('Contacts could not be loaded. Try again.')
   await interaction.click(screen.getByRole('button', { name: 'Retry' }))
   expect(retry).toHaveBeenCalledTimes(1)
+})
+
+test('renders the global volunteer directory and Edit actions only for administrators', () => {
+  renderContact(true)
+
+  expect(useDistrictContactsMock).toHaveBeenCalledWith(user.contactId, { isAdmin: true })
+  expect(screen.getByText('Volunteer contacts across all districts.')).toBeInTheDocument()
+  const table = screen.getByRole('table', { name: 'Volunteer contacts' })
+  expect(within(table).getByRole('columnheader', { name: 'Actions' })).toBeInTheDocument()
+  expect(within(table).getByRole('button', { name: 'Edit Sara Rahimi' })).toBeInTheDocument()
+})
+
+test('uses administrator-specific empty and search-empty messages', () => {
+  useDistrictContactsMock.mockReturnValue({ ...readyState, contacts: [], hasNext: false })
+  const { rerender } = renderContact(true)
+  expect(screen.getByRole('status')).toHaveTextContent('No volunteer contacts are available.')
+
+  useDistrictContactsMock.mockReturnValue({
+    ...readyState,
+    contacts: [],
+    search: 'Nobody',
+    hasNext: false,
+  })
+  rerender(<MemoryRouter><Contact user={user} isAdmin /></MemoryRouter>)
+  expect(screen.getByRole('status')).toHaveTextContent('No volunteer contacts match “Nobody”.')
+  expect(screen.getByRole('status')).not.toHaveTextContent('district')
+})
+
+test('opens and closes the administrator edit modal and restores focus', async () => {
+  const actor = userEvent.setup()
+  renderContact(true)
+  const edit = screen.getByRole('button', { name: 'Edit Sara Rahimi' })
+
+  await actor.click(edit)
+  expect(screen.getByRole('dialog', { name: 'Edit volunteer contact' })).toBeInTheDocument()
+  await actor.click(screen.getByRole('button', { name: 'Close edit contact' }))
+
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  expect(edit).toHaveFocus()
+})
+
+test('closes and reloads the current administrator page after a successful edit', async () => {
+  const actor = userEvent.setup()
+  renderContact(true)
+
+  await actor.click(screen.getByRole('button', { name: 'Edit Sara Rahimi' }))
+  await actor.clear(screen.getByLabelText('First Name'))
+  await actor.type(screen.getByLabelText('First Name'), 'Amina')
+  await actor.click(screen.getByRole('button', { name: 'Save changes' }))
+
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  expect(updateAdminContactMock).toHaveBeenCalledTimes(1)
+  expect(reload).toHaveBeenCalledTimes(1)
+})
+
+test('keeps the edit modal open and does not reload after a failed edit', async () => {
+  const actor = userEvent.setup()
+  updateAdminContactMock.mockRejectedValueOnce(new Error('Dataverse detail'))
+  renderContact(true)
+
+  await actor.click(screen.getByRole('button', { name: 'Edit Sara Rahimi' }))
+  await actor.click(screen.getByRole('button', { name: 'Save changes' }))
+
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'Contact changes could not be saved. Try again.',
+  )
+  expect(screen.getByRole('dialog')).toBeInTheDocument()
+  expect(reload).not.toHaveBeenCalled()
 })

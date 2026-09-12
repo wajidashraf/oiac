@@ -49,7 +49,15 @@ export default function App({ session: suppliedSession }: AppProps) {
               <Route path="/" element={<Home contactId={completedSession.user.contactId} />} />
               <Route path="/my-reports" element={<MyReports />} />
               <Route path="/my-calendar" element={<MyCalendar contactId={completedSession.user.contactId} />} />
-              <Route path="/contact" element={<Contact user={completedSession.user} />} />
+              <Route
+                path="/contact"
+                element={(
+                  <Contact
+                    user={completedSession.user}
+                    isAdmin={hasRole(completedSession, 'Administrators')}
+                  />
+                )}
+              />
               <Route path="/user-profile" element={<UserProfile user={completedSession.user} />} />
               <Route path="/activity" element={<Navigate to="/activity/events" replace />} />
               {/* <Route path="/activity/activity-log" element={<ActivityLog />} /> */}
