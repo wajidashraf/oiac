@@ -1,5 +1,12 @@
 import { powerPagesFetch } from '../../shared/powerPagesApi'
-import type { ContactPage, ContactQuery, ContactRecord, DistrictContact } from './contactTypes'
+import type {
+  AdminContactQuery,
+  AdminContactUpdate,
+  ContactPage,
+  ContactQuery,
+  ContactRecord,
+  DistrictContact,
+} from './contactTypes'
 
 export const CONTACT_PAGE_SIZE = 15
 
@@ -17,6 +24,30 @@ const SEARCH_FIELDS = [
   'emailaddress1',
   'mobilephone',
   'address1_city',
+] as const
+
+const ADMIN_CONTACT_SELECT = [
+  'contactid',
+  'address1_city',
+  'address1_stateorprovince',
+  'address1_postalcode',
+  '_mss_district_value',
+  'emailaddress1',
+  'firstname',
+  'jobtitle',
+  'lastname',
+  'mobilephone',
+] as const
+
+const ADMIN_SEARCH_FIELDS = [
+  'firstname',
+  'lastname',
+  'emailaddress1',
+  'mobilephone',
+  'jobtitle',
+  'address1_city',
+  'address1_stateorprovince',
+  'address1_postalcode',
 ] as const
 
 const CONTACT_PREFER = `odata.include-annotations="OData.Community.Display.V1.FormattedValue",odata.maxpagesize=${CONTACT_PAGE_SIZE}`
@@ -38,16 +69,29 @@ function textOrNull(value: unknown): string | null {
   return normalized || null
 }
 
-function mapContact(record: ContactRecord, districtId: string): DistrictContact {
+function mapContact(
+  record: ContactRecord,
+  districtId: string | null,
+  deriveFullName = false,
+): DistrictContact {
   const contactId = normalizeGuid(record.contactid)
   if (!contactId) throw new Error('Dataverse returned a Contact without a valid identifier.')
 
+  const firstName = textOrNull(record.firstname)
+  const lastName = textOrNull(record.lastname)
+  const derivedFullName = [firstName, lastName].filter(Boolean).join(' ') || null
+
   return {
     id: contactId,
-    fullName: textOrNull(record.fullname),
+    fullName: deriveFullName ? derivedFullName : textOrNull(record.fullname),
+    firstName,
+    lastName,
     email: textOrNull(record.emailaddress1),
+    jobTitle: textOrNull(record.jobtitle),
     mobilePhone: textOrNull(record.mobilephone),
     city: textOrNull(record.address1_city),
+    stateOrProvince: textOrNull(record.address1_stateorprovince),
+    postalCode: textOrNull(record.address1_postalcode),
     districtName: textOrNull(
       record['_mss_district_value@OData.Community.Display.V1.FormattedValue'],
     ),
@@ -72,6 +116,22 @@ export function buildContactsQuery({ districtId, search }: ContactQuery): string
   params.set('$filter', filter)
   params.set('$orderby', 'fullname asc,contactid asc')
   params.set('$count', 'true')
+  return `?${params.toString()}`
+}
+
+export function buildAdminContactsQuery({ search }: AdminContactQuery): string {
+  const volunteerFilter = "contains(jobtitle,'volunteer')"
+  const normalizedSearch = search.trim()
+  const filter = normalizedSearch
+    ? `${volunteerFilter} and (${ADMIN_SEARCH_FIELDS
+      .map((field) => `contains(${field},'${escapeODataString(normalizedSearch)}')`)
+      .join(' or ')})`
+    : volunteerFilter
+
+  const params = new URLSearchParams()
+  params.set('$select', ADMIN_CONTACT_SELECT.join(','))
+  params.set('$filter', filter)
+  params.set('$orderby', 'lastname asc,firstname asc,contactid asc')
   return `?${params.toString()}`
 }
 
@@ -136,4 +196,62 @@ export async function getDistrictContacts(
     hasNext: Boolean(nextLink),
     nextLink,
   }
+}
+
+export async function getAdminVolunteerContacts(
+  query: AdminContactQuery,
+  signal?: AbortSignal,
+): Promise<ContactPage> {
+  const requestPath = query.nextLink
+    ? normalizeContactsNextLink(query.nextLink)
+    : `/_api/contacts${buildAdminContactsQuery(query)}`
+  const response = await powerPagesFetch<{
+    readonly value: readonly ContactRecord[]
+    readonly '@odata.nextLink'?: string
+  }>(requestPath, {
+    signal,
+    headers: { Prefer: CONTACT_PREFER },
+  })
+  if (!Array.isArray(response.value)) throw new Error('Dataverse returned an invalid Contacts response.')
+
+  const nextLink = typeof response['@odata.nextLink'] === 'string'
+    ? response['@odata.nextLink']
+    : null
+
+  return {
+    contacts: response.value.map((record) => mapContact(record, null, true)),
+    hasNext: Boolean(nextLink),
+    nextLink,
+  }
+}
+
+export async function updateAdminContact(
+  contactId: string,
+  values: AdminContactUpdate,
+): Promise<void> {
+  const normalizedContactId = normalizeGuid(contactId)
+  if (!normalizedContactId) throw new Error('A valid Contact identifier is required.')
+
+  const lastName = values.lastName.trim()
+  if (!lastName) throw new Error('Last Name is required.')
+
+  const districtId = values.districtId === null ? null : normalizeGuid(values.districtId)
+  if (values.districtId !== null && !districtId) {
+    throw new Error('A valid district identifier is required.')
+  }
+
+  await powerPagesFetch<void>(`/_api/contacts(${normalizedContactId})`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'If-Match': '*' },
+    body: JSON.stringify({
+      firstname: textOrNull(values.firstName),
+      lastname: lastName,
+      jobtitle: textOrNull(values.jobTitle),
+      mobilephone: textOrNull(values.mobilePhone),
+      address1_city: textOrNull(values.city),
+      address1_stateorprovince: textOrNull(values.stateOrProvince),
+      address1_postalcode: textOrNull(values.postalCode),
+      'mss_District@odata.bind': districtId ? `/mss_districts(${districtId})` : null,
+    }),
+  })
 }

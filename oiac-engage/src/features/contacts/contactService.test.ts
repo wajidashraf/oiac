@@ -2,11 +2,14 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { powerPagesFetch } from '../../shared/powerPagesApi'
 import {
   CONTACT_PAGE_SIZE,
+  buildAdminContactsQuery,
   buildContactsQuery,
+  getAdminVolunteerContacts,
   getDistrictContacts,
   getLoggedInUserDistrict,
+  updateAdminContact,
 } from './contactService'
-import type { ContactRecord } from './contactTypes'
+import type { AdminContactUpdate, ContactRecord } from './contactTypes'
 
 vi.mock('../../shared/powerPagesApi', () => ({
   powerPagesFetch: vi.fn(),
@@ -26,6 +29,31 @@ function makeContact(index: number): ContactRecord {
     _mss_district_value: DISTRICT_ID,
     '_mss_district_value@OData.Community.Display.V1.FormattedValue': 'District 1',
   }
+}
+
+const ADMIN_CONTACT: ContactRecord = {
+  contactid: CONTACT_ID.toUpperCase(),
+  firstname: ' Sara ',
+  lastname: ' Rahimi ',
+  emailaddress1: ' sara@example.org ',
+  jobtitle: ' Volunteer Coordinator ',
+  mobilephone: ' 202-555-0100 ',
+  address1_city: ' Washington ',
+  address1_stateorprovince: ' DC ',
+  address1_postalcode: ' 20001 ',
+  _mss_district_value: DISTRICT_ID.toUpperCase(),
+  '_mss_district_value@OData.Community.Display.V1.FormattedValue': ' District 1 ',
+}
+
+const ADMIN_UPDATE: AdminContactUpdate = {
+  firstName: ' Sara ',
+  lastName: ' Rahimi ',
+  jobTitle: ' Volunteer Coordinator ',
+  mobilePhone: '   ',
+  city: ' Washington ',
+  stateOrProvince: ' DC ',
+  postalCode: ' 20001 ',
+  districtId: DISTRICT_ID.toUpperCase(),
 }
 
 describe('Contact Web API service', () => {
@@ -151,11 +179,170 @@ describe('Contact Web API service', () => {
     expect(result.contacts[0]).toEqual({
       id: CONTACT_ID,
       fullName: null,
+      firstName: null,
+      lastName: null,
       email: null,
+      jobTitle: null,
       mobilePhone: null,
       city: null,
+      stateOrProvince: null,
+      postalCode: null,
       districtName: null,
       districtId: DISTRICT_ID,
     })
+  })
+
+  test('builds a bounded volunteer query for administrators', () => {
+    const query = buildAdminContactsQuery({ search: '' })
+    const params = new URLSearchParams(query.slice(1))
+
+    expect(params.get('$select')).toBe(
+      'contactid,address1_city,address1_stateorprovince,address1_postalcode,'
+      + '_mss_district_value,emailaddress1,firstname,jobtitle,lastname,mobilephone',
+    )
+    expect(params.get('$filter')).toBe("contains(jobtitle,'volunteer')")
+    expect(params.get('$orderby')).toBe('lastname asc,firstname asc,contactid asc')
+    expect(params.has('$skip')).toBe(false)
+    expect(params.has('$top')).toBe(false)
+  })
+
+  test('keeps administrator search inside the volunteer boundary and escapes apostrophes', () => {
+    const query = buildAdminContactsQuery({ search: " O'Connor " })
+    const filter = new URLSearchParams(query.slice(1)).get('$filter')
+
+    expect(filter).toBe(
+      "contains(jobtitle,'volunteer') and ("
+      + "contains(firstname,'O''Connor') or "
+      + "contains(lastname,'O''Connor') or "
+      + "contains(emailaddress1,'O''Connor') or "
+      + "contains(mobilephone,'O''Connor') or "
+      + "contains(jobtitle,'O''Connor') or "
+      + "contains(address1_city,'O''Connor') or "
+      + "contains(address1_stateorprovince,'O''Connor') or "
+      + "contains(address1_postalcode,'O''Connor'))",
+    )
+  })
+
+  test('loads and maps an administrator volunteer page with the existing page preference', async () => {
+    const signal = new AbortController().signal
+    const nextLink = '/_api/contacts?%24skiptoken=admin-page-2'
+    powerPagesFetchMock.mockResolvedValue({ value: [ADMIN_CONTACT], '@odata.nextLink': nextLink })
+
+    const result = await getAdminVolunteerContacts({ search: '' }, signal)
+
+    expect(result.contacts[0]).toEqual({
+      id: CONTACT_ID,
+      fullName: 'Sara Rahimi',
+      firstName: 'Sara',
+      lastName: 'Rahimi',
+      email: 'sara@example.org',
+      jobTitle: 'Volunteer Coordinator',
+      mobilePhone: '202-555-0100',
+      city: 'Washington',
+      stateOrProvince: 'DC',
+      postalCode: '20001',
+      districtName: 'District 1',
+      districtId: DISTRICT_ID,
+    })
+    expect(result).toMatchObject({ hasNext: true, nextLink })
+    expect(powerPagesFetchMock).toHaveBeenCalledWith(expect.stringMatching(/^\/_api\/contacts\?/), {
+      signal,
+      headers: {
+        Prefer: `odata.include-annotations="OData.Community.Display.V1.FormattedValue",odata.maxpagesize=${CONTACT_PAGE_SIZE}`,
+      },
+    })
+  })
+
+  test('uses only safe Contacts continuation links for administrator pages', async () => {
+    const nextLink = '/_api/contacts?%24skiptoken=admin-page-2'
+    powerPagesFetchMock.mockResolvedValue({ value: [] })
+
+    await getAdminVolunteerContacts({ search: '', nextLink })
+    expect(powerPagesFetchMock).toHaveBeenCalledWith(nextLink, expect.any(Object))
+
+    await expect(getAdminVolunteerContacts({
+      search: '',
+      nextLink: 'https://attacker.example/_api/contacts?$skiptoken=stolen',
+    })).rejects.toThrow('Dataverse returned an invalid Contacts continuation link.')
+    await expect(getAdminVolunteerContacts({
+      search: '',
+      nextLink: '/_api/accounts?$skiptoken=wrong-table',
+    })).rejects.toThrow('Dataverse returned an invalid Contacts continuation link.')
+    expect(powerPagesFetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  test('rejects malformed administrator collection data and invalid Contact identifiers', async () => {
+    powerPagesFetchMock.mockResolvedValueOnce({ value: null })
+    await expect(getAdminVolunteerContacts({ search: '' })).rejects.toThrow(
+      'Dataverse returned an invalid Contacts response.',
+    )
+
+    powerPagesFetchMock.mockResolvedValueOnce({ value: [{ ...ADMIN_CONTACT, contactid: 'bad-id' }] })
+    await expect(getAdminVolunteerContacts({ search: '' })).rejects.toThrow(
+      'Dataverse returned a Contact without a valid identifier.',
+    )
+  })
+
+  test('updates only approved administrator fields with normalized values', async () => {
+    powerPagesFetchMock.mockResolvedValue(undefined)
+
+    await updateAdminContact(CONTACT_ID.toUpperCase(), ADMIN_UPDATE)
+
+    expect(powerPagesFetchMock).toHaveBeenCalledWith(`/_api/contacts(${CONTACT_ID})`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'If-Match': '*' },
+      body: JSON.stringify({
+        firstname: 'Sara',
+        lastname: 'Rahimi',
+        jobtitle: 'Volunteer Coordinator',
+        mobilephone: null,
+        address1_city: 'Washington',
+        address1_stateorprovince: 'DC',
+        address1_postalcode: '20001',
+        'mss_District@odata.bind': `/mss_districts(${DISTRICT_ID})`,
+      }),
+    })
+    const request = powerPagesFetchMock.mock.calls[0]?.[1]
+    expect(request?.body).not.toContain('emailaddress1')
+    expect(request?.body).not.toContain('contactid')
+    expect(request?.body).not.toContain('fullname')
+  })
+
+  test('clears optional values and District with explicit nulls', async () => {
+    powerPagesFetchMock.mockResolvedValue(undefined)
+
+    await updateAdminContact(CONTACT_ID, {
+      ...ADMIN_UPDATE,
+      firstName: ' ',
+      jobTitle: '',
+      city: '',
+      stateOrProvince: '',
+      postalCode: '',
+      districtId: null,
+    })
+
+    expect(JSON.parse(String(powerPagesFetchMock.mock.calls[0]?.[1]?.body))).toEqual({
+      firstname: null,
+      lastname: 'Rahimi',
+      jobtitle: null,
+      mobilephone: null,
+      address1_city: null,
+      address1_stateorprovince: null,
+      address1_postalcode: null,
+      'mss_District@odata.bind': null,
+    })
+  })
+
+  test('rejects invalid update identifiers and a blank Last Name before requesting Dataverse', async () => {
+    await expect(updateAdminContact('bad-id', ADMIN_UPDATE)).rejects.toThrow(
+      'A valid Contact identifier is required.',
+    )
+    await expect(updateAdminContact(CONTACT_ID, { ...ADMIN_UPDATE, districtId: 'bad-id' })).rejects.toThrow(
+      'A valid district identifier is required.',
+    )
+    await expect(updateAdminContact(CONTACT_ID, { ...ADMIN_UPDATE, lastName: '   ' })).rejects.toThrow(
+      'Last Name is required.',
+    )
+    expect(powerPagesFetchMock).not.toHaveBeenCalled()
   })
 })
