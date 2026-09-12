@@ -11,6 +11,19 @@ export const ATTACHMENT_FILE_NAME_PATTERN = /^[A-Za-z0-9_()-](?:[A-Za-z0-9 _()-]
 
 const INVALID_FILE_NAME_MESSAGE = 'File names can contain only letters, numbers, spaces, hyphens, underscores, and parentheses, followed by a file extension.'
 
+export type AttachmentViewSource = {
+  readonly meetingReportId: string
+  readonly attachmentId: string
+  readonly fileName: string
+  readonly contentType: string | null
+}
+
+export type AttachmentViewResult = {
+  readonly blob: Blob
+  readonly fileName: string
+  readonly contentType: string
+}
+
 export type MeetingReportAttachment = {
   readonly attachmentId: string
   readonly duplicateAttachmentIds?: readonly string[]
@@ -56,11 +69,13 @@ const clientFileIds = new WeakMap<File, string>()
 
 export class MeetingReportAttachmentFlowError extends Error {
   readonly status: number | null
+  readonly code: string | null
 
-  constructor(status: number | null = null) {
+  constructor(status: number | null = null, code: string | null = null) {
     super('The attachment request could not be completed.')
     this.name = 'MeetingReportAttachmentFlowError'
     this.status = status
+    this.code = code
   }
 }
 
@@ -161,6 +176,63 @@ function optionalHttpsUrl(value: unknown): string | null {
 
 function optionalSize(value: unknown): number | null {
   return typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : null
+}
+
+function normalizeContentType(value: unknown): string | null {
+  const candidate = optionalText(value)?.split(';', 1)[0].trim().toLowerCase()
+  return candidate || null
+}
+
+function responseFileName(value: unknown, fallback: string): string {
+  const candidate = optionalText(value)
+    ?.replace(/[\u0000-\u001f\u007f]/g, '')
+    .replace(/[\\/]/g, '_')
+    .trim()
+  return candidate || fallback
+}
+
+function flowErrorCode(value: unknown): string | null {
+  const body = object(value)
+  return optionalText(object(body?.error)?.code) ?? optionalText(body?.code)
+}
+
+export async function viewAttachment(
+  source: AttachmentViewSource,
+  signal?: AbortSignal,
+): Promise<AttachmentViewResult> {
+  const meetingReportId = requiredGuid(source.meetingReportId, 'Meeting Report identifier')
+  const attachmentId = requiredGuid(source.attachmentId, 'Attachment identifier')
+  let response: Response
+  try {
+    response = await fetch(MEETING_REPORT_ATTACHMENT_FLOW_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ operation: 'view', meetingReportId, attachmentId }),
+      signal,
+    })
+  } catch {
+    throw new MeetingReportAttachmentFlowError()
+  }
+
+  if (!response.ok) {
+    let code: string | null = null
+    try {
+      code = flowErrorCode(await response.json())
+    } catch {
+      // Flow errors are intentionally reduced to a safe status/code pair.
+    }
+    throw new MeetingReportAttachmentFlowError(response.status, code)
+  }
+
+  const contentType = normalizeContentType(response.headers.get('Content-Type'))
+    ?? normalizeContentType(source.contentType)
+    ?? 'application/octet-stream'
+  const fileName = responseFileName(response.headers.get('X-File-Name'), source.fileName)
+  const responseBlob = await response.blob()
+  const blob = responseBlob.type === contentType
+    ? responseBlob
+    : new Blob([responseBlob], { type: contentType })
+  return { blob, fileName, contentType }
 }
 
 function normalizeAttachment(value: unknown): MeetingReportAttachment {

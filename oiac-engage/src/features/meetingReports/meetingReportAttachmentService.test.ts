@@ -15,6 +15,7 @@ import {
   listMeetingReportPageAttachments,
   uploadMeetingReportAttachments,
   validateAndMergeAttachmentFiles,
+  viewAttachment,
 } from './meetingReportAttachmentService'
 
 const reportId = '11111111-1111-4111-8111-111111111111'
@@ -129,6 +130,96 @@ describe('attachment selection validation', () => {
 })
 
 describe('attachment flow operations', () => {
+  test('views an attachment with only its Dataverse identifiers and reads successful content as a Blob', async () => {
+    const response = new Response('pdf content', {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf; charset=binary',
+        'X-File-Name': 'Original Meeting Notes.pdf',
+      },
+    })
+    const jsonSpy = vi.spyOn(response, 'json')
+    fetchMock.mockResolvedValue(response)
+
+    const result = await viewAttachment({
+      meetingReportId: reportId,
+      attachmentId,
+      fileName: 'Dataverse Name.pdf',
+      contentType: 'image/png',
+    })
+
+    expect(fetchMock).toHaveBeenCalledWith(MEETING_REPORT_ATTACHMENT_FLOW_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ operation: 'view', meetingReportId: reportId, attachmentId }),
+      signal: undefined,
+    })
+    expect(jsonSpy).not.toHaveBeenCalled()
+    expect(result.blob).toBeInstanceOf(Blob)
+    expect(result.blob.size).toBeGreaterThan(0)
+    expect(result).toMatchObject({
+      fileName: 'Original Meeting Notes.pdf',
+      contentType: 'application/pdf',
+    })
+  })
+
+  test('falls back to Dataverse metadata when binary response headers are absent', async () => {
+    fetchMock.mockResolvedValue(new Response(new Uint8Array([1, 2, 3]), { status: 200 }))
+
+    const result = await viewAttachment({
+      meetingReportId: `{${reportId.toUpperCase()}}`,
+      attachmentId: `{${attachmentId.toUpperCase()}}`,
+      fileName: 'Dataverse Image.png',
+      contentType: 'image/png',
+    })
+
+    expect(result).toMatchObject({ fileName: 'Dataverse Image.png', contentType: 'image/png' })
+    expect(result.blob.type).toBe('image/png')
+  })
+
+  test.each([
+    'InvalidViewRequest',
+    'MeetingReportNotFound',
+    'AttachmentNotFound',
+    'FileContentNotFound',
+    'AttachmentLookupFailed',
+  ])('returns the safe flow error code %s for a failed view', async (code) => {
+    fetchMock.mockResolvedValue(jsonResponse({ error: { code, message: 'Sensitive flow detail' } }, 404))
+
+    const error = await viewAttachment({
+      meetingReportId: reportId,
+      attachmentId,
+      fileName: 'Meeting Notes.pdf',
+      contentType: 'application/pdf',
+    }).catch((reason: unknown) => reason)
+
+    expect(error).toBeInstanceOf(MeetingReportAttachmentFlowError)
+    expect(error).toMatchObject({ status: 404, code })
+    expect(String(error)).not.toContain('Sensitive flow detail')
+  })
+
+  test('returns a safe typed error for malformed error JSON and network failures', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('not json', { status: 500 }))
+
+    await expect(viewAttachment({
+      meetingReportId: reportId,
+      attachmentId,
+      fileName: 'Meeting Notes.pdf',
+      contentType: null,
+    })).rejects.toMatchObject({ status: 500, code: null })
+
+    fetchMock.mockRejectedValueOnce(new Error('https://flow.example.test?sig=secret'))
+
+    const networkError = await viewAttachment({
+      meetingReportId: reportId,
+      attachmentId,
+      fileName: 'Meeting Notes.pdf',
+      contentType: null,
+    }).catch((reason: unknown) => reason)
+    expect(networkError).toMatchObject({ status: null, code: null })
+    expect(String(networkError)).not.toContain('sig=secret')
+  })
+
   test('loads one page of Dataverse attachments grouped by report and collapses duplicate SharePoint files', async () => {
     const secondReportId = '33333333-3333-4333-8333-333333333333'
     fetchMock.mockResolvedValue(jsonResponse({
