@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { getDistrictContacts, getLoggedInUserDistrict } from './contactService'
+import {
+  getAdminVolunteerContacts,
+  getDistrictContacts,
+  getLoggedInUserDistrict,
+} from './contactService'
 import type { DistrictContact } from './contactTypes'
 
 export type DistrictContactsStatus =
@@ -22,6 +26,11 @@ export type DistrictContactsState = {
   readonly nextPage: () => void
   readonly previousPage: () => void
   readonly retry: () => void
+  readonly reload: () => void
+}
+
+export type ContactDirectoryOptions = {
+  readonly isAdmin?: boolean
 }
 
 function isAbortError(error: unknown): boolean {
@@ -30,7 +39,11 @@ function isAbortError(error: unknown): boolean {
     : error instanceof Error && error.name === 'AbortError'
 }
 
-export function useDistrictContacts(contactId?: string): DistrictContactsState {
+export function useDistrictContacts(
+  contactId?: string,
+  options?: ContactDirectoryOptions,
+): DistrictContactsState {
+  const isAdmin = options?.isAdmin === true
   const [districtId, setDistrictId] = useState<string | null>(null)
   const [contacts, setContacts] = useState<readonly DistrictContact[]>([])
   const [search, setSearch] = useState('')
@@ -38,7 +51,7 @@ export function useDistrictContacts(contactId?: string): DistrictContactsState {
   const [page, setPage] = useState(1)
   const [hasNext, setHasNext] = useState(false)
   const [status, setStatus] = useState<DistrictContactsStatus>(
-    contactId ? 'loading-district' : 'missing-session',
+    isAdmin ? 'loading-contacts' : contactId ? 'loading-district' : 'missing-session',
   )
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [districtRetry, setDistrictRetry] = useState(0)
@@ -70,6 +83,11 @@ export function useDistrictContacts(contactId?: string): DistrictContactsState {
     setPage(1)
     setErrorMessage(null)
 
+    if (isAdmin) {
+      setStatus('loading-contacts')
+      return () => controller.abort()
+    }
+
     if (!contactId) {
       setStatus('missing-session')
       return () => controller.abort()
@@ -98,10 +116,10 @@ export function useDistrictContacts(contactId?: string): DistrictContactsState {
       })
 
     return () => controller.abort()
-  }, [contactId, districtRetry])
+  }, [contactId, districtRetry, isAdmin])
 
   useEffect(() => {
-    if (!districtId) return undefined
+    if (!isAdmin && !districtId) return undefined
 
     const requestId = ++contactsRequestId.current
     const controller = new AbortController()
@@ -109,10 +127,17 @@ export function useDistrictContacts(contactId?: string): DistrictContactsState {
     setStatus('loading-contacts')
     setErrorMessage(null)
 
-    getDistrictContacts(
-      { districtId, search: debouncedSearch, nextLink: currentNextLink },
-      controller.signal,
-    )
+    const request = isAdmin
+      ? getAdminVolunteerContacts(
+        { search: debouncedSearch, nextLink: currentNextLink },
+        controller.signal,
+      )
+      : getDistrictContacts(
+        { districtId: districtId!, search: debouncedSearch, nextLink: currentNextLink },
+        controller.signal,
+      )
+
+    request
       .then((result) => {
         if (controller.signal.aborted || requestId !== contactsRequestId.current) return
         setContacts(result.contacts)
@@ -125,6 +150,7 @@ export function useDistrictContacts(contactId?: string): DistrictContactsState {
         console.error('[DistrictContacts] Contacts request failed', {
           error,
           districtId,
+          isAdmin,
           page,
           hasContinuation: Boolean(currentNextLink),
           searchLength: debouncedSearch.length,
@@ -136,7 +162,7 @@ export function useDistrictContacts(contactId?: string): DistrictContactsState {
       })
 
     return () => controller.abort()
-  }, [contactsRetry, debouncedSearch, districtId, page])
+  }, [contactsRetry, debouncedSearch, districtId, isAdmin, page])
 
   const nextPage = useCallback(() => {
     if (!nextLink) return
@@ -145,12 +171,15 @@ export function useDistrictContacts(contactId?: string): DistrictContactsState {
   }, [nextLink, page])
   const previousPage = useCallback(() => setPage((currentPage) => Math.max(1, currentPage - 1)), [])
   const retry = useCallback(() => {
-    if (districtId) {
+    if (isAdmin || districtId) {
       setContactsRetry((value) => value + 1)
       return
     }
     setDistrictRetry((value) => value + 1)
-  }, [districtId])
+  }, [districtId, isAdmin])
+  const reload = useCallback(() => {
+    setContactsRetry((value) => value + 1)
+  }, [])
 
   return {
     contacts,
@@ -164,5 +193,6 @@ export function useDistrictContacts(contactId?: string): DistrictContactsState {
     nextPage,
     previousPage,
     retry,
+    reload,
   }
 }
