@@ -2942,6 +2942,47 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 
 .page--report-form .meeting-report-attachments__state--error { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; color: var(--color-danger); }
 
+.attachment-preview {
+  position: fixed;
+  z-index: 200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgb(15 31 28 / 72%);
+  padding: 1rem;
+}
+
+.attachment-preview__dialog {
+  display: grid;
+  width: min(70rem, 100%);
+  height: min(52rem, calc(100vh - 2rem));
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.attachment-preview__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-4);
+}
+
+.attachment-preview__title { display: grid; min-width: 0; gap: 0.15rem; }
+.attachment-preview__title span { color: var(--color-primary); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.attachment-preview__title h2 { overflow: hidden; margin: 0; color: var(--color-text); font-size: 1rem; text-overflow: ellipsis; white-space: nowrap; }
+.attachment-preview__actions { display: flex; flex: none; align-items: center; gap: var(--space-2); }
+.attachment-preview__actions svg { width: 1rem; height: 1rem; }
+
+.attachment-preview__stage { min-width: 0; min-height: 0; overflow: auto; background: #eef1f0; }
+.attachment-preview__stage--image { display: grid; place-items: center; padding: var(--space-4); }
+.attachment-preview__frame { width: 100%; height: 100%; border: 0; background: #fff; }
+.attachment-preview__image { display: block; max-width: 100%; max-height: 100%; margin: auto; object-fit: contain; }
+
 .required-mark { color: var(--color-danger); }
 
 .report-form__actions { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-top: 1.7rem; }
