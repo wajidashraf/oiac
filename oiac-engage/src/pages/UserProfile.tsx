@@ -8,6 +8,8 @@ import {
   updateMyProfile,
 } from '../features/profile/profileService'
 import type { ProfileFormValues } from '../features/profile/profileTypes'
+import { DistrictLookup } from '../features/meetingReports/ContactLookup'
+import type { DistrictOption } from '../features/meetingReports/meetingReportTypes'
 
 type UserProfileProps = {
   readonly user: PortalUser
@@ -19,8 +21,13 @@ type FieldErrors = Partial<Record<'firstName' | 'lastName', string>>
 const EMPTY_PROFILE: ProfileFormValues = {
   firstName: '',
   lastName: '',
+  email: '',
+  mobilePhone: '',
   city: '',
   state: '',
+  postalCode: '',
+  districtId: null,
+  districtName: '',
 }
 
 function isAbortError(error: unknown): boolean {
@@ -32,6 +39,7 @@ export default function UserProfile({ user }: UserProfileProps) {
   const [loadStatus, setLoadStatus] = useState<LoadStatus>(contactId ? 'loading' : 'missing-session')
   const [loadAttempt, setLoadAttempt] = useState(0)
   const [values, setValues] = useState<ProfileFormValues>(EMPTY_PROFILE)
+  const [storedDistrictId, setStoredDistrictId] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
@@ -57,6 +65,7 @@ export default function UserProfile({ user }: UserProfileProps) {
     getMyProfile(contactId, controller.signal)
       .then((profile) => {
         setValues(profile)
+        setStoredDistrictId(profile.districtId)
         setLoadStatus('ready')
       })
       .catch((error: unknown) => {
@@ -66,13 +75,26 @@ export default function UserProfile({ user }: UserProfileProps) {
     return () => controller.abort()
   }, [contactId, loadAttempt])
 
-  function changeValue(field: keyof ProfileFormValues, value: string) {
+  function changeValue(
+    field: 'firstName' | 'lastName' | 'mobilePhone' | 'city' | 'state' | 'postalCode',
+    value: string,
+  ) {
     setValues((current) => ({ ...current, [field]: value }))
     setSuccessMessage(null)
     setFormError(null)
     if (field === 'firstName' || field === 'lastName') {
       setFieldErrors((current) => ({ ...current, [field]: undefined }))
     }
+  }
+
+  function changeDistrict(district: DistrictOption | null) {
+    setValues((current) => ({
+      ...current,
+      districtId: district?.id ?? null,
+      districtName: district?.name ?? '',
+    }))
+    setSuccessMessage(null)
+    setFormError(null)
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -96,8 +118,11 @@ export default function UserProfile({ user }: UserProfileProps) {
     setFormError(null)
     setSuccessMessage(null)
     try {
-      const savedValues = await updateMyProfile(contactId, values)
+      const savedValues = await updateMyProfile(contactId, values, storedDistrictId)
       setValues(savedValues)
+      if (!storedDistrictId && savedValues.districtId) {
+        setStoredDistrictId(savedValues.districtId)
+      }
       setSuccessMessage('Profile updated.')
     } catch {
       setFormError('Your profile could not be updated. Try again.')
@@ -187,6 +212,32 @@ export default function UserProfile({ user }: UserProfileProps) {
               </div>
 
               <div className="field">
+                <label htmlFor="profile-email">Email</label>
+                <input
+                  id="profile-email"
+                  name="emailaddress1"
+                  type="email"
+                  autoComplete="email"
+                  readOnly
+                  aria-readonly="true"
+                  value={values.email}
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="profile-mobile-phone">Mobile Phone</label>
+                <input
+                  id="profile-mobile-phone"
+                  name="mobilephone"
+                  type="tel"
+                  autoComplete="tel"
+                  disabled={saving}
+                  value={values.mobilePhone}
+                  onChange={(event) => changeValue('mobilePhone', event.target.value)}
+                />
+              </div>
+
+              <div className="field">
                 <label htmlFor="profile-city">City</label>
                 <input
                   id="profile-city"
@@ -211,6 +262,54 @@ export default function UserProfile({ user }: UserProfileProps) {
                   onChange={(event) => changeValue('state', event.target.value)}
                 />
               </div>
+
+              <div className="field">
+                <label htmlFor="profile-postal-code">Zip Code</label>
+                <input
+                  id="profile-postal-code"
+                  name="address1_postalcode"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="postal-code"
+                  disabled={saving}
+                  value={values.postalCode}
+                  onChange={(event) => changeValue('postalCode', event.target.value)}
+                />
+              </div>
+
+              {storedDistrictId ? (
+                <div className="field">
+                  <label htmlFor="profile-district">District</label>
+                  <input
+                    id="profile-district"
+                    name="mss_district"
+                    type="text"
+                    readOnly
+                    aria-readonly="true"
+                    aria-describedby="profile-district-help"
+                    value={values.districtName}
+                  />
+                  <span className="field__help" id="profile-district-help">
+                    District cannot be changed after it is selected.
+                  </span>
+                </div>
+              ) : (
+                <div className="profile-form__district-field">
+                  <DistrictLookup
+                    label="District"
+                    value={values.districtId ? {
+                      id: values.districtId,
+                      name: values.districtName,
+                    } : null}
+                    onChange={changeDistrict}
+                    disabled={saving}
+                    describedBy="profile-district-selection-help"
+                  />
+                  <span className="field__help" id="profile-district-selection-help">
+                    Choose carefully. District cannot be changed after you save it.
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="profile-form__actions">

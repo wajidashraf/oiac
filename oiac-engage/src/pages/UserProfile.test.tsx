@@ -12,6 +12,7 @@ vi.mock('../shared/powerPagesApi', () => ({
 
 const powerPagesFetchMock = vi.mocked(powerPagesFetch)
 const CONTACT_ID = '11111111-1111-4111-8111-111111111111'
+const DISTRICT_ID = '22222222-2222-4222-8222-222222222222'
 const approvedUser: PortalUser = {
   userName: 'ava@example.org',
   firstName: 'Ava',
@@ -23,8 +24,13 @@ const profileRecord = {
   contactid: CONTACT_ID,
   firstname: 'Ava',
   lastname: 'Rahimi',
+  emailaddress1: 'ava@example.org',
+  mobilephone: '555-0100',
   address1_city: 'Arlington',
   address1_stateorprovince: 'Virginia',
+  address1_postalcode: '22201',
+  _mss_district_value: DISTRICT_ID,
+  '_mss_district_value@OData.Community.Display.V1.FormattedValue': 'District 12',
 }
 
 function renderProfile(user: PortalUser = approvedUser) {
@@ -39,7 +45,7 @@ beforeEach(() => {
   powerPagesFetchMock.mockReset()
 })
 
-test('loads the current Contact into the profile form without displaying email', async () => {
+test('loads the complete Contact profile with Email and an existing District read-only', async () => {
   let resolveProfile!: (value: typeof profileRecord) => void
   powerPagesFetchMock.mockReturnValue(new Promise((resolve) => {
     resolveProfile = resolve
@@ -51,10 +57,58 @@ test('loads the current Contact into the profile form without displaying email',
   resolveProfile(profileRecord)
   expect(await screen.findByLabelText(/^First Name/)).toHaveValue('Ava')
   expect(screen.getByLabelText(/^Last Name/)).toHaveValue('Rahimi')
+  expect(screen.getByLabelText('Email')).toHaveValue('ava@example.org')
+  expect(screen.getByLabelText('Email')).toHaveAttribute('readonly')
+  expect(screen.getByLabelText('Mobile Phone')).toHaveValue('555-0100')
   expect(screen.getByLabelText('City')).toHaveValue('Arlington')
   expect(screen.getByLabelText('State')).toHaveValue('Virginia')
-  expect(screen.queryByLabelText(/email/i)).not.toBeInTheDocument()
-  expect(screen.queryByText('ava@example.org')).not.toBeInTheDocument()
+  expect(screen.getByLabelText('Zip Code')).toHaveValue('22201')
+  expect(screen.getByLabelText('District')).toHaveValue('District 12')
+  expect(screen.getByLabelText('District')).toHaveAttribute('readonly')
+  expect(screen.queryByRole('combobox', { name: 'District' })).not.toBeInTheDocument()
+})
+
+test('lets the user select District once and locks it after a successful save', async () => {
+  const user = userEvent.setup()
+  powerPagesFetchMock
+    .mockResolvedValueOnce({
+      ...profileRecord,
+      _mss_district_value: null,
+      '_mss_district_value@OData.Community.Display.V1.FormattedValue': undefined,
+    })
+    .mockResolvedValueOnce({
+      value: [{ mss_districtid: DISTRICT_ID, mss_number: 'District 12' }],
+    })
+    .mockResolvedValueOnce(undefined)
+    .mockResolvedValueOnce(undefined)
+
+  renderProfile()
+
+  const districtLookup = await screen.findByRole('combobox', { name: 'District' })
+  expect(districtLookup).toHaveAccessibleDescription(
+    'Choose carefully. District cannot be changed after you save it.',
+  )
+  await user.click(districtLookup)
+  await user.click(await screen.findByRole('option', { name: 'District 12' }))
+  await user.click(screen.getByRole('button', { name: 'Save changes' }))
+
+  expect(await screen.findByRole('status')).toHaveTextContent('Profile updated.')
+  expect(screen.getByLabelText('District')).toHaveValue('District 12')
+  expect(screen.getByLabelText('District')).toHaveAttribute('readonly')
+
+  const updateRequest = powerPagesFetchMock.mock.calls[2]?.[1]
+  expect(JSON.parse(String(updateRequest?.body))).toMatchObject({
+    'mss_District@odata.bind': `/mss_districts(${DISTRICT_ID})`,
+  })
+
+  const city = screen.getByLabelText('City')
+  await user.clear(city)
+  await user.type(city, 'Alexandria')
+  await user.click(screen.getByRole('button', { name: 'Save changes' }))
+  expect(await screen.findByRole('status')).toHaveTextContent('Profile updated.')
+
+  const secondUpdate = JSON.parse(String(powerPagesFetchMock.mock.calls[3]?.[1]?.body))
+  expect(secondUpdate).not.toHaveProperty('mss_District@odata.bind')
 })
 
 test('does not request Dataverse when the session has no valid Contact identifier', () => {
@@ -98,7 +152,7 @@ test('requires both name fields and focuses the first invalid field', async () =
   expect(powerPagesFetchMock).toHaveBeenCalledTimes(1)
 })
 
-test('saves the four profile values and announces success', async () => {
+test('saves editable profile values and announces success', async () => {
   const user = userEvent.setup()
   powerPagesFetchMock
     .mockResolvedValueOnce(profileRecord)

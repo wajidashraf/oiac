@@ -97,6 +97,7 @@ type DistrictLookupProps = {
   readonly onChange: (value: DistrictOption | null) => void
   readonly required?: boolean
   readonly disabled?: boolean
+  readonly describedBy?: string
   readonly loadOptions?: (search: string, signal?: AbortSignal) => Promise<readonly DistrictOption[]>
   readonly debounceMs?: number
 }
@@ -107,6 +108,7 @@ export function DistrictLookup({
   onChange,
   required = false,
   disabled = false,
+  describedBy,
   loadOptions = searchDistricts,
   debounceMs = 350,
 }: DistrictLookupProps) {
@@ -134,6 +136,7 @@ export function DistrictLookup({
           aria-expanded={open}
           aria-controls={`${id}-options`}
           aria-required={required}
+          aria-describedby={describedBy}
           autoComplete="off"
           disabled={disabled}
           placeholder={value ? 'Search to replace...' : 'Search and select...'}

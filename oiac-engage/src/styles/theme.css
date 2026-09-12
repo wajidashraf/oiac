@@ -2057,7 +2057,7 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 
 .text-action { border: 0; background: transparent; color: var(--color-primary-strong); cursor: pointer; font-weight: 700; padding: 0; }
 
-.page--profile { width: min(47rem, 100%); min-height: 36rem; padding-top: 2.5rem; padding-bottom: 6rem; }
+.page--profile { width: min(52rem, 100%); min-height: 36rem; margin-inline: auto; padding-top: 2.5rem; padding-bottom: 6rem; }
 
 .profile-page__back { display: inline-flex; min-height: 2.75rem; align-items: center; gap: 0.35rem; margin-bottom: 0.15rem; color: var(--color-text-muted); font-size: 0.82rem; font-weight: 600; }
 
@@ -2065,7 +2065,7 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 
 .profile-page__back:hover { color: var(--color-primary-strong); }
 
-.profile-page__header { max-width: 42rem; }
+.profile-page__header { max-width: 42rem; margin-inline: auto; text-align: center; }
 
 .profile-page__eyebrow { margin-bottom: 0.45rem; color: var(--color-primary); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
 
@@ -2079,7 +2079,7 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 
 .profile-page__state--error p { margin-bottom: var(--space-4); }
 
-.profile-card { margin-top: 1.75rem; overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: var(--shadow-sm); }
+.profile-card { margin-top: 1.75rem; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: var(--shadow-sm); }
 
 .profile-card__heading { border-bottom: 1px solid var(--color-border); padding: var(--space-5) var(--space-6); }
 
@@ -2091,9 +2091,13 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 
 .profile-form__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }
 
+.profile-form__district-field { display: grid; min-width: 0; align-content: start; gap: var(--space-2); }
+
 .profile-form__actions { display: flex; justify-content: flex-start; }
 
 .profile-form :disabled { cursor: wait; opacity: 0.68; }
+
+.profile-form input[readonly] { background: #f5f7f6; color: var(--color-text-muted); cursor: default; }
 
 .page--contacts { min-height: 34rem; padding-top: 2.5rem; padding-bottom: 6rem; }
 
@@ -2523,16 +2527,16 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   cursor: default;
 }
 
-:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup {
+:is(.page--report-form, .admin-contact-modal, .page--profile) .meeting-report-lookup {
   position: relative;
   align-content: start;
   gap: 0.4rem;
   min-width: 0;
 }
 
-:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup > label,
-:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup > label > span,
-:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__label {
+:is(.page--report-form, .admin-contact-modal, .page--profile) .meeting-report-lookup > label,
+:is(.page--report-form, .admin-contact-modal, .page--profile) .meeting-report-lookup > label > span,
+:is(.page--report-form, .admin-contact-modal, .page--profile) .meeting-report-lookup__label {
   display: block;
   margin: 0;
   color: var(--color-text);
@@ -2541,7 +2545,7 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   line-height: 1.35;
 }
 
-:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__control {
+:is(.page--report-form, .admin-contact-modal, .page--profile) .meeting-report-lookup__control {
   display: flex;
   min-height: 2.75rem;
   align-items: center;
@@ -2553,12 +2557,12 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   padding: 0.25rem 0.4rem;
 }
 
-:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__control:focus-within {
+:is(.page--report-form, .admin-contact-modal, .page--profile) .meeting-report-lookup__control:focus-within {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 2px rgb(60 92 87 / 12%);
 }
 
-:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__control > input {
+:is(.page--report-form, .admin-contact-modal, .page--profile) .meeting-report-lookup__control > input {
   flex: 1 1 9rem;
   min-width: 7rem;
   min-height: 2.1rem;
@@ -2568,13 +2572,13 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   padding: 0.3rem 0.35rem;
 }
 
-:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__control > input:focus {
+:is(.page--report-form, .admin-contact-modal, .page--profile) .meeting-report-lookup__control > input:focus {
   border: 0;
   box-shadow: none;
   outline: 0;
 }
 
-:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__selection {
+:is(.page--report-form, .admin-contact-modal, .page--profile) .meeting-report-lookup__selection {
   display: inline-flex;
   max-width: 100%;
   min-height: 1.95rem;
@@ -2587,9 +2591,9 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   padding: 0.15rem 0.25rem 0.15rem 0.45rem;
 }
 
-:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__selection-icon { width: 0.9rem; height: 0.9rem; flex: 0 0 auto; }
+:is(.page--report-form, .admin-contact-modal, .page--profile) .meeting-report-lookup__selection-icon { width: 0.9rem; height: 0.9rem; flex: 0 0 auto; }
 
-:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__selection strong {
+:is(.page--report-form, .admin-contact-modal, .page--profile) .meeting-report-lookup__selection strong {
   overflow: hidden;
   min-width: 0;
   color: inherit;
@@ -2599,8 +2603,8 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   white-space: nowrap;
 }
 
-:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__selection button,
-:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__message button {
+:is(.page--report-form, .admin-contact-modal, .page--profile) .meeting-report-lookup__selection button,
+:is(.page--report-form, .admin-contact-modal, .page--profile) .meeting-report-lookup__message button {
   min-width: auto;
   min-height: 2rem;
   border: 0;
@@ -2613,7 +2617,7 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   padding: 0.25rem 0.45rem;
 }
 
-:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__selection button {
+:is(.page--report-form, .admin-contact-modal, .page--profile) .meeting-report-lookup__selection button {
   display: inline-grid;
   width: 1.55rem;
   min-height: 1.55rem;
@@ -2621,10 +2625,10 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   padding: 0;
 }
 
-:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__selection button:hover,
-:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__message button:hover { background: rgb(60 92 87 / 10%); }
+:is(.page--report-form, .admin-contact-modal, .page--profile) .meeting-report-lookup__selection button:hover,
+:is(.page--report-form, .admin-contact-modal, .page--profile) .meeting-report-lookup__message button:hover { background: rgb(60 92 87 / 10%); }
 
-:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__options {
+:is(.page--report-form, .admin-contact-modal, .page--profile) .meeting-report-lookup__options {
   position: absolute;
   z-index: 20;
   top: calc(100% + 0.25rem);
@@ -2641,9 +2645,9 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   padding: 0.35rem;
 }
 
-:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__options li { margin: 0; padding: 0; }
+:is(.page--report-form, .admin-contact-modal, .page--profile) .meeting-report-lookup__options li { margin: 0; padding: 0; }
 
-:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__options button[role='option'] {
+:is(.page--report-form, .admin-contact-modal, .page--profile) .meeting-report-lookup__options button[role='option'] {
   display: grid;
   width: 100%;
   min-height: 2.75rem;
@@ -2658,14 +2662,14 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   text-align: left;
 }
 
-:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__options button[role='option']:hover,
-:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__options button[role='option']:focus-visible { background: var(--color-primary-soft); }
+:is(.page--report-form, .admin-contact-modal, .page--profile) .meeting-report-lookup__options button[role='option']:hover,
+:is(.page--report-form, .admin-contact-modal, .page--profile) .meeting-report-lookup__options button[role='option']:focus-visible { background: var(--color-primary-soft); }
 
-:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__options strong { font-size: 0.8rem; }
+:is(.page--report-form, .admin-contact-modal, .page--profile) .meeting-report-lookup__options strong { font-size: 0.8rem; }
 
-:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__options small { color: var(--color-text-muted); font-size: 0.7rem; }
+:is(.page--report-form, .admin-contact-modal, .page--profile) .meeting-report-lookup__options small { color: var(--color-text-muted); font-size: 0.7rem; }
 
-:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__message {
+:is(.page--report-form, .admin-contact-modal, .page--profile) .meeting-report-lookup__message {
   margin: 0;
   border-radius: var(--radius-sm);
   background: #f5f7f6;
@@ -2674,7 +2678,7 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   padding: 0.55rem 0.65rem;
 }
 
-:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__message--error { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); color: var(--color-danger); }
+:is(.page--report-form, .admin-contact-modal, .page--profile) .meeting-report-lookup__message--error { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); color: var(--color-danger); }
 
 .page--report-form .meeting-report-lookup__multi-trigger {
   display: flex;
