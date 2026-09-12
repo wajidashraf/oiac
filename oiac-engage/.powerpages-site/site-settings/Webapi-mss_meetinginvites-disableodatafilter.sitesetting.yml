@@ -1,0 +1,4 @@
+description: Require OData filtering rules for Meeting Invite Web API reads
+id: dc00f24b-5945-4ff9-90f4-db53c8b023a5
+name: Webapi/mss_meetinginvites/disableodatafilter
+value: false

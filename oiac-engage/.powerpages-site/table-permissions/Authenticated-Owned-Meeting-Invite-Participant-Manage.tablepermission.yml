@@ -1,0 +1,13 @@
+adx_entitypermission_webrole:
+- 0353acdd-7b95-4c07-8997-ae95dafd978d
+append: true
+appendto: true
+contactrelationship: mss_meetinginviteparticipant_Contact_contact
+create: true
+delete: false
+entitylogicalname: mss_meetinginviteparticipant
+entityname: Authenticated Owned Meeting Invite Participant Manage
+id: 3639e15a-7043-4c37-aaa8-42f4919f070c
+read: true
+scope: 756150001
+write: true

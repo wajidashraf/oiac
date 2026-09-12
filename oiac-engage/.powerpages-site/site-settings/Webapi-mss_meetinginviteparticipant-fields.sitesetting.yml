@@ -1,0 +1,4 @@
+description: Allowed fields for Meeting Invite Participant Web API reads and Accept writes
+id: 5e249652-6897-4935-bc14-83bdd772328b
+name: Webapi/mss_meetinginviteparticipant/fields
+value: "mss_meetinginviteparticipantid,mss_acceptedon,mss_contact,mss_Contact,_mss_contact_value,mss_invitationstatus,mss_meetinginvite,mss_MeetingInvite,_mss_meetinginvite_value,mss_name"

@@ -1,0 +1,12 @@
+adx_entitypermission_webrole:
+- 0353acdd-7b95-4c07-8997-ae95dafd978d
+append: false
+appendto: true
+create: false
+delete: false
+entitylogicalname: mss_meetinginvites
+entityname: Authenticated Meeting Invites Global Read
+id: a59b7986-f998-4a3d-822b-02364a74f3fb
+read: true
+scope: 756150000
+write: false

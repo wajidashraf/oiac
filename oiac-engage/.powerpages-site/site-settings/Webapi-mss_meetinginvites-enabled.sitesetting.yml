@@ -1,0 +1,4 @@
+description: Enable Web API access for Meeting Invite records
+id: 4e23a4f5-74c7-40de-93e5-1cd40e7e5afd
+name: Webapi/mss_meetinginvites/enabled
+value: true
