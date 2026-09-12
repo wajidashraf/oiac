@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { getCalendarEvents } from '../events/eventService'
 import type { EventItem } from '../events/eventTypes'
 import {
@@ -10,6 +10,11 @@ import {
   getMeetingReports,
 } from '../meetingReports/meetingReportService'
 import type { MeetingReportSummary } from '../meetingReports/meetingReportTypes'
+import {
+  acceptMeetingInvite,
+  getMeetingInvites,
+} from '../meetingInvites/meetingInviteService'
+import type { MeetingInvite } from '../meetingInvites/meetingInviteTypes'
 
 export type DashboardLoadStatus = 'loading' | 'ready' | 'error'
 
@@ -20,6 +25,12 @@ export type HomeDashboardData = {
   readonly upcomingEvents: readonly EventItem[]
   readonly reportsStatus: DashboardLoadStatus
   readonly registrationsStatus: DashboardLoadStatus
+  readonly meetingInvites: readonly MeetingInvite[]
+  readonly invitesStatus: DashboardLoadStatus
+  readonly acceptingInviteIds: ReadonlySet<string>
+  readonly inviteError: string | null
+  readonly acceptInvite: (inviteId: string) => Promise<void>
+  readonly retryInvites: () => void
   readonly retry: () => void
 }
 
@@ -30,8 +41,17 @@ export function useHomeDashboardData(contactId?: string): HomeDashboardData {
   const [upcomingEvents, setUpcomingEvents] = useState<readonly EventItem[]>([])
   const [reportsStatus, setReportsStatus] = useState<DashboardLoadStatus>('loading')
   const [registrationsStatus, setRegistrationsStatus] = useState<DashboardLoadStatus>('loading')
+  const [meetingInvites, setMeetingInvites] = useState<readonly MeetingInvite[]>([])
+  const [invitesStatus, setInvitesStatus] = useState<DashboardLoadStatus>('loading')
+  const [acceptingInviteIds, setAcceptingInviteIds] = useState<ReadonlySet<string>>(new Set())
+  const [inviteError, setInviteError] = useState<string | null>(null)
   const [retryKey, setRetryKey] = useState(0)
+  const [inviteRetryKey, setInviteRetryKey] = useState(0)
+  const meetingInvitesRef = useRef<readonly MeetingInvite[]>([])
+  const contactFullNameRef = useRef('')
+  const acceptingInviteIdsRef = useRef(new Set<string>())
   const retry = useCallback(() => setRetryKey((value) => value + 1), [])
+  const retryInvites = useCallback(() => setInviteRetryKey((value) => value + 1), [])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -97,6 +117,64 @@ export function useHomeDashboardData(contactId?: string): HomeDashboardData {
     return () => controller.abort()
   }, [contactId, retryKey])
 
+  useEffect(() => {
+    const controller = new AbortController()
+    const { signal } = controller
+
+    setInvitesStatus('loading')
+    setInviteError(null)
+    setMeetingInvites([])
+    meetingInvitesRef.current = []
+    contactFullNameRef.current = ''
+
+    if (!contactId) {
+      setInvitesStatus('error')
+      return () => controller.abort()
+    }
+
+    void getMeetingInvites(contactId, signal).then((collection) => {
+      if (signal.aborted) return
+      contactFullNameRef.current = collection.contactFullName
+      meetingInvitesRef.current = collection.invites
+      setMeetingInvites(collection.invites)
+      setInvitesStatus('ready')
+    }).catch(() => {
+      if (signal.aborted) return
+      meetingInvitesRef.current = []
+      setMeetingInvites([])
+      setInvitesStatus('error')
+    })
+
+    return () => controller.abort()
+  }, [contactId, inviteRetryKey])
+
+  const acceptInvite = useCallback(async (inviteId: string): Promise<void> => {
+    if (!contactId || acceptingInviteIdsRef.current.has(inviteId)) return
+    const invite = meetingInvitesRef.current.find((item) => item.id === inviteId)
+    if (!invite) return
+
+    acceptingInviteIdsRef.current.add(inviteId)
+    setAcceptingInviteIds(new Set(acceptingInviteIdsRef.current))
+    setInviteError(null)
+    try {
+      const participant = await acceptMeetingInvite({
+        contactId,
+        contactFullName: contactFullNameRef.current,
+        invite,
+      })
+      const updatedInvites = meetingInvitesRef.current.map((item) => (
+        item.id === inviteId ? { ...item, participant } : item
+      ))
+      meetingInvitesRef.current = updatedInvites
+      setMeetingInvites(updatedInvites)
+    } catch {
+      setInviteError(`${invite.title} could not be accepted. Try again.`)
+    } finally {
+      acceptingInviteIdsRef.current.delete(inviteId)
+      setAcceptingInviteIds(new Set(acceptingInviteIdsRef.current))
+    }
+  }, [contactId])
+
   return {
     reports,
     reportCount,
@@ -104,6 +182,12 @@ export function useHomeDashboardData(contactId?: string): HomeDashboardData {
     upcomingEvents,
     reportsStatus,
     registrationsStatus,
+    meetingInvites,
+    invitesStatus,
+    acceptingInviteIds,
+    inviteError,
+    acceptInvite,
+    retryInvites,
     retry,
   }
 }

@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { getCalendarEvents } from '../events/eventService'
 import type { EventItem } from '../events/eventTypes'
@@ -6,6 +6,12 @@ import { getEventRegistrations } from '../eventRegistrations/eventRegistrationSe
 import { EVENT_REGISTRATION_STATUS } from '../eventRegistrations/eventRegistrationTypes'
 import { listMeetingReportPageAttachments } from '../meetingReports/meetingReportAttachmentService'
 import { getMeetingReportCount, getMeetingReports } from '../meetingReports/meetingReportService'
+import {
+  acceptMeetingInvite,
+  getMeetingInvites,
+  MEETING_INVITATION_STATUS,
+} from '../meetingInvites/meetingInviteService'
+import type { MeetingInvite } from '../meetingInvites/meetingInviteTypes'
 import { useHomeDashboardData } from './useHomeDashboardData'
 
 vi.mock('../events/eventService', () => ({ getCalendarEvents: vi.fn() }))
@@ -20,12 +26,30 @@ vi.mock('../meetingReports/meetingReportService', () => ({
 vi.mock('../meetingReports/meetingReportAttachmentService', () => ({
   listMeetingReportPageAttachments: vi.fn(),
 }))
+vi.mock('../meetingInvites/meetingInviteService', async (importOriginal) => {
+  const original = await importOriginal<typeof import('../meetingInvites/meetingInviteService')>()
+  return {
+    ...original,
+    acceptMeetingInvite: vi.fn(),
+    getMeetingInvites: vi.fn(),
+  }
+})
 
 const contactId = '11111111-1111-1111-1111-111111111111'
 const activeEventId = '22222222-2222-2222-2222-222222222222'
 const secondEventId = '33333333-3333-3333-3333-333333333333'
 const cancelledEventId = '44444444-4444-4444-4444-444444444444'
 const waitlistedEventId = '55555555-5555-5555-5555-555555555555'
+const inviteId = '66666666-6666-4666-8666-666666666666'
+const participantId = '77777777-7777-4777-8777-777777777777'
+
+const meetingInvite: MeetingInvite = {
+  id: inviteId,
+  title: 'District Briefing',
+  startDateTime: '2026-09-18T18:00:00Z',
+  endDateTime: '2026-09-18T19:00:00Z',
+  participant: null,
+}
 
 function event(id: string, title: string): EventItem {
   return {
@@ -116,6 +140,18 @@ beforeEach(() => {
     event(activeEventId, 'First registered event'),
     event(secondEventId, 'Second registered event'),
   ])
+  vi.mocked(getMeetingInvites).mockResolvedValue({
+    contactFullName: 'Sara Rahimi',
+    invites: [meetingInvite],
+  })
+  vi.mocked(acceptMeetingInvite).mockResolvedValue({
+    id: participantId,
+    contactId,
+    meetingInviteId: inviteId,
+    status: MEETING_INVITATION_STATUS.accepted,
+    acceptedOn: '2026-09-12T14:30:00.000Z',
+    name: 'District Briefing - Sara Rahimi',
+  })
 })
 
 test('loads live report KPIs and only unique Registered events for the signed-in Contact', async () => {
@@ -177,10 +213,71 @@ test('aborts all dashboard requests when Home unmounts', () => {
   const reportListSignal = vi.mocked(getMeetingReports).mock.calls[0][1]
   const reportCountSignal = vi.mocked(getMeetingReportCount).mock.calls[0][0]
   const registrationsSignal = vi.mocked(getEventRegistrations).mock.calls[0][1]
+  const invitationsSignal = vi.mocked(getMeetingInvites).mock.calls[0][1]
 
   unmount()
 
   expect(reportListSignal?.aborted).toBe(true)
   expect(reportCountSignal?.aborted).toBe(true)
   expect(registrationsSignal?.aborted).toBe(true)
+  expect(invitationsSignal?.aborted).toBe(true)
+})
+
+test('loads eligible meeting invites independently for the signed-in Contact', async () => {
+  const { result } = renderHook(() => useHomeDashboardData(contactId))
+
+  await waitFor(() => expect(result.current.invitesStatus).toBe('ready'))
+  expect(result.current.meetingInvites).toEqual([meetingInvite])
+  expect(result.current.inviteError).toBeNull()
+  expect(getMeetingInvites).toHaveBeenCalledWith(contactId, expect.any(AbortSignal))
+})
+
+test('accepts one invite, locks repeat requests synchronously, and updates only that row', async () => {
+  let resolveAccept!: (value: Awaited<ReturnType<typeof acceptMeetingInvite>>) => void
+  vi.mocked(acceptMeetingInvite).mockReturnValue(new Promise((resolve) => {
+    resolveAccept = resolve
+  }))
+  const { result } = renderHook(() => useHomeDashboardData(contactId))
+  await waitFor(() => expect(result.current.invitesStatus).toBe('ready'))
+
+  let first!: Promise<void>
+  let repeated!: Promise<void>
+  act(() => {
+    first = result.current.acceptInvite(inviteId)
+    repeated = result.current.acceptInvite(inviteId)
+  })
+  await repeated
+  expect(result.current.acceptingInviteIds.has(inviteId)).toBe(true)
+  expect(acceptMeetingInvite).toHaveBeenCalledTimes(1)
+
+  await act(async () => {
+    resolveAccept({
+      id: participantId,
+      contactId,
+      meetingInviteId: inviteId,
+      status: MEETING_INVITATION_STATUS.accepted,
+      acceptedOn: '2026-09-12T14:30:00.000Z',
+      name: 'District Briefing - Sara Rahimi',
+    })
+    await first
+  })
+
+  expect(result.current.meetingInvites[0].participant?.status).toBe(MEETING_INVITATION_STATUS.accepted)
+  expect(result.current.acceptingInviteIds.has(inviteId)).toBe(false)
+})
+
+test('exposes a row-specific invitation error and retries invitations without reloading other dashboard data', async () => {
+  vi.mocked(acceptMeetingInvite).mockRejectedValue(new Error('write failed'))
+  const { result } = renderHook(() => useHomeDashboardData(contactId))
+  await waitFor(() => expect(result.current.invitesStatus).toBe('ready'))
+
+  await act(async () => {
+    await result.current.acceptInvite(inviteId)
+  })
+  expect(result.current.inviteError).toBe('District Briefing could not be accepted. Try again.')
+
+  const reportsCalls = vi.mocked(getMeetingReports).mock.calls.length
+  await act(async () => result.current.retryInvites())
+  await waitFor(() => expect(getMeetingInvites).toHaveBeenCalledTimes(2))
+  expect(getMeetingReports).toHaveBeenCalledTimes(reportsCalls)
 })
