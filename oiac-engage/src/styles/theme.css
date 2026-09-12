@@ -514,6 +514,47 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 
 .team-announcement-modal__footer svg { width: 1rem; height: 1rem; }
 
+.admin-contact-modal { position: fixed; z-index: 220; inset: 0; display: grid; place-items: center; overflow-y: auto; background: rgb(15 31 28 / 72%); padding: 1rem; }
+
+.admin-contact-modal__dialog { width: min(46rem, 100%); max-height: calc(100vh - 2rem); overflow: auto; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: 0 1.5rem 4rem rgb(15 31 28 / 24%); }
+
+.admin-contact-modal__header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); padding: clamp(1.25rem, 4vw, 2rem); border-bottom: 1px solid var(--color-border); }
+
+.admin-contact-modal__header h2 { margin: 0; color: var(--color-text); font-family: var(--font-display); font-size: clamp(1.35rem, 3vw, 1.75rem); line-height: 1.2; }
+
+.admin-contact-modal__header p:not(.admin-contact-modal__eyebrow) { margin: var(--space-2) 0 0; color: var(--color-text-muted); font-size: 0.85rem; }
+
+.admin-contact-modal__eyebrow { margin: 0 0 var(--space-2); color: var(--color-primary); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; }
+
+.admin-contact-modal__close { width: 2.75rem; min-width: 2.75rem; height: 2.75rem; padding: 0; }
+
+.admin-contact-modal__close svg { width: 1.2rem; height: 1.2rem; }
+
+.admin-contact-modal__form { display: grid; gap: var(--space-5); padding: clamp(1.25rem, 4vw, 2rem); }
+
+.admin-contact-modal__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+
+.admin-contact-modal__wide { grid-column: 1 / -1; }
+
+.admin-contact-modal .field { display: grid; align-content: start; gap: var(--space-2); margin: 0; }
+
+.admin-contact-modal .field > span,
+.admin-contact-modal .field > label { color: var(--color-text); font-size: 0.78rem; font-weight: 600; }
+
+.admin-contact-modal .field > input { width: 100%; min-height: 2.75rem; border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); padding: 0.65rem 0.75rem; font: inherit; font-size: 0.86rem; font-weight: 400; }
+
+.admin-contact-modal .field > input:focus { border-color: var(--color-primary); outline: 0; box-shadow: 0 0 0 2px rgb(60 92 87 / 12%); }
+
+.admin-contact-modal .field > input[readonly] { background: #f5f7f6; color: var(--color-text-muted); }
+
+.admin-contact-modal .field > input:disabled { cursor: not-allowed; opacity: 0.7; }
+
+.admin-contact-modal__error { margin: 0; border: 1px solid rgb(161 71 71 / 30%); border-radius: var(--radius-sm); background: rgb(161 71 71 / 8%); color: var(--color-danger); padding: 0.75rem 0.9rem; font-size: 0.82rem; }
+
+.admin-contact-modal__actions { display: flex; justify-content: flex-end; padding-top: var(--space-4); border-top: 1px solid var(--color-border); }
+
+.admin-contact-modal__actions .button { min-height: 2.75rem; }
+
 .dashboard-training-list { display: grid; gap: 0.15rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); padding: 0.55rem 0.75rem; }
 
 .dashboard-training-list li { display: grid; grid-template-columns: 1rem minmax(0, 1fr); align-items: center; gap: var(--space-2); }
@@ -2474,16 +2515,16 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   cursor: default;
 }
 
-.page--report-form .meeting-report-lookup {
+:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup {
   position: relative;
   align-content: start;
   gap: 0.4rem;
   min-width: 0;
 }
 
-.page--report-form .meeting-report-lookup > label,
-.page--report-form .meeting-report-lookup > label > span,
-.page--report-form .meeting-report-lookup__label {
+:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup > label,
+:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup > label > span,
+:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__label {
   display: block;
   margin: 0;
   color: var(--color-text);
@@ -2492,7 +2533,7 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   line-height: 1.35;
 }
 
-.page--report-form .meeting-report-lookup__control {
+:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__control {
   display: flex;
   min-height: 2.75rem;
   align-items: center;
@@ -2504,12 +2545,12 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   padding: 0.25rem 0.4rem;
 }
 
-.page--report-form .meeting-report-lookup__control:focus-within {
+:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__control:focus-within {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 2px rgb(60 92 87 / 12%);
 }
 
-.page--report-form .meeting-report-lookup__control > input {
+:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__control > input {
   flex: 1 1 9rem;
   min-width: 7rem;
   min-height: 2.1rem;
@@ -2519,13 +2560,13 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   padding: 0.3rem 0.35rem;
 }
 
-.page--report-form .meeting-report-lookup__control > input:focus {
+:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__control > input:focus {
   border: 0;
   box-shadow: none;
   outline: 0;
 }
 
-.page--report-form .meeting-report-lookup__selection {
+:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__selection {
   display: inline-flex;
   max-width: 100%;
   min-height: 1.95rem;
@@ -2538,9 +2579,9 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   padding: 0.15rem 0.25rem 0.15rem 0.45rem;
 }
 
-.page--report-form .meeting-report-lookup__selection-icon { width: 0.9rem; height: 0.9rem; flex: 0 0 auto; }
+:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__selection-icon { width: 0.9rem; height: 0.9rem; flex: 0 0 auto; }
 
-.page--report-form .meeting-report-lookup__selection strong {
+:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__selection strong {
   overflow: hidden;
   min-width: 0;
   color: inherit;
@@ -2550,8 +2591,8 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   white-space: nowrap;
 }
 
-.page--report-form .meeting-report-lookup__selection button,
-.page--report-form .meeting-report-lookup__message button {
+:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__selection button,
+:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__message button {
   min-width: auto;
   min-height: 2rem;
   border: 0;
@@ -2564,7 +2605,7 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   padding: 0.25rem 0.45rem;
 }
 
-.page--report-form .meeting-report-lookup__selection button {
+:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__selection button {
   display: inline-grid;
   width: 1.55rem;
   min-height: 1.55rem;
@@ -2572,10 +2613,10 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   padding: 0;
 }
 
-.page--report-form .meeting-report-lookup__selection button:hover,
-.page--report-form .meeting-report-lookup__message button:hover { background: rgb(60 92 87 / 10%); }
+:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__selection button:hover,
+:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__message button:hover { background: rgb(60 92 87 / 10%); }
 
-.page--report-form .meeting-report-lookup__options {
+:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__options {
   position: absolute;
   z-index: 20;
   top: calc(100% + 0.25rem);
@@ -2592,9 +2633,9 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   padding: 0.35rem;
 }
 
-.page--report-form .meeting-report-lookup__options li { margin: 0; padding: 0; }
+:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__options li { margin: 0; padding: 0; }
 
-.page--report-form .meeting-report-lookup__options button[role='option'] {
+:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__options button[role='option'] {
   display: grid;
   width: 100%;
   min-height: 2.75rem;
@@ -2609,14 +2650,14 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   text-align: left;
 }
 
-.page--report-form .meeting-report-lookup__options button[role='option']:hover,
-.page--report-form .meeting-report-lookup__options button[role='option']:focus-visible { background: var(--color-primary-soft); }
+:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__options button[role='option']:hover,
+:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__options button[role='option']:focus-visible { background: var(--color-primary-soft); }
 
-.page--report-form .meeting-report-lookup__options strong { font-size: 0.8rem; }
+:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__options strong { font-size: 0.8rem; }
 
-.page--report-form .meeting-report-lookup__options small { color: var(--color-text-muted); font-size: 0.7rem; }
+:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__options small { color: var(--color-text-muted); font-size: 0.7rem; }
 
-.page--report-form .meeting-report-lookup__message {
+:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__message {
   margin: 0;
   border-radius: var(--radius-sm);
   background: #f5f7f6;
@@ -2625,7 +2666,7 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   padding: 0.55rem 0.65rem;
 }
 
-.page--report-form .meeting-report-lookup__message--error { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); color: var(--color-danger); }
+:is(.page--report-form, .admin-contact-modal) .meeting-report-lookup__message--error { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); color: var(--color-danger); }
 
 .page--report-form .meeting-report-lookup__multi-trigger {
   display: flex;
@@ -3443,9 +3484,14 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   .dashboard-admin-label { font-size: 0.875rem; }
   .dashboard-date-tile strong { font-size: 1rem; }
   .dashboard-invite-accept { min-height: 2.75rem; font-size: 0.875rem; }
-  .team-announcement-modal { align-items: end; padding: 0.75rem; }
+  .team-announcement-modal,
+  .admin-contact-modal { align-items: end; padding: 0.75rem; }
   .team-announcement-modal__dialog { width: 100%; max-height: calc(100vh - 1.5rem); border-radius: var(--radius-lg); }
   .team-announcement-modal__footer .button { width: 100%; }
+  .admin-contact-modal__dialog { width: 100%; max-height: calc(100vh - 1.5rem); }
+  .admin-contact-modal__grid { grid-template-columns: 1fr; }
+  .admin-contact-modal__wide { grid-column: auto; }
+  .admin-contact-modal__actions .button { width: 100%; }
   .site-footer__inner { min-height: 8rem; align-items: flex-start; flex-direction: column; justify-content: center; gap: var(--space-4); }
   .site-footer__identity { align-items: flex-start; }
   .site-footer__identity span { max-width: 15rem; line-height: 1.5; }
