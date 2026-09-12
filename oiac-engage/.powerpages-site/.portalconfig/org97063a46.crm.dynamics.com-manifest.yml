@@ -78,7 +78,7 @@ adx_entitypermission:
   IsDeleted: false
 - RecordId: a59b7986-f998-4a3d-822b-02364a74f3fb
   DisplayName: a59b7986-f998-4a3d-822b-02364a74f3fb
-  CheckSum: e1d8e70fea755cac54ac06f9f2401a95e511a963bb20dee10d579c60a7eaba97
+  CheckSum: bc96b637b7eca1ce68687f7051e63e2eb88077fd015ad3d8079b1edb16fa01fc
   IsDeleted: false
 - RecordId: c209641a-73ce-42a2-a1e7-8f70a22fe752
   DisplayName: c209641a-73ce-42a2-a1e7-8f70a22fe752
@@ -597,7 +597,7 @@ adx_webfile:
   IsDeleted: false
 - RecordId: 8f607af5-905b-48cb-aee8-e80e065dad40
   DisplayName: 8f607af5-905b-48cb-aee8-e80e065dad40
-  CheckSum: 3ce9236d405372f5abdd0d8289027c31ac6d672aed56830689100b195335db86
+  CheckSum: 5239a83d72ffd8ffb4e157b16dd514f282f020fdea5c75b0c1aa2643e6271fc5
   IsDeleted: false
 - RecordId: 98c794cf-8c42-4880-837a-648c750f26a4
   DisplayName: 98c794cf-8c42-4880-837a-648c750f26a4
@@ -606,6 +606,10 @@ adx_webfile:
 - RecordId: a0af0346-42d2-4872-b589-24c7447691f9
   DisplayName: a0af0346-42d2-4872-b589-24c7447691f9
   CheckSum: b0ebc075a4390b449df624e7b8f02b5899104ebeabfe91514bda1bc0099a5fa6
+  IsDeleted: false
+- RecordId: cafd0dfc-4ea3-4dab-9da2-4da8db9a911f
+  DisplayName: cafd0dfc-4ea3-4dab-9da2-4da8db9a911f
+  CheckSum: e0b510788a056c7075551f6d974b5d314bc7c318a3cb331756c9ddc8e9ef542e
   IsDeleted: false
 - RecordId: f576e1cc-a3dd-450e-937b-2de0549fa187
   DisplayName: f576e1cc-a3dd-450e-937b-2de0549fa187
@@ -660,7 +664,7 @@ adx_webpage:
   IsDeleted: false
 - RecordId: 71591c4f-0e93-46f1-b1c4-91008a9f143a
   DisplayName: 71591c4f-0e93-46f1-b1c4-91008a9f143a
-  CheckSum: 33f938b14701d75c1c1977d4d7c984fc2441f5791de51586d9c404ee35c5670a
+  CheckSum: 6cbfca39a8fb833ff351071529af122921209fadaa8c54a3f4e37c37ace36d4c
   IsDeleted: false
 - RecordId: 950db54f-769f-4242-88c4-2fc0329bb3e8
   DisplayName: 950db54f-769f-4242-88c4-2fc0329bb3e8
@@ -841,7 +845,7 @@ annotation:
   IsDeleted: false
 - RecordId: 8f607af5-905b-48cb-aee8-e80e065dad40
   DisplayName: index.html
-  CheckSum: 3de8812178bad82e2d5bd48e31be45708acff19bf2c5478cd82ca4515f233aa0
+  CheckSum: 1e372ca609ecd538ed970847e44e259717dcb921d9d5a30c49eb5de494804268
   IsDeleted: false
 - RecordId: 98c794cf-8c42-4880-837a-648c750f26a4
   DisplayName: logo.png
@@ -850,6 +854,10 @@ annotation:
 - RecordId: a0af0346-42d2-4872-b589-24c7447691f9
   DisplayName: Logo-sm-64.png
   CheckSum: 7366b2f5a4f4c9aea14fa3723159aee561022a8a874ffb5f8d69884af1e6f66e
+  IsDeleted: false
+- RecordId: cafd0dfc-4ea3-4dab-9da2-4da8db9a911f
+  DisplayName: index-CKSO-ewZ.css
+  CheckSum: 5d87327fe554a29bba3257db197a3fe903c5e48795d62bf39057804258371688
   IsDeleted: false
 - RecordId: f576e1cc-a3dd-450e-937b-2de0549fa187
   DisplayName: MainHomeImage.jpg

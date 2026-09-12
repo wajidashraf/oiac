@@ -60,7 +60,7 @@ test('enables participant reads and Accept writes with both lookup representatio
   ]) expect(fields).toContain(field)
 })
 
-test('grants authenticated users read-only global Meeting Invite access for lookup binding', () => {
+test('grants authenticated users read-only global Meeting Invite access as a lookup target', () => {
   const permission = metadata(
     tablePermissions,
     'Authenticated-Meeting-Invites-Global-Read.tablepermission.yml',
@@ -72,7 +72,8 @@ test('grants authenticated users read-only global Meeting Invite access for look
   expect(permission).toContain('create: false')
   expect(permission).toContain('write: false')
   expect(permission).toContain('delete: false')
-  expect(permission).toContain('appendto: true')
+  expect(permission).toContain('append: true')
+  expect(permission).toContain('appendto: false')
 })
 
 test('limits participant management to records related to the signed-in Contact', () => {

@@ -115,6 +115,20 @@ describe('active Teams announcements query and mapping', () => {
     ])
   })
 
+  test('accepts Dataverse sequential GUIDs used by announcement records', async () => {
+    vi.mocked(powerPagesFetch).mockResolvedValue({ value: [
+      announcement({
+        mss_teamsannouncementsid: 'f9d7c399-a3ae-f111-aaac-70a8a5b12aa6',
+        mss_title: 'Dataverse announcement',
+      }),
+    ] })
+
+    const result = await getActiveTeamAnnouncements({ now: NOW })
+
+    expect(result).toHaveLength(1)
+    expect(result[0]?.id).toBe('f9d7c399-a3ae-f111-aaac-70a8a5b12aa6')
+  })
+
   test.each([
     undefined,
     null,
