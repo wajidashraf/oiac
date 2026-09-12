@@ -63,9 +63,9 @@ beforeEach(() => {
   vi.mocked(listMeetingReportPageAttachments).mockResolvedValue(new Map([[
     'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
     [{
+      meetingReportId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
       attachmentId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
       fileName: 'District briefing.pdf',
-      fileUrl: 'https://example.sharepoint.com/District%20briefing.pdf',
       contentType: 'application/pdf',
       size: 2048,
     }],
