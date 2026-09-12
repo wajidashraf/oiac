@@ -1,6 +1,7 @@
-import { powerPagesFetch } from '../../shared/powerPagesApi'
+import { powerPagesFetch, powerPagesRequest } from '../../shared/powerPagesApi'
 import {
   MEETING_INVITATION_STATUS,
+  type AcceptMeetingInviteInput,
   type MeetingInvitationStatus,
   type MeetingInvite,
   type MeetingInviteCollection,
@@ -9,6 +10,7 @@ import {
 
 export { MEETING_INVITATION_STATUS } from './meetingInviteTypes'
 export type {
+  AcceptMeetingInviteInput,
   MeetingInvitationStatus,
   MeetingInvite,
   MeetingInviteCollection,
@@ -37,6 +39,12 @@ const participantSelect = [
 
 function isRecord(value: unknown): value is DataRecord {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function normalizeEntityId(value: string | null): string | null {
+  if (!value) return null
+  const match = value.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)
+  return match ? match[0].toLowerCase() : null
 }
 
 function normalizeGuid(value: unknown, label: string): string {
@@ -180,4 +188,95 @@ export async function getMeetingInvites(
     || left.id.localeCompare(right.id))
 
   return { contactFullName: profileValue.fullname, invites }
+}
+
+function participantQuery(contactId: string, inviteId: string): string {
+  const params = new URLSearchParams({
+    $select: participantSelect,
+    $filter: `_mss_contact_value eq ${contactId} and _mss_meetinginvite_value eq ${inviteId}`,
+  })
+  return `/_api/mss_meetinginviteparticipants?${params.toString()}`
+}
+
+async function recoverAcceptedParticipant(
+  contactId: string,
+  inviteId: string,
+): Promise<MeetingInviteParticipant | null> {
+  const envelope = await powerPagesFetch<CollectionEnvelope>(participantQuery(contactId, inviteId))
+  const participants = collectionRows(envelope).map(mapParticipant)
+  const selected = selectParticipant(participants, inviteId)
+  return selected?.status === MEETING_INVITATION_STATUS.accepted ? selected : null
+}
+
+export async function acceptMeetingInvite(
+  input: AcceptMeetingInviteInput,
+  acceptedAt: Date = new Date(),
+): Promise<MeetingInviteParticipant> {
+  const contactId = normalizeGuid(input.contactId, 'Contact')
+  const inviteId = normalizeGuid(input.invite.id, 'Meeting Invite')
+  const contactFullName = input.contactFullName.trim()
+  if (!contactFullName) throw new Error('A Contact name is required.')
+  if (Number.isNaN(acceptedAt.getTime())) throw new Error('A valid Accepted On date is required.')
+
+  const acceptedOn = acceptedAt.toISOString()
+  const existing = input.invite.participant
+  if (existing?.status === MEETING_INVITATION_STATUS.accepted) return existing
+
+  if (existing) {
+    const participantId = normalizeGuid(existing.id, 'Meeting Invite Participant')
+    await powerPagesRequest(`/_api/mss_meetinginviteparticipants(${participantId})`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mss_invitationstatus: MEETING_INVITATION_STATUS.accepted,
+        mss_acceptedon: acceptedOn,
+      }),
+    })
+    return {
+      ...existing,
+      id: participantId,
+      contactId,
+      meetingInviteId: inviteId,
+      status: MEETING_INVITATION_STATUS.accepted,
+      acceptedOn,
+    }
+  }
+
+  const name = `${input.invite.title} - ${contactFullName}`
+  const payload = {
+    mss_name: name,
+    mss_invitationstatus: MEETING_INVITATION_STATUS.accepted,
+    mss_acceptedon: acceptedOn,
+    'mss_Contact@odata.bind': `/contacts(${contactId})`,
+    'mss_MeetingInvite@odata.bind': `/mss_meetinginviteses(${inviteId})`,
+  }
+
+  let response: Response
+  try {
+    response = await powerPagesRequest('/_api/mss_meetinginviteparticipants', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+  } catch (error) {
+    const recovered = await recoverAcceptedParticipant(contactId, inviteId).catch(() => null)
+    if (recovered) return recovered
+    throw error
+  }
+
+  const id = normalizeEntityId(response.headers.get('entityid') ?? response.headers.get('odata-entityid'))
+  if (!id) {
+    const recovered = await recoverAcceptedParticipant(contactId, inviteId)
+    if (recovered) return recovered
+    throw new Error('The invitation was accepted but could not be confirmed.')
+  }
+
+  return {
+    id,
+    contactId,
+    meetingInviteId: inviteId,
+    status: MEETING_INVITATION_STATUS.accepted,
+    acceptedOn,
+    name,
+  }
 }

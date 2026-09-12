@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { powerPagesFetch } from '../../shared/powerPagesApi'
-import { getMeetingInvites, MEETING_INVITATION_STATUS } from './meetingInviteService'
+import { powerPagesFetch, powerPagesRequest } from '../../shared/powerPagesApi'
+import {
+  acceptMeetingInvite,
+  getMeetingInvites,
+  MEETING_INVITATION_STATUS,
+} from './meetingInviteService'
+import type { MeetingInvite } from './meetingInviteTypes'
 
 vi.mock('../../shared/powerPagesApi', () => ({
   powerPagesFetch: vi.fn(),
@@ -144,5 +149,127 @@ describe('meeting invite queries and mapping', () => {
       .mockResolvedValueOnce({ value: 'invalid' })
       .mockResolvedValueOnce({ value: [] })
     await expect(getMeetingInvites(CONTACT_ID)).rejects.toThrow('Meeting invites could not be loaded.')
+  })
+})
+
+describe('accepting a meeting invite', () => {
+  const acceptedAt = new Date('2026-09-12T14:30:00.000Z')
+  const baseInvite: MeetingInvite = {
+    id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    title: 'District Briefing',
+    startDateTime: '2026-09-18T18:00:00Z',
+    endDateTime: '2026-09-18T19:00:00Z',
+    participant: null,
+  }
+
+  beforeEach(() => {
+    vi.resetAllMocks()
+  })
+
+  test('keeps an already accepted participant without writing', async () => {
+    const participant = {
+      id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      contactId: CONTACT_ID,
+      meetingInviteId: baseInvite.id,
+      status: MEETING_INVITATION_STATUS.accepted,
+      acceptedOn: '2026-09-10T10:00:00Z',
+      name: 'District Briefing - Sara Rahimi',
+    } as const
+
+    await expect(acceptMeetingInvite({
+      contactId: CONTACT_ID,
+      contactFullName: 'Sara Rahimi',
+      invite: { ...baseInvite, participant },
+    }, acceptedAt)).resolves.toEqual(participant)
+    expect(powerPagesRequest).not.toHaveBeenCalled()
+  })
+
+  test.each([
+    MEETING_INVITATION_STATUS.pending,
+    MEETING_INVITATION_STATUS.rejected,
+  ])('patches an existing status %s participant to Accepted', async (status) => {
+    const participant = {
+      id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      contactId: CONTACT_ID,
+      meetingInviteId: baseInvite.id,
+      status,
+      acceptedOn: null,
+      name: 'District Briefing - Sara Rahimi',
+    } as const
+    vi.mocked(powerPagesRequest).mockResolvedValue(new Response(null, { status: 204 }))
+
+    const result = await acceptMeetingInvite({
+      contactId: CONTACT_ID,
+      contactFullName: 'Sara Rahimi',
+      invite: { ...baseInvite, participant },
+    }, acceptedAt)
+
+    expect(powerPagesRequest).toHaveBeenCalledWith(
+      `/_api/mss_meetinginviteparticipants(${participant.id})`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mss_invitationstatus: MEETING_INVITATION_STATUS.accepted,
+          mss_acceptedon: acceptedAt.toISOString(),
+        }),
+      },
+    )
+    expect(result).toMatchObject({ status: 1, acceptedOn: acceptedAt.toISOString() })
+  })
+
+  test('creates a participant with both Dataverse bindings when no participant exists', async () => {
+    const participantId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'
+    vi.mocked(powerPagesRequest).mockResolvedValue(new Response(null, {
+      status: 204,
+      headers: { entityid: `{${participantId.toUpperCase()}}` },
+    }))
+
+    const result = await acceptMeetingInvite({
+      contactId: CONTACT_ID,
+      contactFullName: 'Sara Rahimi',
+      invite: baseInvite,
+    }, acceptedAt)
+
+    expect(powerPagesRequest).toHaveBeenCalledWith('/_api/mss_meetinginviteparticipants', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mss_name: 'District Briefing - Sara Rahimi',
+        mss_invitationstatus: MEETING_INVITATION_STATUS.accepted,
+        mss_acceptedon: acceptedAt.toISOString(),
+        'mss_Contact@odata.bind': `/contacts(${CONTACT_ID})`,
+        'mss_MeetingInvite@odata.bind': `/mss_meetinginviteses(${baseInvite.id})`,
+      }),
+    })
+    expect(result).toEqual({
+      id: participantId,
+      contactId: CONTACT_ID,
+      meetingInviteId: baseInvite.id,
+      status: MEETING_INVITATION_STATUS.accepted,
+      acceptedOn: acceptedAt.toISOString(),
+      name: 'District Briefing - Sara Rahimi',
+    })
+  })
+
+  test('recovers a committed create with a narrow participant query when entityid is missing', async () => {
+    const participantId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd'
+    vi.mocked(powerPagesRequest).mockResolvedValue(new Response(null, { status: 204 }))
+    vi.mocked(powerPagesFetch).mockResolvedValue({ value: [{
+      mss_meetinginviteparticipantid: participantId,
+      _mss_contact_value: CONTACT_ID,
+      _mss_meetinginvite_value: baseInvite.id,
+      mss_invitationstatus: MEETING_INVITATION_STATUS.accepted,
+      mss_acceptedon: acceptedAt.toISOString(),
+      mss_name: 'District Briefing - Sara Rahimi',
+    }] })
+
+    await expect(acceptMeetingInvite({
+      contactId: CONTACT_ID,
+      contactFullName: 'Sara Rahimi',
+      invite: baseInvite,
+    }, acceptedAt)).resolves.toMatchObject({ id: participantId, status: 1 })
+    expect(decodeURIComponent(vi.mocked(powerPagesFetch).mock.calls[0][0]).replaceAll('+', ' '))
+      .toContain(`$filter=_mss_contact_value eq ${CONTACT_ID} and _mss_meetinginvite_value eq ${baseInvite.id}`)
   })
 })

@@ -28,3 +28,8 @@ export type MeetingInviteCollection = {
   readonly invites: readonly MeetingInvite[]
 }
 
+export type AcceptMeetingInviteInput = {
+  readonly contactId: string
+  readonly contactFullName: string
+  readonly invite: MeetingInvite
+}
