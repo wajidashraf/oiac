@@ -8,6 +8,7 @@ import {
   type AttachmentViewResult,
   type MeetingReportAttachment,
 } from './meetingReportAttachmentService'
+import type { AttachmentContentLoader } from './useAttachmentPreviewCache'
 
 type PreviewState = {
   readonly result: AttachmentViewResult
@@ -32,6 +33,7 @@ export type MeetingReportAttachmentsProps = {
   readonly selectionErrors: readonly string[]
   readonly deletingAttachmentIds: ReadonlySet<string>
   readonly disabled: boolean
+  readonly loadAttachmentContent?: AttachmentContentLoader
   readonly onFilesSelected: (files: readonly File[]) => void
   readonly onSelectedFileRemoved: (fileName: string) => void
   readonly onDeleteExisting: (attachment: MeetingReportAttachment) => void
@@ -45,6 +47,7 @@ export function MeetingReportAttachments({
   selectionErrors,
   deletingAttachmentIds,
   disabled,
+  loadAttachmentContent = viewAttachment,
   onFilesSelected,
   onSelectedFileRemoved,
   onDeleteExisting,
@@ -76,7 +79,7 @@ export function MeetingReportAttachments({
     setViewingAttachmentIds((current) => new Set(current).add(attachment.attachmentId))
     setViewError(null)
     try {
-      const result = await viewAttachment(attachment)
+      const result = await loadAttachmentContent(attachment)
       const kind = getAttachmentPreviewKind(result)
       if (kind === 'pdf' || kind === 'image') {
         setPreview({ result, kind, returnFocusTo })

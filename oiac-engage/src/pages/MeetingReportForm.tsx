@@ -16,6 +16,7 @@ import { LoadingBackdrop } from '../components/LoadingBackdrop'
 import { ContactLookup, DistrictLookup } from '../features/meetingReports/ContactLookup'
 import { MeetingReportAttachments } from '../features/meetingReports/MeetingReportAttachments'
 import { MultiContactLookup } from '../features/meetingReports/MultiContactLookup'
+import { useAttachmentPreviewCache } from '../features/meetingReports/useAttachmentPreviewCache'
 import {
   deleteMeetingReportAttachment,
   listMeetingReportAttachments,
@@ -118,6 +119,10 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
   const originalRelationships = useRef<RelationshipSelection>({ staffIds: [], volunteerIds: [] })
   const submitLock = useRef(false)
   const attachmentListRequestId = useRef(0)
+  const loadAttachmentContent = useAttachmentPreviewCache(
+    existingAttachments,
+    isEdit && attachmentListStatus === 'ready',
+  )
 
   useEffect(() => {
     document.title = `${isEdit ? 'Edit' : 'New'} Meeting Report — OIAC Engage`
@@ -512,6 +517,7 @@ export default function MeetingReportForm({ user }: MeetingReportFormProps) {
                       selectionErrors={selectionErrors}
                       deletingAttachmentIds={deletingAttachmentIds}
                       disabled={formLocked}
+                      loadAttachmentContent={loadAttachmentContent}
                       onFilesSelected={selectAttachmentFiles}
                       onSelectedFileRemoved={removeSelectedFile}
                       onDeleteExisting={deleteExistingAttachment}

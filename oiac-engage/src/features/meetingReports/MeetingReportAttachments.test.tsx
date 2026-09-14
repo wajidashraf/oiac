@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 vi.mock('./meetingReportAttachmentService', async (importOriginal) => {
@@ -12,6 +12,7 @@ import {
   viewAttachment,
 } from './meetingReportAttachmentService'
 import { MeetingReportAttachments, type MeetingReportAttachmentsProps } from './MeetingReportAttachments'
+import { useAttachmentPreviewCache } from './useAttachmentPreviewCache'
 
 const selectedFile = new File(['hello'], 'Meeting Notes.pdf', { type: 'application/pdf' })
 const existingAttachment: MeetingReportAttachment = {
@@ -20,6 +21,34 @@ const existingAttachment: MeetingReportAttachment = {
   fileName: 'Existing Report.pdf',
   contentType: 'application/pdf',
   size: 2048,
+}
+
+const imageAttachment: MeetingReportAttachment = {
+  meetingReportId: existingAttachment.meetingReportId,
+  attachmentId: '33333333-3333-4333-8333-333333333333',
+  fileName: 'Existing Photo.png',
+  contentType: 'image/png',
+  size: 4096,
+}
+
+const documentAttachment: MeetingReportAttachment = {
+  meetingReportId: existingAttachment.meetingReportId,
+  attachmentId: '44444444-4444-4444-8444-444444444444',
+  fileName: 'Existing Notes.docx',
+  contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  size: 8192,
+}
+
+const pdfViewResult: AttachmentViewResult = {
+  blob: new Blob(['pdf'], { type: 'application/pdf' }),
+  fileName: 'Returned Notes.pdf',
+  contentType: 'application/pdf',
+}
+
+const imageViewResult: AttachmentViewResult = {
+  blob: new Blob(['image'], { type: 'image/png' }),
+  fileName: 'Returned Photo.png',
+  contentType: 'image/png',
 }
 
 beforeEach(() => {
@@ -48,7 +77,15 @@ function renderAttachments(overrides: Partial<MeetingReportAttachmentsProps> = {
     onRetryList: vi.fn(),
     ...overrides,
   }
-  return { ...render(<MeetingReportAttachments {...props} />), props }
+  return { ...render(<AttachmentHarness {...props} />), props }
+}
+
+function AttachmentHarness(props: MeetingReportAttachmentsProps) {
+  const loadAttachmentContent = useAttachmentPreviewCache(
+    props.existingAttachments,
+    props.listStatus === 'ready',
+  )
+  return <MeetingReportAttachments {...props} loadAttachmentContent={loadAttachmentContent} />
 }
 
 test('provides a multiple file input and forwards each selected file', async () => {
@@ -105,6 +142,109 @@ test('replaces the existing Open link with a secure View button and keeps delete
   expect(onDeleteExisting).toHaveBeenCalledWith(existingAttachment)
 })
 
+test('prefetches only previewable attachments one at a time', async () => {
+  let resolvePdf!: (result: AttachmentViewResult) => void
+  let resolveImage!: (result: AttachmentViewResult) => void
+  vi.mocked(viewAttachment)
+    .mockImplementationOnce(() => new Promise((resolve) => { resolvePdf = resolve }))
+    .mockImplementationOnce(() => new Promise((resolve) => { resolveImage = resolve }))
+
+  renderAttachments({
+    existingAttachments: [existingAttachment, imageAttachment, documentAttachment],
+    listStatus: 'ready',
+  })
+
+  await waitFor(() => expect(viewAttachment).toHaveBeenCalledTimes(1))
+  expect(viewAttachment).toHaveBeenNthCalledWith(1, existingAttachment, expect.any(AbortSignal))
+
+  await act(async () => { resolvePdf(pdfViewResult) })
+  await waitFor(() => expect(viewAttachment).toHaveBeenCalledTimes(2))
+  expect(viewAttachment).toHaveBeenNthCalledWith(2, imageAttachment, expect.any(AbortSignal))
+
+  await act(async () => { resolveImage(imageViewResult) })
+  expect(viewAttachment).toHaveBeenCalledTimes(2)
+})
+
+test('opens an already-prefetched preview without another backend request', async () => {
+  const actor = userEvent.setup()
+  vi.mocked(viewAttachment).mockResolvedValue(pdfViewResult)
+  renderAttachments({ existingAttachments: [existingAttachment], listStatus: 'ready' })
+
+  await waitFor(() => expect(viewAttachment).toHaveBeenCalledTimes(1))
+  await act(async () => undefined)
+  await actor.click(screen.getByRole('button', { name: 'View Existing Report.pdf' }))
+
+  expect(await screen.findByRole('dialog', { name: 'Preview Returned Notes.pdf' })).toBeInTheDocument()
+  expect(viewAttachment).toHaveBeenCalledTimes(1)
+})
+
+test('reuses an in-flight prefetch when View is clicked', async () => {
+  const actor = userEvent.setup()
+  let resolvePrefetch!: (result: AttachmentViewResult) => void
+  vi.mocked(viewAttachment).mockReturnValue(new Promise((resolve) => { resolvePrefetch = resolve }))
+  renderAttachments({ existingAttachments: [existingAttachment], listStatus: 'ready' })
+
+  await waitFor(() => expect(viewAttachment).toHaveBeenCalledTimes(1))
+  await actor.click(screen.getByRole('button', { name: 'View Existing Report.pdf' }))
+  expect(viewAttachment).toHaveBeenCalledTimes(1)
+  expect(screen.getByRole('button', { name: 'Loading Existing Report.pdf' })).toBeDisabled()
+
+  await act(async () => { resolvePrefetch(pdfViewResult) })
+  expect(await screen.findByRole('dialog', { name: 'Preview Returned Notes.pdf' })).toBeInTheDocument()
+  expect(viewAttachment).toHaveBeenCalledTimes(1)
+})
+
+test('retries a failed background prefetch when View is clicked', async () => {
+  const actor = userEvent.setup()
+  vi.mocked(viewAttachment)
+    .mockRejectedValueOnce(new MeetingReportAttachmentFlowError(503, 'AttachmentLookupFailed'))
+    .mockResolvedValueOnce(pdfViewResult)
+  renderAttachments({ existingAttachments: [existingAttachment], listStatus: 'ready' })
+
+  await waitFor(() => expect(viewAttachment).toHaveBeenCalledTimes(1))
+  await act(async () => undefined)
+  await actor.click(screen.getByRole('button', { name: 'View Existing Report.pdf' }))
+
+  expect(await screen.findByRole('dialog', { name: 'Preview Returned Notes.pdf' })).toBeInTheDocument()
+  expect(viewAttachment).toHaveBeenCalledTimes(2)
+})
+
+test('aborts attachment prefetching when the attachment component unmounts', async () => {
+  let prefetchSignal: AbortSignal | undefined
+  vi.mocked(viewAttachment).mockImplementation((_attachment, signal) => {
+    prefetchSignal = signal
+    return new Promise(() => undefined)
+  })
+  const view = renderAttachments({ existingAttachments: [existingAttachment], listStatus: 'ready' })
+
+  await waitFor(() => expect(prefetchSignal).toBeDefined())
+  expect(prefetchSignal?.aborted).toBe(false)
+  view.unmount()
+
+  expect(prefetchSignal?.aborted).toBe(true)
+})
+
+test('restarts a retained attachment prefetch after an attachment-list change aborts it', async () => {
+  const signals: AbortSignal[] = []
+  vi.mocked(viewAttachment).mockImplementation((_attachment, signal) => {
+    if (signal) signals.push(signal)
+    return new Promise((_resolve, reject) => {
+      signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true })
+    })
+  })
+  const view = renderAttachments({ existingAttachments: [existingAttachment], listStatus: 'ready' })
+
+  await waitFor(() => expect(viewAttachment).toHaveBeenCalledTimes(1))
+  view.rerender(<AttachmentHarness
+    {...view.props}
+    existingAttachments={[existingAttachment, imageAttachment]}
+  />)
+
+  await waitFor(() => expect(viewAttachment).toHaveBeenCalledTimes(2))
+  expect(signals[0].aborted).toBe(true)
+  expect(viewAttachment).toHaveBeenNthCalledWith(2, existingAttachment, expect.any(AbortSignal))
+})
+
 test('disables repeat View clicks while the same attachment is loading', async () => {
   let resolveView!: (result: AttachmentViewResult) => void
   vi.mocked(viewAttachment).mockReturnValue(new Promise((resolve) => { resolveView = resolve }))
@@ -157,9 +297,10 @@ test('downloads unsupported content without opening a preview and revokes its te
     fileName: 'Returned Document.docx',
     contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   })
-  renderAttachments({ existingAttachments: [existingAttachment], listStatus: 'ready' })
+  renderAttachments({ existingAttachments: [documentAttachment], listStatus: 'ready' })
 
-  await actor.click(screen.getByRole('button', { name: 'View Existing Report.pdf' }))
+  expect(viewAttachment).not.toHaveBeenCalled()
+  await actor.click(screen.getByRole('button', { name: 'View Existing Notes.docx' }))
 
   expect(clickSpy).toHaveBeenCalledTimes(1)
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()

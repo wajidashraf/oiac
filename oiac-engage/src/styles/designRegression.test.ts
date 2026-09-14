@@ -153,3 +153,16 @@ test('keeps the admin Contact edit modal compact and resistant to host control s
   expect.soft(disabledCloseButton ?? '').toContain('background: var(--color-surface)')
   expect.soft(disabledCloseButton ?? '').toContain('color: var(--color-primary-strong)')
 })
+
+test('keeps the Teams Announcement close icon visible over Power Pages host styles', () => {
+  const closeButton = css.match(/\.team-announcement-modal__dialog \.team-announcement-modal__close\s*\{([^}]*)\}/s)?.[1]
+  const closeIcon = css.match(/\.team-announcement-modal__dialog \.team-announcement-modal__close svg\s*\{([^}]*)\}/s)?.[1]
+
+  expect.soft(closeButton ?? '').toContain('display: inline-grid')
+  expect.soft(closeButton ?? '').toContain('place-items: center')
+  expect.soft(closeButton ?? '').toContain('color: var(--color-primary-strong)')
+  expect.soft(closeButton ?? '').toContain('padding: 0')
+  expect.soft(closeIcon ?? '').toContain('fill: none')
+  expect.soft(closeIcon ?? '').toContain('stroke: currentColor')
+  expect.soft(closeIcon ?? '').toContain('stroke-width: 2')
+})

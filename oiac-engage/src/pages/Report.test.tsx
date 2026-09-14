@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import type { PortalUser } from '../auth/powerPagesSession'
@@ -6,6 +6,7 @@ import {
   deleteMeetingReportAttachment,
   listMeetingReportAttachments,
   uploadMeetingReportAttachments,
+  viewAttachment,
 } from '../features/meetingReports/meetingReportAttachmentService'
 import {
   createMeetingReport,
@@ -362,6 +363,24 @@ test('hydrates and updates a report, removing deselected relationships', async (
   expect(vi.mocked(runRelationshipOperations).mock.invocationCallOrder[0])
     .toBeLessThan(vi.mocked(uploadMeetingReportAttachments).mock.invocationCallOrder[0])
   expect(await screen.findByRole('status')).toHaveTextContent('Report updated.')
+})
+
+test('starts previewable attachment prefetching as soon as the edit form opens', async () => {
+  const documentAttachment = {
+    ...existingAttachment,
+    attachmentId: '99999999-9999-4999-8999-999999999999',
+    fileName: 'Existing notes.docx',
+    contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  }
+  vi.mocked(listMeetingReportAttachments).mockResolvedValue([existingAttachment, documentAttachment])
+  vi.mocked(viewAttachment).mockImplementation(() => new Promise(() => undefined))
+
+  renderReportRoute(`/report/${reportId}/edit`)
+
+  await screen.findByDisplayValue('Sara Rahimi')
+  await waitFor(() => expect(viewAttachment).toHaveBeenCalledTimes(1))
+  expect(viewAttachment).toHaveBeenCalledWith(existingAttachment, expect.any(AbortSignal))
+  expect(screen.queryByRole('button', { name: 'View Existing notes.pdf' })).not.toBeInTheDocument()
 })
 
 test('retries only failed relationships without creating a duplicate report', async () => {
