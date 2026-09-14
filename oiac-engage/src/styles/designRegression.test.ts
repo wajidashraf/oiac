@@ -124,17 +124,26 @@ test('renders form control values with normal font weight across the app', () =>
 })
 
 test('keeps the admin Contact edit modal compact and resistant to host control styles', () => {
+  const root = css.match(/:root\s*\{([^}]*)\}/s)?.[1]
   const dialog = css.match(/\.admin-contact-modal__dialog\s*\{([^}]*)\}/s)?.[1]
+  const field = css.match(/\.admin-contact-modal__dialog \.admin-contact-modal__field\s*\{([^}]*)\}/s)?.[1]
   const standardInput = css.match(/\.admin-contact-modal__dialog \.admin-contact-modal__field > input\s*\{([^}]*)\}/s)?.[1]
-  const closeButton = css.match(/\.admin-contact-modal__close\s*\{([^}]*)\}/s)?.[1]
+  const closeButton = css.match(/\.admin-contact-modal__dialog \.admin-contact-modal__close\s*\{([^}]*)\}/s)?.[1]
+  const inputBorderToken = standardInput?.match(/border:\s*1px solid var\((--[\w-]+)\)/)?.[1]
+  const definedRootTokens = new Set(
+    Array.from(root?.matchAll(/(--[\w-]+)\s*:/g) ?? [], (match) => match[1]),
+  )
 
-  expect(dialog).toContain('width: min(40rem, 100%)')
-  expect(standardInput).toContain('appearance: none')
-  expect(standardInput).toContain('box-sizing: border-box')
-  expect(standardInput).toContain('border: 1px solid var(--color-border-strong)')
-  expect(closeButton).toContain('display: inline-grid')
-  expect(closeButton).toContain('place-items: center')
-  expect(closeButton).toContain('border: 1px solid var(--color-border)')
-  expect(closeButton).toContain('background: var(--color-surface)')
-  expect(closeButton).toContain('color: var(--color-primary-strong)')
+  expect.soft(dialog ?? '').toContain('width: min(40rem, 100%)')
+  expect.soft(field ?? '').toContain('gap: 0.4rem')
+  expect.soft(standardInput ?? '').toContain('appearance: none')
+  expect.soft(standardInput ?? '').toContain('box-sizing: border-box')
+  expect.soft(standardInput ?? '').toContain('border: 1px solid var(--color-border-strong)')
+  expect.soft(inputBorderToken && definedRootTokens.has(inputBorderToken)).toBe(true)
+  expect.soft(closeButton ?? '').toContain('display: inline-grid')
+  expect.soft(closeButton ?? '').toContain('place-items: center')
+  expect.soft(closeButton ?? '').toContain('border: 1px solid var(--color-border)')
+  expect.soft(closeButton ?? '').toContain('background: var(--color-surface)')
+  expect.soft(closeButton ?? '').toContain('color: var(--color-primary-strong)')
+  expect.soft(closeButton ?? '').toContain('padding: 0')
 })
