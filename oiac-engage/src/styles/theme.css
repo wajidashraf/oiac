@@ -516,38 +516,42 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 
 .admin-contact-modal { position: fixed; z-index: 220; inset: 0; display: grid; place-items: center; overflow-y: auto; background: rgb(15 31 28 / 72%); padding: 1rem; }
 
-.admin-contact-modal__dialog { width: min(46rem, 100%); max-height: calc(100vh - 2rem); overflow: auto; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: 0 1.5rem 4rem rgb(15 31 28 / 24%); }
+.admin-contact-modal__dialog { width: min(40rem, 100%); max-height: calc(100vh - 2rem); overflow: auto; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: 0 1.5rem 4rem rgb(15 31 28 / 24%); }
 
-.admin-contact-modal__header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); padding: clamp(1.25rem, 4vw, 2rem); border-bottom: 1px solid var(--color-border); }
+.admin-contact-modal__header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); padding: 1rem 1.25rem; border-bottom: 1px solid var(--color-border); }
 
 .admin-contact-modal__header h2 { margin: 0; color: var(--color-text); font-family: var(--font-display); font-size: clamp(1.35rem, 3vw, 1.75rem); line-height: 1.2; }
 
-.admin-contact-modal__header p:not(.admin-contact-modal__eyebrow) { margin: var(--space-2) 0 0; color: var(--color-text-muted); font-size: 0.85rem; }
+.admin-contact-modal__header p:not(.admin-contact-modal__eyebrow) { margin: var(--space-1) 0 0; color: var(--color-text-muted); font-size: 0.85rem; }
 
-.admin-contact-modal__eyebrow { margin: 0 0 var(--space-2); color: var(--color-primary); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; }
+.admin-contact-modal__eyebrow { margin: 0 0 var(--space-1); color: var(--color-primary); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; }
 
-.admin-contact-modal__close { width: 2.75rem; min-width: 2.75rem; height: 2.75rem; padding: 0; }
+.admin-contact-modal__close { display: inline-grid; width: 2.75rem; min-width: 2.75rem; height: 2.75rem; place-items: center; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-primary-strong); padding: 0; }
 
-.admin-contact-modal__close svg { width: 1.2rem; height: 1.2rem; }
+.admin-contact-modal__close:hover { border-color: var(--color-primary); background: var(--color-primary-soft); color: var(--color-primary-strong); }
 
-.admin-contact-modal__form { display: grid; gap: var(--space-5); padding: clamp(1.25rem, 4vw, 2rem); }
+.admin-contact-modal__close:focus-visible { border-color: var(--color-primary); outline: 0; box-shadow: 0 0 0 2px rgb(60 92 87 / 18%); }
 
-.admin-contact-modal__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+.admin-contact-modal__close svg { width: 1.2rem; height: 1.2rem; stroke-width: 2; }
+
+.admin-contact-modal__form { display: grid; gap: var(--space-4); padding: 1rem 1.25rem 1.25rem; }
+
+.admin-contact-modal__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3) var(--space-4); }
 
 .admin-contact-modal__wide { grid-column: 1 / -1; }
 
-.admin-contact-modal .field { display: grid; align-content: start; gap: var(--space-2); margin: 0; }
+.admin-contact-modal__field { display: grid; align-content: start; gap: 0.4rem; margin: 0; }
 
-.admin-contact-modal .field > span,
-.admin-contact-modal .field > label { color: var(--color-text); font-size: 0.78rem; font-weight: 600; }
+.admin-contact-modal__field > span,
+.admin-contact-modal__field > label { color: var(--color-text); font-size: 0.78rem; font-weight: 600; }
 
-.admin-contact-modal .field > input { width: 100%; min-height: 2.75rem; border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); padding: 0.65rem 0.75rem; font: inherit; font-size: 0.86rem; font-weight: 400; }
+.admin-contact-modal__dialog .admin-contact-modal__field > input { appearance: none; box-sizing: border-box; width: 100%; min-height: 2.75rem; border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); padding: 0.65rem 0.75rem; font: inherit; font-size: 0.86rem; font-weight: 400; }
 
-.admin-contact-modal .field > input:focus { border-color: var(--color-primary); outline: 0; box-shadow: 0 0 0 2px rgb(60 92 87 / 12%); }
+.admin-contact-modal__dialog .admin-contact-modal__field > input:focus { border-color: var(--color-primary); outline: 0; box-shadow: 0 0 0 2px rgb(60 92 87 / 12%); }
 
-.admin-contact-modal .field > input[readonly] { background: #f5f7f6; color: var(--color-text-muted); }
+.admin-contact-modal__dialog .admin-contact-modal__field > input[readonly] { background: #f5f7f6; color: var(--color-text-muted); }
 
-.admin-contact-modal .field > input:disabled { cursor: not-allowed; opacity: 0.7; }
+.admin-contact-modal__dialog .admin-contact-modal__field > input:disabled { cursor: not-allowed; opacity: 0.7; }
 
 .admin-contact-modal__error { margin: 0; border: 1px solid rgb(161 71 71 / 30%); border-radius: var(--radius-sm); background: rgb(161 71 71 / 8%); color: var(--color-danger); padding: 0.75rem 0.9rem; font-size: 0.82rem; }
 

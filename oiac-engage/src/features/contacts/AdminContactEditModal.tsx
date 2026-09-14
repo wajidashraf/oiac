@@ -166,39 +166,39 @@ export function AdminContactEditModal({
           onSubmit={handleSubmit}
         >
           <div className="admin-contact-modal__grid">
-            <label className="field">
+            <label className="field admin-contact-modal__field">
               <span>First Name</span>
               <input value={firstName} disabled={isSaving} autoComplete="given-name" onChange={(event) => setFirstName(event.target.value)} />
             </label>
-            <label className="field">
+            <label className="field admin-contact-modal__field">
               <span>Last Name <span className="required-mark" aria-hidden="true">*</span></span>
               <input aria-label="Last Name" value={lastName} disabled={isSaving} required aria-invalid={errorMessage === 'Last Name is required.'} autoComplete="family-name" onChange={(event) => setLastName(event.target.value)} />
             </label>
-            <label className="field admin-contact-modal__wide">
+            <label className="field admin-contact-modal__field admin-contact-modal__wide">
               <span>Email</span>
               <input value={contact.email ?? ''} readOnly type="email" autoComplete="email" />
             </label>
-            <label className="field admin-contact-modal__wide">
+            <label className="field admin-contact-modal__field admin-contact-modal__wide">
               <span>Job Title</span>
               <input value={jobTitle} disabled={isSaving} autoComplete="organization-title" onChange={(event) => setJobTitle(event.target.value)} />
             </label>
-            <label className="field">
+            <label className="field admin-contact-modal__field">
               <span>Mobile Phone</span>
               <input value={mobilePhone} disabled={isSaving} type="tel" autoComplete="tel" onChange={(event) => setMobilePhone(event.target.value)} />
             </label>
-            <label className="field">
+            <label className="field admin-contact-modal__field">
               <span>City</span>
               <input value={city} disabled={isSaving} autoComplete="address-level2" onChange={(event) => setCity(event.target.value)} />
             </label>
-            <label className="field">
+            <label className="field admin-contact-modal__field">
               <span>State / Province</span>
               <input value={stateOrProvince} disabled={isSaving} autoComplete="address-level1" onChange={(event) => setStateOrProvince(event.target.value)} />
             </label>
-            <label className="field">
+            <label className="field admin-contact-modal__field">
               <span>Postal Code</span>
               <input value={postalCode} disabled={isSaving} autoComplete="postal-code" onChange={(event) => setPostalCode(event.target.value)} />
             </label>
-            <div className="admin-contact-modal__wide">
+            <div className="field admin-contact-modal__field admin-contact-modal__wide">
               <DistrictLookup
                 label="District"
                 value={district}

@@ -94,6 +94,28 @@ describe('AdminContactEditModal', () => {
     expect(screen.getByText('District 1')).toBeInTheDocument()
   })
 
+  test('wraps every contact form control in a modal-specific field hook', () => {
+    renderModal()
+
+    const standardFieldLabels = [
+      'First Name',
+      'Last Name',
+      'Email',
+      'Job Title',
+      'Mobile Phone',
+      'City',
+      'State / Province',
+      'Postal Code',
+    ]
+
+    for (const label of standardFieldLabels) {
+      expect(screen.getByLabelText(label).closest('.admin-contact-modal__field')).not.toBeNull()
+    }
+    expect(
+      screen.getByRole('combobox', { name: 'District' }).closest('.admin-contact-modal__field'),
+    ).not.toBeNull()
+  })
+
   test('searches, replaces, and clears the District selection', async () => {
     const actor = userEvent.setup()
     renderModal()

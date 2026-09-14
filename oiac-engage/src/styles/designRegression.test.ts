@@ -122,3 +122,19 @@ test('renders form control values with normal font weight across the app', () =>
   expect(formControlTypography).toBeDefined()
   expect(formControlTypography).toMatch(/font-weight:\s*400/)
 })
+
+test('keeps the admin Contact edit modal compact and resistant to host control styles', () => {
+  const dialog = css.match(/\.admin-contact-modal__dialog\s*\{([^}]*)\}/s)?.[1]
+  const standardInput = css.match(/\.admin-contact-modal__dialog \.admin-contact-modal__field > input\s*\{([^}]*)\}/s)?.[1]
+  const closeButton = css.match(/\.admin-contact-modal__close\s*\{([^}]*)\}/s)?.[1]
+
+  expect(dialog).toContain('width: min(40rem, 100%)')
+  expect(standardInput).toContain('appearance: none')
+  expect(standardInput).toContain('box-sizing: border-box')
+  expect(standardInput).toContain('border: 1px solid var(--color-border-strong)')
+  expect(closeButton).toContain('display: inline-grid')
+  expect(closeButton).toContain('place-items: center')
+  expect(closeButton).toContain('border: 1px solid var(--color-border)')
+  expect(closeButton).toContain('background: var(--color-surface)')
+  expect(closeButton).toContain('color: var(--color-primary-strong)')
+})
