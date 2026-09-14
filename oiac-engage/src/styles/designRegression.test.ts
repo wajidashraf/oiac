@@ -129,6 +129,7 @@ test('keeps the admin Contact edit modal compact and resistant to host control s
   const field = css.match(/\.admin-contact-modal__dialog \.admin-contact-modal__field\s*\{([^}]*)\}/s)?.[1]
   const standardInput = css.match(/\.admin-contact-modal__dialog \.admin-contact-modal__field > input\s*\{([^}]*)\}/s)?.[1]
   const closeButton = css.match(/\.admin-contact-modal__dialog \.admin-contact-modal__close\s*\{([^}]*)\}/s)?.[1]
+  const disabledCloseButton = css.match(/\.admin-contact-modal__dialog \.admin-contact-modal__close:disabled\s*\{([^}]*)\}/s)?.[1]
   const inputBorderToken = standardInput?.match(/border:\s*1px solid var\((--[\w-]+)\)/)?.[1]
   const definedRootTokens = new Set(
     Array.from(root?.matchAll(/(--[\w-]+)\s*:/g) ?? [], (match) => match[1]),
@@ -146,4 +147,9 @@ test('keeps the admin Contact edit modal compact and resistant to host control s
   expect.soft(closeButton ?? '').toContain('background: var(--color-surface)')
   expect.soft(closeButton ?? '').toContain('color: var(--color-primary-strong)')
   expect.soft(closeButton ?? '').toContain('padding: 0')
+  expect.soft(disabledCloseButton ?? '').toContain('cursor: not-allowed')
+  expect.soft(disabledCloseButton ?? '').toContain('opacity: 0.65')
+  expect.soft(disabledCloseButton ?? '').toContain('border-color: var(--color-border)')
+  expect.soft(disabledCloseButton ?? '').toContain('background: var(--color-surface)')
+  expect.soft(disabledCloseButton ?? '').toContain('color: var(--color-primary-strong)')
 })

@@ -533,6 +533,8 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 
 .admin-contact-modal__dialog .admin-contact-modal__close:focus-visible { border-color: var(--color-primary); outline: 0; box-shadow: 0 0 0 2px rgb(60 92 87 / 18%); }
 
+.admin-contact-modal__dialog .admin-contact-modal__close:disabled { border-color: var(--color-border); background: var(--color-surface); color: var(--color-primary-strong); cursor: not-allowed; opacity: 0.65; }
+
 .admin-contact-modal__dialog .admin-contact-modal__close svg { width: 1.2rem; height: 1.2rem; stroke-width: 2; }
 
 .admin-contact-modal__form { display: grid; gap: var(--space-4); padding: 1rem 1.25rem 1.25rem; }
