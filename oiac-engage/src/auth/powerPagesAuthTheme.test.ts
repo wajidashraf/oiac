@@ -43,6 +43,16 @@ test('loads the native form theme only inside the reset-password route condition
   expect(header).toContain("auth_path == '/account/login/resetpassword'")
   expect(header).toMatch(/{% if is_reset_password_page %}\s*<link rel="stylesheet" href="\/auth\.css\?v=4">[\s\S]*?{% endif %}/)
   expect(header.match(/<link rel="stylesheet" href="\/auth\.css\?v=4">/g)).toHaveLength(1)
+
+  const resetRoute = header.match(/{% if auth_path == '([^']+)' %}\s*{% assign is_reset_password_page = true %}/)?.[1]
+  expect(resetRoute).toBe('/account/login/resetpassword')
+  expect([
+    '/SignIn',
+    '/Account/Login/Register',
+    '/Account/Login/ForgotPassword',
+    '/Account/Login/ResetPassword/',
+  ].map((path) => path.toLowerCase() === resetRoute)).toEqual([false, false, false, false])
+  expect('/Account/Login/ResetPassword'.toLowerCase() === resetRoute).toBe(true)
 })
 
 test('labels an empty native reset submit button without replacing platform copy', () => {

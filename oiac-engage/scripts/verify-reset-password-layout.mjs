@@ -2,6 +2,9 @@ import { readFileSync } from 'node:fs'
 import { chromium } from 'playwright'
 
 const css = readFileSync(new URL('../.powerpages-site/web-files/auth.css/auth.css', import.meta.url), 'utf8')
+const header = readFileSync(new URL('../.powerpages-site/web-templates/oiac-auth-header/OIAC-Auth-Header.webtemplate.source.html', import.meta.url), 'utf8')
+const resetScript = header.match(/{% if is_reset_password_page %}[\s\S]*?<script>([\s\S]*?)<\/script>[\s\S]*?{% endif %}/)?.[1]
+if (!resetScript) throw new Error('Reset-password enhancement script is missing from the authentication header.')
 const browser = await chromium.launch({ headless: true })
 
 try {
@@ -9,6 +12,7 @@ try {
     const page = await browser.newPage({ viewport })
     await page.setContent(`
       <style>${css}</style>
+      <script>${resetScript}</script>
       <div id="content-container" class="container wrapper-body" role="main">
         <div id="content">
           <div class="page-content">
@@ -28,7 +32,7 @@ try {
                     <label class="col-md-4 col-form-label fw-bold" for="ConfirmPassword">Confirm new password</label>
                     <div class="col-md-8"><input class="form-control" id="ConfirmPassword" name="ConfirmPassword" type="password"></div>
                   </div>
-                  <div class="row mb-3"><div class="offset-md-4 col-md-8"><button id="submit-reset-password" class="btn btn-primary">Reset password</button></div></div>
+                  <div class="row mb-3"><div class="offset-md-4 col-md-8"><button id="submit-reset-password" class="btn btn-primary"></button></div></div>
                 </fieldset></div>
               </form>
             </div></div>
@@ -61,6 +65,8 @@ try {
         inputWidth: input.getBoundingClientRect().width,
         buttonWidth: button.getBoundingClientRect().width,
         buttonBackground: getComputedStyle(button).backgroundColor,
+        buttonText: button.textContent?.trim(),
+        buttonLabel: button.getAttribute('aria-label'),
       }
     })
 
@@ -72,6 +78,8 @@ try {
       || Math.abs(layout.inputWidth - layout.fieldWidth) > 1
       || Math.abs(layout.buttonWidth - layout.fieldWidth) > 1
       || layout.buttonBackground !== 'rgb(89, 110, 106)'
+      || layout.buttonText !== 'Reset password'
+      || layout.buttonLabel !== 'Reset password'
     ) {
       throw new Error(`${viewport.width}px reset layout failed: ${JSON.stringify(layout)}`)
     }
