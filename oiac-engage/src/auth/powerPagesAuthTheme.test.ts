@@ -39,10 +39,11 @@ test('native authentication shell renders a route-aware branded header while its
   expect(codeSiteFooter.trim()).toBe('<div/>')
 })
 
-test('loads the native form theme only inside the reset-password route condition', () => {
+test('loads the native form theme only on reset-password and confirmation routes', () => {
   expect(header).toContain("auth_path == '/account/login/resetpassword'")
-  expect(header).toMatch(/{% if is_reset_password_page %}\s*<link rel="stylesheet" href="\/auth\.css\?v=4">[\s\S]*?{% endif %}/)
-  expect(header.match(/<link rel="stylesheet" href="\/auth\.css\?v=4">/g)).toHaveLength(1)
+  expect(header).toContain("auth_path == '/account/login/resetpasswordconfirmation'")
+  expect(header).toMatch(/{% if is_reset_password_page or is_reset_password_confirmation_page %}\s*<link rel="stylesheet" href="\/auth\.css\?v=5">[\s\S]*?{% endif %}/)
+  expect(header.match(/<link rel="stylesheet" href="\/auth\.css\?v=5">/g)).toHaveLength(1)
 
   const resetRoute = header.match(/{% if auth_path == '([^']+)' %}\s*{% assign is_reset_password_page = true %}/)?.[1]
   expect(resetRoute).toBe('/account/login/resetpassword')
@@ -79,6 +80,30 @@ test('labels an empty native reset submit button without replacing platform copy
   document.body.replaceChildren()
 })
 
+test('labels the native reset confirmation action and marks its page for scoped styling', () => {
+  const confirmationAssets = header.match(/{% if is_reset_password_confirmation_page %}([\s\S]*?){% endif %}/)
+  expect(confirmationAssets).not.toBeNull()
+
+  const confirmationScript = confirmationAssets?.[1].match(/<script>([\s\S]*?)<\/script>/)
+  expect(confirmationScript).not.toBeNull()
+
+  document.body.innerHTML = `
+    <div class="form-horizontal">
+      <a class="btn btn-primary" href="/SignIn"><span class="fa fa-sign-in"></span></a>
+    </div>
+  `
+  Function(confirmationScript![1])()
+  document.dispatchEvent(new Event('DOMContentLoaded'))
+
+  expect(document.body).toHaveClass('oiac-reset-password-confirmation')
+  const signIn = document.querySelector<HTMLAnchorElement>('.form-horizontal a.btn-primary')!
+  expect(signIn).toHaveTextContent('Sign In')
+  expect(signIn).toHaveAccessibleName('Sign In')
+  expect(signIn).toHaveAttribute('href', '/SignIn')
+  document.body.replaceChildren()
+  document.body.classList.remove('oiac-reset-password-confirmation')
+})
+
 test('dedicated native authentication web file is deployable after Bootstrap', () => {
   expect(authMetadata).toContain('displayorder: 3')
   expect(authMetadata).toContain('filename: auth.css')
@@ -102,6 +127,13 @@ test('themes only the native reset-password form', () => {
   expect(authCss).toMatch(/form\[action\*="\/Account\/Login\/ResetPassword"\]\s+fieldset[\s\S]*?background:\s*var\(--reset-surface\)/)
   expect(authCss).toMatch(/#submit-reset-password[\s\S]*?width:\s*100%/)
   expect(authCss).toMatch(/@media \(max-width: 720px\)[\s\S]*?--reset-card-padding:\s*1\.25rem/)
+})
+
+test('themes the reset confirmation as a centered success card and shortens the auth header button', () => {
+  expect(authCss).toMatch(/body\.oiac-reset-password-confirmation[\s\S]*?#content-container\.container\.wrapper-body[\s\S]*?max-width:\s*35rem\s*!important/)
+  expect(authCss).toMatch(/body\.oiac-reset-password-confirmation[\s\S]*?\.form-horizontal\s+fieldset[\s\S]*?background:\s*var\(--reset-surface\)/)
+  expect(authCss).toMatch(/body\.oiac-reset-password-confirmation[\s\S]*?\.alert-success[\s\S]*?background:\s*#e8f4ee/)
+  expect(header).toMatch(/{% if is_reset_password_page or is_reset_password_confirmation_page %}[\s\S]*?\.auth-site-button\s*\{[^}]*min-height:\s*1\.75rem/s)
 })
 
 test('native account tabs stay 45px tall without vertical scrolling', () => {

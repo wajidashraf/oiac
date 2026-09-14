@@ -12,9 +12,16 @@
 {% if auth_path == '/account/login/resetpassword' %}
   {% assign is_reset_password_page = true %}
 {% endif %}
+{% assign is_reset_password_confirmation_page = false %}
+{% if auth_path == '/account/login/resetpasswordconfirmation' %}
+  {% assign is_reset_password_confirmation_page = true %}
+{% endif %}
+
+{% if is_reset_password_page or is_reset_password_confirmation_page %}
+  <link rel="stylesheet" href="/auth.css?v=5">
+{% endif %}
 
 {% if is_reset_password_page %}
-  <link rel="stylesheet" href="/auth.css?v=4">
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       var resetButton = document.getElementById('submit-reset-password');
@@ -22,6 +29,22 @@
       if (!resetButton.textContent.trim()) resetButton.textContent = 'Reset password';
       if (!resetButton.hasAttribute('aria-label')) {
         resetButton.setAttribute('aria-label', resetButton.textContent.trim());
+      }
+    });
+  </script>
+{% endif %}
+
+{% if is_reset_password_confirmation_page %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      document.body.classList.add('oiac-reset-password-confirmation');
+      var signInButton = document.querySelector('.form-horizontal a.btn-primary[href*="/SignIn"]');
+      if (!signInButton) return;
+      if (!signInButton.textContent.trim()) {
+        signInButton.append(document.createTextNode(' Sign In'));
+      }
+      if (!signInButton.hasAttribute('aria-label')) {
+        signInButton.setAttribute('aria-label', signInButton.textContent.trim());
       }
     });
   </script>
@@ -98,6 +121,16 @@
       outline: 3px solid #c78528;
       outline-offset: 3px;
     }
+
+    {% if is_reset_password_page or is_reset_password_confirmation_page %}
+      .auth-site-button {
+        height: 1.75rem;
+        min-height: 1.75rem;
+        padding: 0 0.9rem;
+        font-size: 0.8rem;
+        line-height: 1;
+      }
+    {% endif %}
 
     @media (max-width: 720px) {
       .auth-site-header__inner {

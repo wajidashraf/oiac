@@ -156,7 +156,7 @@ test('renders the volunteer dashboard and its operational sections', () => {
   expect(document.title).toBe('Volunteer Dashboard — OIAC Engage')
 })
 
-test('keeps unfinished dashboard features visible without navigation behavior', () => {
+test('keeps unfinished dashboard features visible while training resources are live', () => {
   renderHome()
 
   const shortcuts = screen.getByRole('navigation', { name: 'Dashboard shortcuts' })
@@ -186,9 +186,21 @@ test('keeps unfinished dashboard features visible without navigation behavior', 
   expect(within(announcements).queryByText('Coming Soon')).not.toBeInTheDocument()
   expect(announcements).not.toHaveClass('dashboard-panel--coming-soon')
   expect(announcements).not.toHaveAttribute('aria-disabled')
-  expect(within(training).getByText('Coming Soon')).toBeInTheDocument()
-  expect(training).toHaveClass('dashboard-panel--coming-soon')
-  expect(training).toHaveAttribute('aria-disabled', 'true')
+  expect(within(training).queryByText('Coming Soon')).not.toBeInTheDocument()
+  expect(training).not.toHaveClass('dashboard-panel--coming-soon')
+  expect(training).not.toHaveAttribute('aria-disabled')
+  expect(within(training).getByRole('link', { name: 'Volunteer Onboarding Guide' })).toHaveAttribute(
+    'href',
+    '/resources/volunteer-onboarding-guide',
+  )
+  expect(within(training).getByRole('link', { name: 'Teams Quick Start' })).toHaveAttribute(
+    'href',
+    '/resources/teams-quick-start',
+  )
+  expect(within(training).getByRole('link', { name: 'Meeting Report Instructions' })).toHaveAttribute(
+    'href',
+    '/resources/meeting-report-instructions',
+  )
   expect(teams).not.toHaveClass('dashboard-section--coming-soon')
   expect(teams).not.toHaveAttribute('aria-disabled')
   expect(upcomingMeetings).not.toHaveClass('dashboard-panel--coming-soon')
@@ -202,7 +214,7 @@ test('keeps unfinished dashboard features visible without navigation behavior', 
   expect(within(submissions).getByText('Coming Soon')).toBeInTheDocument()
   expect(submissions).toHaveClass('dashboard-section--coming-soon')
   expect(submissions).toHaveAttribute('aria-disabled', 'true')
-  expect(within(training).queryByRole('link')).not.toBeInTheDocument()
+  expect(within(training).getAllByRole('link')).toHaveLength(3)
   expect(within(upcomingMeetings).getByRole('link', {
     name: 'Join Pending District Briefing in a new tab',
   })).toBeInTheDocument()

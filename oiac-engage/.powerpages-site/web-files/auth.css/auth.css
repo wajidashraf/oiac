@@ -510,6 +510,134 @@ body:has(form[action*="/Account/Login/ResetPassword"]) #submit-reset-password:fo
   outline-offset: 3px;
 }
 
+/* OIAC native reset password confirmation ---------------------------------- */
+
+body.oiac-reset-password-confirmation {
+  --reset-page: #f9fafa;
+  --reset-surface: #ffffff;
+  --reset-text: #1a1f1e;
+  --reset-muted: #49605c;
+  --reset-border: #dde3e2;
+  --reset-primary: #596e6a;
+  --reset-primary-strong: #3d4e4b;
+  margin: 0;
+  background: var(--reset-page);
+  color: var(--reset-text);
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+body.oiac-reset-password-confirmation #content-container.container.wrapper-body {
+  width: calc(100% - 2rem) !important;
+  max-width: 35rem !important;
+  margin: 0 auto !important;
+  padding: 3rem 0 6rem !important;
+  float: none !important;
+  background: var(--reset-page);
+}
+
+body.oiac-reset-password-confirmation #content,
+body.oiac-reset-password-confirmation .page-content {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+body.oiac-reset-password-confirmation .page-content > .row {
+  display: block !important;
+  margin: 0 !important;
+}
+
+body.oiac-reset-password-confirmation .page-content > .row > [class*="col-"] {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  flex: 0 0 100% !important;
+  float: none !important;
+}
+
+body.oiac-reset-password-confirmation .form-horizontal {
+  width: 100% !important;
+  max-width: 31.25rem !important;
+  margin-inline: auto !important;
+}
+
+body.oiac-reset-password-confirmation .form-horizontal *,
+body.oiac-reset-password-confirmation .form-horizontal *::before,
+body.oiac-reset-password-confirmation .form-horizontal *::after {
+  box-sizing: border-box;
+}
+
+body.oiac-reset-password-confirmation .form-horizontal fieldset {
+  min-width: 0;
+  margin: 0;
+  border: 1px solid var(--reset-border);
+  border-radius: 0.65rem;
+  padding: 2rem;
+  background: var(--reset-surface);
+  box-shadow: 0 1px 2px rgb(26 31 30 / 5%), 0 10px 30px rgb(26 31 30 / 6%);
+}
+
+body.oiac-reset-password-confirmation .form-horizontal legend {
+  display: block;
+  float: none;
+  width: 100%;
+  margin: 0 0 1.25rem;
+  border: 0;
+  border-bottom: 1px solid var(--reset-border);
+  padding: 0 0 1.25rem;
+  color: var(--reset-text);
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: clamp(1.65rem, 4vw, 2rem);
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+body.oiac-reset-password-confirmation .form-horizontal .alert-success {
+  margin: 0 0 1.5rem;
+  border: 1px solid #b9dccb;
+  border-radius: 0.4rem;
+  padding: 0.9rem 1rem;
+  background: #e8f4ee;
+  color: #176b47;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+body.oiac-reset-password-confirmation .form-horizontal .alert-success :last-child {
+  margin-bottom: 0;
+}
+
+body.oiac-reset-password-confirmation .form-horizontal a.btn-primary[href*="/SignIn"] {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 1px solid var(--reset-primary) !important;
+  border-radius: 0.4rem;
+  padding: 0.7rem 1.25rem;
+  background: var(--reset-primary) !important;
+  color: #fff !important;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.25rem;
+  text-decoration: none;
+  box-shadow: none;
+}
+
+body.oiac-reset-password-confirmation .form-horizontal a.btn-primary[href*="/SignIn"]:hover,
+body.oiac-reset-password-confirmation .form-horizontal a.btn-primary[href*="/SignIn"]:focus {
+  border-color: var(--reset-primary-strong) !important;
+  background: var(--reset-primary-strong) !important;
+}
+
+body.oiac-reset-password-confirmation .form-horizontal a.btn-primary[href*="/SignIn"]:focus-visible {
+  outline: 3px solid rgb(89 110 106 / 30%);
+  outline-offset: 3px;
+}
+
 @media (max-width: 720px) {
   body:has(form[action*="/Account/Login/ResetPassword"]) {
     --reset-card-padding: 1.25rem;
@@ -518,5 +646,14 @@ body:has(form[action*="/Account/Login/ResetPassword"]) #submit-reset-password:fo
   body:has(form[action*="/Account/Login/ResetPassword"]) #content-container.container.wrapper-body {
     width: calc(100% - 1.5rem) !important;
     padding: 2rem 0 4rem !important;
+  }
+
+  body.oiac-reset-password-confirmation #content-container.container.wrapper-body {
+    width: calc(100% - 1.5rem) !important;
+    padding: 2rem 0 4rem !important;
+  }
+
+  body.oiac-reset-password-confirmation .form-horizontal fieldset {
+    padding: 1.25rem;
   }
 }

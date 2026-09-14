@@ -5,6 +5,8 @@ const css = readFileSync(new URL('../.powerpages-site/web-files/auth.css/auth.cs
 const header = readFileSync(new URL('../.powerpages-site/web-templates/oiac-auth-header/OIAC-Auth-Header.webtemplate.source.html', import.meta.url), 'utf8')
 const resetScript = header.match(/{% if is_reset_password_page %}[\s\S]*?<script>([\s\S]*?)<\/script>[\s\S]*?{% endif %}/)?.[1]
 if (!resetScript) throw new Error('Reset-password enhancement script is missing from the authentication header.')
+const confirmationScript = header.match(/{% if is_reset_password_confirmation_page %}[\s\S]*?<script>([\s\S]*?)<\/script>[\s\S]*?{% endif %}/)?.[1]
+if (!confirmationScript) throw new Error('Reset-confirmation enhancement script is missing from the authentication header.')
 const browser = await chromium.launch({ headless: true })
 
 try {
@@ -86,6 +88,65 @@ try {
 
     console.log(`${viewport.width}px reset layout: ${layout.cardWidth}px centered card with full-width controls`)
     await page.close()
+
+    const confirmationPage = await browser.newPage({ viewport })
+    await confirmationPage.setContent(`
+      <style>${css}</style>
+      <script>${confirmationScript}</script>
+      <div id="content-container" class="container wrapper-body" role="main">
+        <div id="content">
+          <div class="page-content">
+            <div class="row"><div class="col-md-12">
+              <div class="form-horizontal">
+                <fieldset>
+                  <legend>Reset password</legend>
+                  <div class="alert alert-success"><div>Your password has been reset.</div></div>
+                  <a class="btn btn-primary" href="/SignIn"><span class="fa fa-sign-in" aria-hidden="true"></span></a>
+                </fieldset>
+              </div>
+            </div></div>
+          </div>
+        </div>
+      </div>
+      <style>
+        .container { width: 100% !important; max-width: 1140px !important; margin: 0 !important; float: left !important; }
+        .row { display: flex !important; margin-inline: -0.75rem !important; }
+        .col-md-12 { width: 100% !important; padding-inline: 0.75rem !important; }
+      </style>
+    `)
+
+    const confirmationLayout = await confirmationPage.evaluate(() => {
+      const card = document.querySelector('fieldset')
+      const message = document.querySelector('.alert-success')
+      const button = document.querySelector('a.btn-primary')
+      if (!card || !message || !button) throw new Error('Reset-confirmation fixture is incomplete.')
+
+      const cardRect = card.getBoundingClientRect()
+      return {
+        bodyClass: document.body.classList.contains('oiac-reset-password-confirmation'),
+        cardWidth: cardRect.width,
+        cardLeft: cardRect.left,
+        messageBackground: getComputedStyle(message).backgroundColor,
+        buttonBackground: getComputedStyle(button).backgroundColor,
+        buttonText: button.textContent?.trim(),
+        buttonLabel: button.getAttribute('aria-label'),
+      }
+    })
+
+    if (
+      !confirmationLayout.bodyClass
+      || Math.abs(confirmationLayout.cardWidth - expectedCardWidth) > 1
+      || Math.abs(confirmationLayout.cardLeft - ((viewport.width - expectedCardWidth) / 2)) > 1
+      || confirmationLayout.messageBackground !== 'rgb(232, 244, 238)'
+      || confirmationLayout.buttonBackground !== 'rgb(89, 110, 106)'
+      || confirmationLayout.buttonText !== 'Sign In'
+      || confirmationLayout.buttonLabel !== 'Sign In'
+    ) {
+      throw new Error(`${viewport.width}px reset confirmation layout failed: ${JSON.stringify(confirmationLayout)}`)
+    }
+
+    console.log(`${viewport.width}px reset confirmation: ${confirmationLayout.cardWidth}px centered success card`)
+    await confirmationPage.close()
   }
 } finally {
   await browser.close()

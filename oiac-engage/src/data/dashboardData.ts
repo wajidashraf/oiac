@@ -42,9 +42,21 @@ export const dashboardMetrics: readonly DashboardMetric[] = [
 ]
 
 export const trainingResources: readonly DashboardResource[] = [
-  { id: 'onboarding-guide', title: 'Volunteer Onboarding Guide', href: '/resources' },
-  { id: 'teams-quick-start', title: 'Teams Quick Start', href: '/resources' },
-  { id: 'report-instructions', title: 'Meeting Report Instructions', href: '/resources' },
+  {
+    id: 'onboarding-guide',
+    title: 'Volunteer Onboarding Guide',
+    href: '/resources/volunteer-onboarding-guide',
+  },
+  {
+    id: 'teams-quick-start',
+    title: 'Teams Quick Start',
+    href: '/resources/teams-quick-start',
+  },
+  {
+    id: 'report-instructions',
+    title: 'Meeting Report Instructions',
+    href: '/resources/meeting-report-instructions',
+  },
 ]
 
 export const teamResourceGroups: readonly TeamResourceGroup[] = [

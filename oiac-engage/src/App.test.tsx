@@ -69,6 +69,9 @@ const protectedRoutes = [
   '/report/new',
   '/report/11111111-1111-4111-8111-111111111111/edit',
   '/resources',
+  '/resources/volunteer-onboarding-guide',
+  '/resources/teams-quick-start',
+  '/resources/meeting-report-instructions',
   '/unknown',
 ] as const
 
@@ -231,6 +234,17 @@ test('renders Resources only for an authenticated session', () => {
   expect(screen.getByRole('heading', { name: 'Resources', level: 1 })).toBeInTheDocument()
   const primaryNavigation = screen.getByRole('navigation', { name: 'Primary navigation' })
   expect(within(primaryNavigation).queryByRole('link', { name: 'Resources' })).not.toBeInTheDocument()
+})
+
+test.each([
+  ['/resources/volunteer-onboarding-guide', 'Volunteer Onboarding Guide'],
+  ['/resources/teams-quick-start', 'Teams Quick Start'],
+  ['/resources/meeting-report-instructions', 'Meeting Report Instructions'],
+])('renders the training resource route %s for an authenticated session', (route, title) => {
+  renderApp(route)
+
+  expect(screen.getByRole('heading', { name: title, level: 1 })).toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Page not found' })).not.toBeInTheDocument()
 })
 
 test.each(protectedRoutes)('redirects a denied signed-in user from %s', async (route) => {

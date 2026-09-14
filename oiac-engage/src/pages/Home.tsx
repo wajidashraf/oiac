@@ -379,19 +379,19 @@ export default function Home({ contactId }: HomeProps) {
           <ContentCard
             title="Training Resources"
             headingLevel="h2"
-            className="dashboard-panel dashboard-panel--coming-soon"
-            ariaDisabled
-            meta={<ComingSoonBadge />}
+            className="dashboard-panel"
           >
             <ul className="dashboard-training-list">
               {trainingResources.map((resource) => (
                 <li key={resource.id}>
-                  <span className="dashboard-list-icon" aria-hidden="true">
-                    {resource.id === 'onboarding-guide' ? <LuGraduationCap /> : null}
-                    {resource.id === 'teams-quick-start' ? <LuBookOpen /> : null}
-                    {resource.id === 'report-instructions' ? <LuClipboardList /> : null}
-                  </span>
-                  <span className="dashboard-training-list__label" aria-disabled="true">{resource.title}</span>
+                  <Link className="dashboard-training-list__link" to={resource.href}>
+                    <span className="dashboard-list-icon" aria-hidden="true">
+                      {resource.id === 'onboarding-guide' ? <LuGraduationCap /> : null}
+                      {resource.id === 'teams-quick-start' ? <LuBookOpen /> : null}
+                      {resource.id === 'report-instructions' ? <LuClipboardList /> : null}
+                    </span>
+                    <span className="dashboard-training-list__label">{resource.title}</span>
+                  </Link>
                 </li>
               ))}
             </ul>
