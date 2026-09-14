@@ -380,7 +380,7 @@ adx_sitesetting:
   IsDeleted: false
 - RecordId: 6dcbad52-ea17-47a3-ae96-d2854e9d30d8
   DisplayName: 6dcbad52-ea17-47a3-ae96-d2854e9d30d8
-  CheckSum: dc68ad5004bddf87047cfec1840baab37ae18cb0936c1572ea86ef3ea28c2c82
+  CheckSum: 9e398269cbeea418926addbe11415be3fee1abd20fbb38b35ac7b260bd73eec7
   IsDeleted: false
 - RecordId: 7088b1ac-06c9-4a16-a7f3-ea4b7761c8e0
   DisplayName: 7088b1ac-06c9-4a16-a7f3-ea4b7761c8e0
@@ -452,7 +452,7 @@ adx_sitesetting:
   IsDeleted: false
 - RecordId: a819a91f-3b5e-4014-8691-63093aa9cc59
   DisplayName: a819a91f-3b5e-4014-8691-63093aa9cc59
-  CheckSum: 1170e854721204a6e4cd04a4ee89621fc116985b9d0a56f4008ac8afaab8389e
+  CheckSum: c76bd5c2250a2a2167778ab7a56e92a8b983dac6019c4b3a986adfe5e79f8513
   IsDeleted: false
 - RecordId: ab721811-ecba-48ee-b81a-bdc7e8baa4d6
   DisplayName: ab721811-ecba-48ee-b81a-bdc7e8baa4d6
@@ -597,7 +597,7 @@ adx_webfile:
   IsDeleted: false
 - RecordId: 8f607af5-905b-48cb-aee8-e80e065dad40
   DisplayName: 8f607af5-905b-48cb-aee8-e80e065dad40
-  CheckSum: 7a6a7078b8bdd7917be6d68d946c518a7db5076557fa87e0a68052765ab5df5d
+  CheckSum: be7849e3f1d5c3eda0cb28193aa1966d20fa4dda0aa50204c6b44c9ccbbac2ea
   IsDeleted: false
 - RecordId: 98c794cf-8c42-4880-837a-648c750f26a4
   DisplayName: 98c794cf-8c42-4880-837a-648c750f26a4
@@ -664,7 +664,7 @@ adx_webpage:
   IsDeleted: false
 - RecordId: 71591c4f-0e93-46f1-b1c4-91008a9f143a
   DisplayName: 71591c4f-0e93-46f1-b1c4-91008a9f143a
-  CheckSum: bf078dfe9f679fc4be2f7c5d7b12df80cf605eed0b533abbb6ac162420f9870f
+  CheckSum: db4be4e331ff63b64c21a641729a0e33a2b36f1c9a081d141763e41972a98827
   IsDeleted: false
 - RecordId: 950db54f-769f-4242-88c4-2fc0329bb3e8
   DisplayName: 950db54f-769f-4242-88c4-2fc0329bb3e8
@@ -845,7 +845,7 @@ annotation:
   IsDeleted: false
 - RecordId: 8f607af5-905b-48cb-aee8-e80e065dad40
   DisplayName: index.html
-  CheckSum: 22c0fb8a70a9ac3c82873d298b860b80daec023f68f3408d2d49922c54ee26e1
+  CheckSum: b629a678b94b337297778fdf824c6a751f441cf95dfcba0ffb0aeffbc5fe716a
   IsDeleted: false
 - RecordId: 98c794cf-8c42-4880-837a-648c750f26a4
   DisplayName: logo.png
