@@ -283,4 +283,3 @@ git status --short
 ```
 
 Expected: no whitespace errors; only the intended commits plus the pre-existing unrelated `Minimal Volunteer Portal Design.make/` untracked directory.
-
