@@ -112,6 +112,8 @@ describe('meeting invite queries and mapping', () => {
       ['44444444-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '/relative/path', null],
       ['55555555-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'not a URL', null],
       ['66666666-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '   ', null],
+      ['77777777-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'http://example.com/meeting', 'http://example.com/meeting'],
+      ['88888888-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 123, null],
     ] as const
     vi.mocked(powerPagesFetch)
       .mockResolvedValueOnce({ contactid: CONTACT_ID, fullname: 'Sara Rahimi', _mss_district_value: null })
