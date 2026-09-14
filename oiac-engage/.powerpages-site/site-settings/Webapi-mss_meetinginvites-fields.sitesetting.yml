@@ -1,4 +1,4 @@
 description: Allowed fields and relationships for Meeting Invite Web API reads
 id: 794797dc-e100-41f9-8a26-e48761dde860
 name: Webapi/mss_meetinginvites/fields
-value: "mss_meetinginvitesid,mss_meetingenddate,mss_meetingforall,mss_meetingstartdate,mss_meetingtitle,mss_MeetingInvites_Contact_Contact,mss_MeetingInvites_mss_District_mss_District"
+value: "mss_meetinginvitesid,mss_meetingenddate,mss_meetingforall,mss_meetingstartdate,mss_meetingtitle,mss_meetinglink,mss_MeetingInvites_Contact_Contact,mss_MeetingInvites_mss_District_mss_District"

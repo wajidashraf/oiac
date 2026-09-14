@@ -39,7 +39,7 @@ test('enables Meeting Invite reads with only the required columns and expansions
   expect(filter).toContain('value: false')
   for (const field of [
     'mss_meetinginvitesid', 'mss_meetingenddate', 'mss_meetingforall',
-    'mss_meetingstartdate', 'mss_meetingtitle', 'mss_MeetingInvites_Contact_Contact',
+    'mss_meetingstartdate', 'mss_meetingtitle', 'mss_meetinglink', 'mss_MeetingInvites_Contact_Contact',
     'mss_MeetingInvites_mss_District_mss_District',
   ]) expect(fields).toContain(field)
 })

@@ -20,6 +20,7 @@ export type MeetingInvite = {
   readonly title: string
   readonly startDateTime: string
   readonly endDateTime: string | null
+  readonly meetingLink: string | null
   readonly participant: MeetingInviteParticipant | null
 }
 

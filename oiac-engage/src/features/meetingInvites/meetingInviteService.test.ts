@@ -21,6 +21,7 @@ function invite(overrides: Record<string, unknown>) {
     mss_meetingtitle: 'All-volunteer briefing',
     mss_meetingstartdate: '2026-09-18T18:00:00Z',
     mss_meetingenddate: '2026-09-18T19:00:00Z',
+    mss_meetinglink: 'https://teams.microsoft.com/l/meetup-join/all-volunteer-briefing',
     mss_meetingforall: false,
     mss_MeetingInvites_Contact_Contact: [],
     mss_MeetingInvites_mss_District_mss_District: [],
@@ -43,6 +44,7 @@ describe('meeting invite queries and mapping', () => {
     const urls = vi.mocked(powerPagesFetch).mock.calls.map(([url]) => decodeURIComponent(url).replace(/\+/g, ' '))
     expect(urls[0]).toContain(`/_api/contacts(${CONTACT_ID})?$select=contactid,fullname,_mss_district_value`)
     expect(urls[1]).toContain('/_api/mss_meetinginviteses?')
+    expect(urls[1]).toContain('$select=mss_meetinginvitesid,mss_meetingenddate,mss_meetingforall,mss_meetingstartdate,mss_meetingtitle,mss_meetinglink')
     expect(urls[1]).toContain('$expand=mss_MeetingInvites_Contact_Contact($select=contactid),mss_MeetingInvites_mss_District_mss_District($select=mss_districtid)')
     expect(urls[2]).toContain('/_api/mss_meetinginviteparticipants?')
     expect(urls[2]).toContain(`$filter=_mss_contact_value eq ${CONTACT_ID}`)
@@ -83,11 +85,48 @@ describe('meeting invite queries and mapping', () => {
     await expect(resultPromise).resolves.toMatchObject({
       contactFullName: 'Sara Rahimi',
       invites: [
-        { id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', participant: { status: 2 } },
-        { id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', participant: null },
-        { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', participant: null },
+        {
+          id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+          meetingLink: 'https://teams.microsoft.com/l/meetup-join/all-volunteer-briefing',
+          participant: { status: 2 },
+        },
+        {
+          id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+          meetingLink: 'https://teams.microsoft.com/l/meetup-join/all-volunteer-briefing',
+          participant: null,
+        },
+        {
+          id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+          meetingLink: 'https://teams.microsoft.com/l/meetup-join/all-volunteer-briefing',
+          participant: null,
+        },
       ],
     })
+  })
+
+  test('keeps trimmed HTTP meeting links and rejects unsafe or unusable links', async () => {
+    const rows = [
+      ['11111111-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '  https://teams.microsoft.com/l/meetup-join/briefing  ', 'https://teams.microsoft.com/l/meetup-join/briefing'],
+      ['22222222-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'javascript:alert(1)', null],
+      ['33333333-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'mailto:person@example.com', null],
+      ['44444444-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '/relative/path', null],
+      ['55555555-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'not a URL', null],
+      ['66666666-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '   ', null],
+    ] as const
+    vi.mocked(powerPagesFetch)
+      .mockResolvedValueOnce({ contactid: CONTACT_ID, fullname: 'Sara Rahimi', _mss_district_value: null })
+      .mockResolvedValueOnce({ value: rows.map(([id, meetingLink]) => invite({
+        mss_meetinginvitesid: id,
+        mss_meetingforall: true,
+        mss_meetinglink: meetingLink,
+      })) })
+      .mockResolvedValueOnce({ value: [] })
+
+    const result = await getMeetingInvites(CONTACT_ID)
+
+    expect(result.invites.map(({ id, meetingLink }) => ({ id, meetingLink }))).toEqual(
+      rows.map(([id, , meetingLink]) => ({ id, meetingLink })),
+    )
   })
 
   test('chooses one deterministic participant using status, accepted date, and ID precedence', async () => {
@@ -159,6 +198,7 @@ describe('accepting a meeting invite', () => {
     title: 'District Briefing',
     startDateTime: '2026-09-18T18:00:00Z',
     endDateTime: '2026-09-18T19:00:00Z',
+    meetingLink: 'https://teams.microsoft.com/l/meetup-join/district-briefing',
     participant: null,
   }
 

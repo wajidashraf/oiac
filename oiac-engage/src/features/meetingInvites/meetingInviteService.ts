@@ -26,6 +26,7 @@ const inviteSelect = [
   'mss_meetingforall',
   'mss_meetingstartdate',
   'mss_meetingtitle',
+  'mss_meetinglink',
 ].join(',')
 
 const participantSelect = [
@@ -65,6 +66,16 @@ function optionalGuid(value: unknown, label: string): string | null {
 function collectionRows(envelope: CollectionEnvelope): readonly unknown[] {
   if (!Array.isArray(envelope?.value)) throw new Error('Meeting invites could not be loaded.')
   return envelope.value
+}
+
+function safeHttpUrl(value: unknown): string | null {
+  if (typeof value !== 'string' || !value.trim()) return null
+  try {
+    const url = new URL(value.trim())
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : null
+  } catch {
+    return null
+  }
 }
 
 function isStatus(value: unknown): value is MeetingInvitationStatus {
@@ -182,6 +193,7 @@ export async function getMeetingInvites(
       title: value.mss_meetingtitle,
       startDateTime: value.mss_meetingstartdate,
       endDateTime: typeof value.mss_meetingenddate === 'string' ? value.mss_meetingenddate : null,
+      meetingLink: safeHttpUrl(value.mss_meetinglink),
       participant: selectParticipant(participants, id),
     }]
   }).sort((left, right) => inviteStartTime(left.startDateTime) - inviteStartTime(right.startDateTime)
