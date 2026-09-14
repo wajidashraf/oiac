@@ -85,6 +85,15 @@ test('native account stylesheet scopes the responsive reference layout', () => {
   expect(authCss).toContain('grid-template-columns: 10rem minmax(0, 1fr)')
 })
 
+test('themes only the native reset-password form', () => {
+  expect(authCss).toContain('body:has(form[action*="/Account/Login/ResetPassword"])')
+  expect(authCss).toMatch(/--reset-primary:\s*#596e6a/)
+  expect(authCss).toMatch(/--reset-page:\s*#f9fafa/)
+  expect(authCss).toMatch(/form\[action\*="\/Account\/Login\/ResetPassword"\]\s+fieldset[\s\S]*?background:\s*var\(--reset-surface\)/)
+  expect(authCss).toMatch(/#submit-reset-password[\s\S]*?width:\s*100%/)
+  expect(authCss).toMatch(/@media \(max-width: 720px\)[\s\S]*?--reset-card-padding:\s*1\.25rem/)
+})
+
 test('native account tabs stay 45px tall without vertical scrolling', () => {
   document.body.innerHTML = `
     <ul class="nav nav-tabs nav-account">

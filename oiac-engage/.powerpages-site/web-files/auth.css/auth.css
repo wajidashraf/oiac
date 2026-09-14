@@ -334,3 +334,189 @@ body:has(.nav-account) [id$="_SecureRegister"] .portal-form .row.mb-3 > [class*=
     margin: 0.75rem 0 0;
   }
 }
+
+/* OIAC native reset password ----------------------------------------------- */
+
+body:has(form[action*="/Account/Login/ResetPassword"]) {
+  --reset-page: #f9fafa;
+  --reset-surface: #ffffff;
+  --reset-text: #1a1f1e;
+  --reset-muted: #49605c;
+  --reset-border: #dde3e2;
+  --reset-control-border: #9ab0ad;
+  --reset-primary: #596e6a;
+  --reset-primary-strong: #3d4e4b;
+  --reset-danger: #a12b35;
+  --reset-card-padding: 2rem;
+  margin: 0;
+  background: var(--reset-page);
+  color: var(--reset-text);
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+body:has(form[action*="/Account/Login/ResetPassword"]) #content-container.container.wrapper-body {
+  width: calc(100% - 2rem) !important;
+  max-width: 35rem !important;
+  margin: 0 auto !important;
+  padding: 3rem 0 6rem !important;
+  float: none !important;
+  background: var(--reset-page);
+}
+
+body:has(form[action*="/Account/Login/ResetPassword"]) #content,
+body:has(form[action*="/Account/Login/ResetPassword"]) .page-content {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+body:has(form[action*="/Account/Login/ResetPassword"]) .page-content > .row {
+  display: block !important;
+  margin: 0 !important;
+}
+
+body:has(form[action*="/Account/Login/ResetPassword"]) .page-content > .row > [class*="col-"] {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  flex: 0 0 100% !important;
+  float: none !important;
+}
+
+body:has(form[action*="/Account/Login/ResetPassword"]) form[action*="/Account/Login/ResetPassword"] {
+  width: 100%;
+  max-width: 31.25rem;
+  margin-inline: auto;
+}
+
+body:has(form[action*="/Account/Login/ResetPassword"]) form[action*="/Account/Login/ResetPassword"] *,
+body:has(form[action*="/Account/Login/ResetPassword"]) form[action*="/Account/Login/ResetPassword"] *::before,
+body:has(form[action*="/Account/Login/ResetPassword"]) form[action*="/Account/Login/ResetPassword"] *::after {
+  box-sizing: border-box;
+}
+
+body:has(form[action*="/Account/Login/ResetPassword"]) form[action*="/Account/Login/ResetPassword"] fieldset {
+  min-width: 0;
+  margin: 0;
+  border: 1px solid var(--reset-border);
+  border-radius: 0.65rem;
+  padding: var(--reset-card-padding);
+  background: var(--reset-surface);
+  box-shadow: 0 1px 2px rgb(26 31 30 / 5%), 0 10px 30px rgb(26 31 30 / 6%);
+}
+
+body:has(form[action*="/Account/Login/ResetPassword"]) form[action*="/Account/Login/ResetPassword"] legend {
+  display: block;
+  float: none;
+  width: 100%;
+  margin: 0 0 1.75rem;
+  border: 0;
+  border-bottom: 1px solid var(--reset-border);
+  padding: 0 0 1.25rem;
+  color: var(--reset-text);
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: clamp(1.65rem, 4vw, 2rem);
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+body:has(form[action*="/Account/Login/ResetPassword"]) form[action*="/Account/Login/ResetPassword"] .row.mb-3 {
+  display: block !important;
+  margin: 0 0 1.25rem !important;
+}
+
+body:has(form[action*="/Account/Login/ResetPassword"]) form[action*="/Account/Login/ResetPassword"] .row.mb-3 > [class*="col-"],
+body:has(form[action*="/Account/Login/ResetPassword"]) form[action*="/Account/Login/ResetPassword"] .row.mb-3 > [class*="offset-"] {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  flex: none !important;
+  float: none !important;
+}
+
+body:has(form[action*="/Account/Login/ResetPassword"]) form[action*="/Account/Login/ResetPassword"] .col-form-label {
+  display: block;
+  margin: 0 0 0.5rem;
+  padding: 0 !important;
+  color: var(--reset-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: left;
+}
+
+body:has(form[action*="/Account/Login/ResetPassword"]) form[action*="/Account/Login/ResetPassword"] .form-control {
+  width: 100%;
+  min-height: 3rem;
+  border: 1px solid var(--reset-control-border);
+  border-radius: 0.3rem;
+  padding: 0.65rem 0.75rem;
+  background: var(--reset-surface);
+  color: var(--reset-text);
+  font: inherit;
+  box-shadow: none;
+}
+
+body:has(form[action*="/Account/Login/ResetPassword"]) form[action*="/Account/Login/ResetPassword"] .form-control:focus {
+  border-color: var(--reset-primary);
+  outline: 3px solid rgb(89 110 106 / 22%);
+  outline-offset: 1px;
+  box-shadow: none;
+}
+
+body:has(form[action*="/Account/Login/ResetPassword"]) form[action*="/Account/Login/ResetPassword"] .validation-summary-valid {
+  display: none;
+}
+
+body:has(form[action*="/Account/Login/ResetPassword"]) form[action*="/Account/Login/ResetPassword"] :is(.validation-summary-errors, .alert-danger:not(.validation-summary-valid)) {
+  margin: 0 0 1.25rem;
+  border: 1px solid #e8b4b8;
+  border-radius: 0.3rem;
+  padding: 0.8rem 1rem;
+  background: #fff4f5;
+  color: var(--reset-danger);
+}
+
+body:has(form[action*="/Account/Login/ResetPassword"]) form[action*="/Account/Login/ResetPassword"] :is(.validation-summary-errors, .alert-danger) ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+body:has(form[action*="/Account/Login/ResetPassword"]) #submit-reset-password {
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid var(--reset-primary) !important;
+  border-radius: 0.4rem;
+  padding: 0.7rem 1.25rem;
+  background: var(--reset-primary) !important;
+  color: #fff !important;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.25rem;
+  box-shadow: none;
+}
+
+body:has(form[action*="/Account/Login/ResetPassword"]) #submit-reset-password:hover,
+body:has(form[action*="/Account/Login/ResetPassword"]) #submit-reset-password:focus {
+  border-color: var(--reset-primary-strong) !important;
+  background: var(--reset-primary-strong) !important;
+}
+
+body:has(form[action*="/Account/Login/ResetPassword"]) #submit-reset-password:focus-visible {
+  outline: 3px solid rgb(89 110 106 / 30%);
+  outline-offset: 3px;
+}
+
+@media (max-width: 720px) {
+  body:has(form[action*="/Account/Login/ResetPassword"]) {
+    --reset-card-padding: 1.25rem;
+  }
+
+  body:has(form[action*="/Account/Login/ResetPassword"]) #content-container.container.wrapper-body {
+    width: calc(100% - 1.5rem) !important;
+    padding: 2rem 0 4rem !important;
+  }
+}

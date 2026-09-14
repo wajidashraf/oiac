@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "audit:a11y": "node scripts/audit-accessibility.mjs",
-    "capture:auth": "node scripts/capture-auth-redesign.mjs"
+    "capture:auth": "node scripts/capture-auth-redesign.mjs",
+    "verify:reset-password-layout": "node scripts/verify-reset-password-layout.mjs"
   },
   "dependencies": {
     "react": "^19.0.0",
