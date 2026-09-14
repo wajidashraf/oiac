@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getCalendarEvents } from '../events/eventService'
 import type { EventItem } from '../events/eventTypes'
 import {
@@ -17,6 +17,7 @@ import {
 import type { MeetingInvite } from '../meetingInvites/meetingInviteTypes'
 import { getActiveTeamAnnouncements } from '../teamAnnouncements/teamAnnouncementService'
 import type { TeamAnnouncement } from '../teamAnnouncements/teamAnnouncementTypes'
+import { selectUpcomingMeetings } from './upcomingMeetings'
 
 export type DashboardLoadStatus = 'loading' | 'ready' | 'error'
 
@@ -28,6 +29,7 @@ export type HomeDashboardData = {
   readonly reportsStatus: DashboardLoadStatus
   readonly registrationsStatus: DashboardLoadStatus
   readonly meetingInvites: readonly MeetingInvite[]
+  readonly upcomingMeetings: readonly MeetingInvite[]
   readonly invitesStatus: DashboardLoadStatus
   readonly teamAnnouncements: readonly TeamAnnouncement[]
   readonly announcementsStatus: DashboardLoadStatus
@@ -206,6 +208,11 @@ export function useHomeDashboardData(contactId?: string): HomeDashboardData {
     }
   }, [contactId])
 
+  const upcomingMeetings = useMemo(
+    () => selectUpcomingMeetings(meetingInvites),
+    [meetingInvites],
+  )
+
   return {
     reports,
     reportCount,
@@ -214,6 +221,7 @@ export function useHomeDashboardData(contactId?: string): HomeDashboardData {
     reportsStatus,
     registrationsStatus,
     meetingInvites,
+    upcomingMeetings,
     invitesStatus,
     teamAnnouncements,
     announcementsStatus,

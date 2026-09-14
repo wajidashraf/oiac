@@ -59,8 +59,9 @@ const teamAnnouncement: TeamAnnouncement = {
 const meetingInvite: MeetingInvite = {
   id: inviteId,
   title: 'District Briefing',
-  startDateTime: '2026-09-18T18:00:00Z',
-  endDateTime: '2026-09-18T19:00:00Z',
+  startDateTime: '2099-09-18T18:00:00Z',
+  endDateTime: '2099-09-18T19:00:00Z',
+  meetingLink: 'https://teams.microsoft.com/l/meetup-join/district-briefing',
   participant: null,
 }
 
@@ -290,6 +291,40 @@ test('loads eligible meeting invites independently for the signed-in Contact', a
   expect(getMeetingInvites).toHaveBeenCalledWith(contactId, expect.any(AbortSignal))
 })
 
+test('derives every future meeting in ascending order without removing past invites upstream', async () => {
+  const pastInvite: MeetingInvite = {
+    ...meetingInvite,
+    id: '88888888-6666-4666-8666-666666666666',
+    title: 'Past District Briefing',
+    startDateTime: '2000-09-18T18:00:00Z',
+    endDateTime: '2000-09-18T19:00:00Z',
+  }
+  const soonerFutureInvite: MeetingInvite = {
+    ...meetingInvite,
+    id: '55555555-6666-4666-8666-666666666666',
+    title: 'Sooner Future Briefing',
+    startDateTime: '2099-09-16T18:00:00Z',
+    endDateTime: '2099-09-16T19:00:00Z',
+  }
+  vi.mocked(getMeetingInvites).mockResolvedValueOnce({
+    contactFullName: 'Sara Rahimi',
+    invites: [meetingInvite, pastInvite, soonerFutureInvite],
+  })
+
+  const { result } = renderHook(() => useHomeDashboardData(contactId))
+  await waitFor(() => expect(result.current.invitesStatus).toBe('ready'))
+
+  expect(result.current.meetingInvites.map(({ id }) => id)).toEqual([
+    meetingInvite.id,
+    pastInvite.id,
+    soonerFutureInvite.id,
+  ])
+  expect(result.current.upcomingMeetings.map(({ id }) => id)).toEqual([
+    soonerFutureInvite.id,
+    meetingInvite.id,
+  ])
+})
+
 test('accepts one invite, locks repeat requests synchronously, and updates only that row', async () => {
   let resolveAccept!: (value: Awaited<ReturnType<typeof acceptMeetingInvite>>) => void
   vi.mocked(acceptMeetingInvite).mockReturnValue(new Promise((resolve) => {
@@ -321,6 +356,7 @@ test('accepts one invite, locks repeat requests synchronously, and updates only 
   })
 
   expect(result.current.meetingInvites[0].participant?.status).toBe(MEETING_INVITATION_STATUS.accepted)
+  expect(result.current.upcomingMeetings[0].participant?.status).toBe(MEETING_INVITATION_STATUS.accepted)
   expect(result.current.acceptingInviteIds.has(inviteId)).toBe(false)
 })
 
