@@ -396,7 +396,7 @@ adx_sitesetting:
   IsDeleted: false
 - RecordId: 794797dc-e100-41f9-8a26-e48761dde860
   DisplayName: 794797dc-e100-41f9-8a26-e48761dde860
-  CheckSum: d16aaa549e4e8f92b24640f1a5ffef8cd071b6d52de08345549236db976b432c
+  CheckSum: 3a1bc88a0e6a1f5f081341cc3261df0d89095843e7421f586aa3eaf8d79feef3
   IsDeleted: false
 - RecordId: 7b27ed62-52bc-4050-8034-1162a21549a7
   DisplayName: 7b27ed62-52bc-4050-8034-1162a21549a7
@@ -452,7 +452,7 @@ adx_sitesetting:
   IsDeleted: false
 - RecordId: a819a91f-3b5e-4014-8691-63093aa9cc59
   DisplayName: a819a91f-3b5e-4014-8691-63093aa9cc59
-  CheckSum: d9ab1d402cfef655a6b5d3968db40cd10cdcca28273e60ef831dcecb179e63c5
+  CheckSum: 1170e854721204a6e4cd04a4ee89621fc116985b9d0a56f4008ac8afaab8389e
   IsDeleted: false
 - RecordId: ab721811-ecba-48ee-b81a-bdc7e8baa4d6
   DisplayName: ab721811-ecba-48ee-b81a-bdc7e8baa4d6
@@ -585,7 +585,7 @@ adx_webfile:
   IsDeleted: true
 - RecordId: 50b46c02-6e17-4abe-b56b-281c1313efc4
   DisplayName: 50b46c02-6e17-4abe-b56b-281c1313efc4
-  CheckSum: 7dd5d2bf078130626b378c03782247dcdb16c54820e7f0a50db95624bfe478cb
+  CheckSum: d15d8e443de173d14e176e36a0af714bb2847560119707ddf7c998eb36640ad4
   IsDeleted: false
 - RecordId: 59ec00b3-2fa8-41b6-8b1f-d8c313da8c40
   DisplayName: 59ec00b3-2fa8-41b6-8b1f-d8c313da8c40
@@ -597,7 +597,7 @@ adx_webfile:
   IsDeleted: false
 - RecordId: 8f607af5-905b-48cb-aee8-e80e065dad40
   DisplayName: 8f607af5-905b-48cb-aee8-e80e065dad40
-  CheckSum: c560fe17695182ddaf983846911b288e08901aeb2bc3205e86b70ae8456d3ad5
+  CheckSum: 7a6a7078b8bdd7917be6d68d946c518a7db5076557fa87e0a68052765ab5df5d
   IsDeleted: false
 - RecordId: 98c794cf-8c42-4880-837a-648c750f26a4
   DisplayName: 98c794cf-8c42-4880-837a-648c750f26a4
@@ -610,7 +610,7 @@ adx_webfile:
 - RecordId: cafd0dfc-4ea3-4dab-9da2-4da8db9a911f
   DisplayName: cafd0dfc-4ea3-4dab-9da2-4da8db9a911f
   CheckSum: e0b510788a056c7075551f6d974b5d314bc7c318a3cb331756c9ddc8e9ef542e
-  IsDeleted: false
+  IsDeleted: true
 - RecordId: f576e1cc-a3dd-450e-937b-2de0549fa187
   DisplayName: f576e1cc-a3dd-450e-937b-2de0549fa187
   CheckSum: 53e98330837dce5639611b3a27ac8cf5b030e6b1ae41632634c17369fa43ba96
@@ -664,7 +664,7 @@ adx_webpage:
   IsDeleted: false
 - RecordId: 71591c4f-0e93-46f1-b1c4-91008a9f143a
   DisplayName: 71591c4f-0e93-46f1-b1c4-91008a9f143a
-  CheckSum: 777eabc9efb0f71ea67308eca5c3e2ae2902e4a7a03f3f39856b0c1f1ba66aed
+  CheckSum: bf078dfe9f679fc4be2f7c5d7b12df80cf605eed0b533abbb6ac162420f9870f
   IsDeleted: false
 - RecordId: 950db54f-769f-4242-88c4-2fc0329bb3e8
   DisplayName: 950db54f-769f-4242-88c4-2fc0329bb3e8
@@ -752,7 +752,7 @@ adx_websitelanguage:
 adx_webtemplate:
 - RecordId: 1a8d7f5c-7e6b-4a4f-b9d5-2f3c6a1e8b70
   DisplayName: 1a8d7f5c-7e6b-4a4f-b9d5-2f3c6a1e8b70
-  CheckSum: d85734522466c0d08e028e0383d3bc12885e213bf63a7ec969c7b47ce4e485b5
+  CheckSum: 6ec9712bd8e130d14bb157078c865514ff35418a1ff4439ee10868252f6440d9
   IsDeleted: false
 - RecordId: 2a0ba60d-ee3a-4469-aeec-fc5a3b7c7b5c
   DisplayName: 2a0ba60d-ee3a-4469-aeec-fc5a3b7c7b5c
@@ -833,7 +833,7 @@ annotation:
   IsDeleted: true
 - RecordId: 50b46c02-6e17-4abe-b56b-281c1313efc4
   DisplayName: auth.css
-  CheckSum: a0b3e94e8b6c3459bccf0502701632cd61372004c07ac985a81ac187e505f1ed
+  CheckSum: ef57be2c18bba1fb5eefa9666fe1e59299a8d456e7142f21bc9f5f004c60ae61
   IsDeleted: false
 - RecordId: 59ec00b3-2fa8-41b6-8b1f-d8c313da8c40
   DisplayName: index-DtaFbc9P.css
@@ -845,7 +845,7 @@ annotation:
   IsDeleted: false
 - RecordId: 8f607af5-905b-48cb-aee8-e80e065dad40
   DisplayName: index.html
-  CheckSum: 1534a89cfd6af645480fa2f8796bcb03ae684e70d16c06b4141e0cf02bb9f3b1
+  CheckSum: 22c0fb8a70a9ac3c82873d298b860b80daec023f68f3408d2d49922c54ee26e1
   IsDeleted: false
 - RecordId: 98c794cf-8c42-4880-837a-648c750f26a4
   DisplayName: logo.png
@@ -858,7 +858,7 @@ annotation:
 - RecordId: cafd0dfc-4ea3-4dab-9da2-4da8db9a911f
   DisplayName: index-CKSO-ewZ.css
   CheckSum: 5d87327fe554a29bba3257db197a3fe903c5e48795d62bf39057804258371688
-  IsDeleted: false
+  IsDeleted: true
 - RecordId: f576e1cc-a3dd-450e-937b-2de0549fa187
   DisplayName: MainHomeImage.jpg
   CheckSum: fbceb0ef1f0130c0f931a2a7c64c38e15a463599b6bbfcb4603902a8cc72dc8f
