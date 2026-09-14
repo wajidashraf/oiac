@@ -8,6 +8,24 @@
 {% if auth_path contains '/account/login/register' %}
   {% assign is_registration_page = true %}
 {% endif %}
+{% assign is_reset_password_page = false %}
+{% if auth_path == '/account/login/resetpassword' %}
+  {% assign is_reset_password_page = true %}
+{% endif %}
+
+{% if is_reset_password_page %}
+  <link rel="stylesheet" href="/auth.css?v=4">
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var resetButton = document.getElementById('submit-reset-password');
+      if (!resetButton) return;
+      if (!resetButton.textContent.trim()) resetButton.textContent = 'Reset password';
+      if (!resetButton.hasAttribute('aria-label')) {
+        resetButton.setAttribute('aria-label', resetButton.textContent.trim());
+      }
+    });
+  </script>
+{% endif %}
 
 {% if auth_path == '/signin' or auth_path == '/register' or auth_path contains '/account/login' %}
   {% if is_registration_page %}

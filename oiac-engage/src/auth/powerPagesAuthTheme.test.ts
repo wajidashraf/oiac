@@ -11,11 +11,8 @@ import codeSiteHeader from '../../.powerpages-site/web-templates/header/Header.w
 import headerCacheSetting from '../../.powerpages-site/site-settings/Header-OutputCache-Enabled.sitesetting.yml?raw'
 import website from '../../.powerpages-site/website.yml?raw'
 
-test('native authentication shell renders a route-aware branded header while its form stylesheet stays disabled', () => {
-  const activeHeader = header.replace(/<!--[\s\S]*?-->/g, '').trim()
-
+test('native authentication shell renders a route-aware branded header while its global form stylesheet stays disabled', () => {
   expect(header).toContain('<!-- <link rel="stylesheet" href="/auth.css?v=3"> -->')
-  expect(activeHeader).not.toContain('<link')
   expect(header).toContain('request.path | downcase')
   expect(header).toContain("auth_path == '/signin'")
   expect(header).toContain("auth_path == '/register'")
@@ -40,6 +37,36 @@ test('native authentication shell renders a route-aware branded header while its
   expect(website).toContain('footerwebtemplateid: 5c3e9a12-4b7d-4f8a-a6c1-9e2d7b5f3048')
   expect(codeSiteHeader.trim()).toBe('<div/>')
   expect(codeSiteFooter.trim()).toBe('<div/>')
+})
+
+test('loads the native form theme only inside the reset-password route condition', () => {
+  expect(header).toContain("auth_path == '/account/login/resetpassword'")
+  expect(header).toMatch(/{% if is_reset_password_page %}\s*<link rel="stylesheet" href="\/auth\.css\?v=4">[\s\S]*?{% endif %}/)
+  expect(header.match(/<link rel="stylesheet" href="\/auth\.css\?v=4">/g)).toHaveLength(1)
+})
+
+test('labels an empty native reset submit button without replacing platform copy', () => {
+  const resetAssets = header.match(/{% if is_reset_password_page %}([\s\S]*?){% endif %}/)
+  expect(resetAssets).not.toBeNull()
+
+  const resetScript = resetAssets?.[1].match(/<script>([\s\S]*?)<\/script>/)
+  expect(resetScript).not.toBeNull()
+
+  document.body.innerHTML = '<button id="submit-reset-password"></button>'
+  Function(resetScript![1])()
+  document.dispatchEvent(new Event('DOMContentLoaded'))
+
+  const button = document.querySelector<HTMLButtonElement>('#submit-reset-password')!
+  expect(button).toHaveTextContent('Reset password')
+  expect(button).toHaveAccessibleName('Reset password')
+
+  button.textContent = 'Choose a new password'
+  button.setAttribute('aria-label', 'Localized reset action')
+  document.dispatchEvent(new Event('DOMContentLoaded'))
+
+  expect(button).toHaveTextContent('Choose a new password')
+  expect(button).toHaveAccessibleName('Localized reset action')
+  document.body.replaceChildren()
 })
 
 test('dedicated native authentication web file is deployable after Bootstrap', () => {
