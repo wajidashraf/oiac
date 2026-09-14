@@ -32,7 +32,9 @@ test('enables only the required Contact Web API fields and secured filtering', (
   expect(contactEnabled).toContain('name: Webapi/contact/enabled')
   expect(contactEnabled).toContain('value: true')
   expect(contactFields).toContain('name: Webapi/contact/fields')
-  expect(contactFields).toContain('value: "contactid,firstname,lastname,fullname,emailaddress1,mobilephone,address1_city,address1_stateorprovince,address1_postalcode,jobtitle,mss_district,_mss_district_value"')
+  expect(contactFields).toContain('value: "contactid,firstname,lastname,fullname,emailaddress1,mobilephone,address1_city,address1_stateorprovince,address1_postalcode,jobtitle,mss_District,_mss_district_value"')
+  const configuredContactFields = contactFields.match(/^value: "([^"]+)"$/m)?.[1] ?? ''
+  expect(configuredContactFields.split(',')).not.toContain('mss_district')
   expect(disableODataFilter).toContain('name: Webapi/contact/disableodatafilter')
   expect(disableODataFilter).toContain('value: false')
   expect(innerError).toContain('name: Webapi/error/innererror')
