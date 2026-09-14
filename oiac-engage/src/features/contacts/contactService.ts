@@ -120,7 +120,7 @@ export function buildContactsQuery({ districtId, search }: ContactQuery): string
 }
 
 export function buildAdminContactsQuery({ search }: AdminContactQuery): string {
-  const volunteerFilter = "contains(jobtitle,'volunteer')"
+  const volunteerFilter = "jobtitle eq 'Volunteer'"
   const normalizedSearch = search.trim()
   const filter = normalizedSearch
     ? `${volunteerFilter} and (${ADMIN_SEARCH_FIELDS

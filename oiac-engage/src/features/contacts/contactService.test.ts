@@ -200,7 +200,8 @@ describe('Contact Web API service', () => {
       'contactid,address1_city,address1_stateorprovince,address1_postalcode,'
       + '_mss_district_value,emailaddress1,firstname,jobtitle,lastname,mobilephone',
     )
-    expect(params.get('$filter')).toBe("contains(jobtitle,'volunteer')")
+    expect(params.get('$filter')).toBe("jobtitle eq 'Volunteer'")
+    expect(params.get('$filter')).not.toContain("contains(jobtitle,'volunteer')")
     expect(params.get('$orderby')).toBe('lastname asc,firstname asc,contactid asc')
     expect(params.has('$skip')).toBe(false)
     expect(params.has('$top')).toBe(false)
@@ -211,7 +212,7 @@ describe('Contact Web API service', () => {
     const filter = new URLSearchParams(query.slice(1)).get('$filter')
 
     expect(filter).toBe(
-      "contains(jobtitle,'volunteer') and ("
+      "jobtitle eq 'Volunteer' and ("
       + "contains(firstname,'O''Connor') or "
       + "contains(lastname,'O''Connor') or "
       + "contains(emailaddress1,'O''Connor') or "
@@ -221,6 +222,7 @@ describe('Contact Web API service', () => {
       + "contains(address1_stateorprovince,'O''Connor') or "
       + "contains(address1_postalcode,'O''Connor'))",
     )
+    expect(filter).not.toContain("contains(jobtitle,'volunteer')")
   })
 
   test('loads and maps an administrator volunteer page with the existing page preference', async () => {
