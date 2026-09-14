@@ -450,7 +450,7 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 
 .dashboard-invite-list strong, .dashboard-announcement-list strong, .dashboard-team-list strong { color: var(--color-text); font-size: 0.76rem; line-height: 1.4; }
 
-.dashboard-invite-list li > div > span, .dashboard-invite-list time, .dashboard-announcement-list time, .dashboard-team-list div > span { color: var(--color-primary); font-size: 0.7rem; line-height: 1.4; }
+.dashboard-invite-list li > div > span, .dashboard-invite-list time, .dashboard-announcement-list time, .dashboard-team-list div > span, .dashboard-team-list time { color: var(--color-primary); font-size: 0.7rem; line-height: 1.4; }
 
 .dashboard-invite-list .status-badge { margin-top: -0.15rem; }
 
@@ -569,9 +569,11 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 
 .dashboard-team-card .content-card__header { justify-content: flex-start; border: 1px solid var(--color-border); border-bottom: 0; border-radius: var(--radius-md) var(--radius-md) 0 0; padding: 0.8rem 1rem; }
 
-.dashboard-team-card .content-card__meta { order: -1; }
+.dashboard-team-card .content-card__meta { display: contents; }
 
-.dashboard-team-card__marker { display: grid; width: 1.25rem; height: 1.25rem; place-items: center; color: var(--color-primary-strong); }
+.dashboard-team-card__marker { display: grid; width: 1.25rem; height: 1.25rem; order: -1; place-items: center; color: var(--color-primary-strong); }
+
+.dashboard-team-card .coming-soon-badge { margin-left: auto; }
 
 .dashboard-team-card__marker svg { width: 1.05rem; height: 1.05rem; stroke-width: 1.75; }
 
@@ -584,6 +586,14 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 .dashboard-team-list li > div { display: grid; min-width: 0; gap: 0.15rem; }
 
 .dashboard-team-list__action { display: inline-flex; min-width: 3.25rem; min-height: 2.75rem; flex: none; align-items: center; justify-content: flex-end; gap: 0.25rem; color: var(--color-text-muted); cursor: default; font-size: 0.72rem; font-weight: 600; }
+
+.dashboard-team-list__action--link { border-radius: var(--radius-sm); color: var(--color-primary-strong); cursor: pointer; text-decoration: none; }
+
+.dashboard-team-list__action--link:hover { color: var(--color-primary); text-decoration: underline; text-underline-offset: 0.18rem; }
+
+.dashboard-team-list__action--link:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+
+.dashboard-team-list__action--unavailable { min-width: auto; color: var(--color-text-muted); white-space: nowrap; }
 
 .dashboard-type-label { display: inline-flex; min-height: 1.45rem; align-items: center; border: 1px solid #d3dcda; border-radius: 999px; background: var(--color-primary-soft); color: var(--color-primary-strong); font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.55rem; }
 
@@ -3489,7 +3499,8 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   .dashboard-invite-list li > div > span,
   .dashboard-invite-list time,
   .dashboard-announcement-list time,
-  .dashboard-team-list div > span { font-size: 0.875rem; }
+  .dashboard-team-list div > span,
+  .dashboard-team-list time { font-size: 0.875rem; }
   .dashboard-table thead th,
   .dashboard-identity__eyebrow,
   .dashboard-date-tile span,

@@ -14,7 +14,7 @@ export type TeamResourceItem = {
   id: string
   title: string
   detail: string
-  action: 'Join' | 'Open'
+  action: 'Open'
   href: string
 }
 
@@ -48,16 +48,6 @@ export const trainingResources: readonly DashboardResource[] = [
 ]
 
 export const teamResourceGroups: readonly TeamResourceGroup[] = [
-  {
-    id: 'upcoming-meetings',
-    title: 'Upcoming Meetings',
-    marker: 'C',
-    items: [
-      { id: 'coordination-call', title: 'Advocacy Coordination Call', detail: 'Sep 5 · 11:00 AM ET · Weekly team sync', action: 'Join', href: '/my-calendar' },
-      { id: 'district-briefing', title: 'District Volunteer Briefing', detail: 'Sep 12 · 2:00 PM ET · DC & VA volunteers', action: 'Join', href: '/my-calendar' },
-      { id: 'crm-walkthrough', title: 'Training: CRM Walkthrough', detail: 'Sep 19 · 10:00 AM ET · New volunteer onboarding', action: 'Join', href: '/my-calendar' },
-    ],
-  },
   {
     id: 'important-channels',
     title: 'Important Channels',

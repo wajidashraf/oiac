@@ -50,6 +50,7 @@ const dashboardInvites: readonly MeetingInvite[] = [
     title: 'Pending District Briefing',
     startDateTime: '2026-09-18T18:00:00Z',
     endDateTime: '2026-09-18T19:00:00Z',
+    meetingLink: 'https://teams.microsoft.com/l/meetup-join/pending-district-briefing',
     participant: {
       id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
       contactId: '11111111-1111-1111-1111-111111111111',
@@ -64,6 +65,7 @@ const dashboardInvites: readonly MeetingInvite[] = [
     title: 'Accepted Volunteer Briefing',
     startDateTime: '2026-09-20T14:00:00Z',
     endDateTime: null,
+    meetingLink: 'https://outlook.office.com/calendar/item/accepted-volunteer-briefing',
     participant: {
       id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
       contactId: '11111111-1111-1111-1111-111111111111',
@@ -78,6 +80,7 @@ const dashboardInvites: readonly MeetingInvite[] = [
     title: 'New Volunteer Invitation',
     startDateTime: '2026-09-21T15:00:00Z',
     endDateTime: null,
+    meetingLink: null,
     participant: null,
   },
 ]
@@ -110,6 +113,7 @@ function dashboardData(overrides: Partial<HomeDashboardData> = {}): HomeDashboar
     reportsStatus: 'ready',
     registrationsStatus: 'ready',
     meetingInvites: dashboardInvites,
+    upcomingMeetings: dashboardInvites,
     invitesStatus: 'ready',
     teamAnnouncements: dashboardAnnouncements,
     announcementsStatus: 'ready',
@@ -171,6 +175,9 @@ test('keeps unfinished dashboard features visible without navigation behavior', 
   const announcements = screen.getByRole('heading', { name: 'Teams Announcements' }).closest('article')!
   const training = screen.getByRole('heading', { name: 'Training Resources' }).closest('article')!
   const teams = screen.getByRole('heading', { name: 'Teams & Resources' }).closest('section')!
+  const upcomingMeetings = within(teams).getByRole('heading', { name: 'Upcoming Meetings' }).closest('article')!
+  const importantChannels = within(teams).getByRole('heading', { name: 'Important Channels' }).closest('article')!
+  const recentDocuments = within(teams).getByRole('heading', { name: 'Recent Documents' }).closest('article')!
   const submissions = screen.getByRole('heading', { name: 'Volunteer Submissions' }).closest('section')!
 
   expect(within(meetingInvites).queryByText('Coming Soon')).not.toBeInTheDocument()
@@ -182,19 +189,94 @@ test('keeps unfinished dashboard features visible without navigation behavior', 
   expect(within(training).getByText('Coming Soon')).toBeInTheDocument()
   expect(training).toHaveClass('dashboard-panel--coming-soon')
   expect(training).toHaveAttribute('aria-disabled', 'true')
-  expect(within(teams).getByText('Coming Soon')).toBeInTheDocument()
-  expect(teams).toHaveClass('dashboard-section--coming-soon')
-  expect(teams).toHaveAttribute('aria-disabled', 'true')
+  expect(teams).not.toHaveClass('dashboard-section--coming-soon')
+  expect(teams).not.toHaveAttribute('aria-disabled')
+  expect(upcomingMeetings).not.toHaveClass('dashboard-panel--coming-soon')
+  expect(upcomingMeetings).not.toHaveAttribute('aria-disabled')
+  for (const placeholder of [importantChannels, recentDocuments]) {
+    expect(within(placeholder).getByText('Coming Soon')).toBeInTheDocument()
+    expect(placeholder).toHaveClass('dashboard-panel--coming-soon')
+    expect(placeholder).toHaveAttribute('aria-disabled', 'true')
+    expect(within(placeholder).queryByRole('link')).not.toBeInTheDocument()
+  }
   expect(within(submissions).getByText('Coming Soon')).toBeInTheDocument()
   expect(submissions).toHaveClass('dashboard-section--coming-soon')
   expect(submissions).toHaveAttribute('aria-disabled', 'true')
   expect(within(training).queryByRole('link')).not.toBeInTheDocument()
-  expect(within(teams).queryByRole('link')).not.toBeInTheDocument()
+  expect(within(upcomingMeetings).getByRole('link', {
+    name: 'Join Pending District Briefing in a new tab',
+  })).toBeInTheDocument()
 
   const upcomingEvents = screen.getByRole('heading', { name: 'Upcoming Events' }).closest('article')!
   expect(upcomingEvents).not.toHaveClass('dashboard-panel--coming-soon')
   expect(upcomingEvents).not.toHaveAttribute('aria-disabled')
   expect(within(upcomingEvents).getByRole('link', { name: /My Calendar/ })).toHaveAttribute('href', '/my-calendar')
+})
+
+test('renders every upcoming meeting with provider-neutral join links and unavailable fallback', () => {
+  renderHome()
+  const panel = screen.getByRole('heading', { name: 'Upcoming Meetings' }).closest('article')!
+  const rows = within(panel).getAllByRole('listitem')
+
+  expect(rows).toHaveLength(3)
+  expect(rows.map((row) => within(row).getByRole('strong').textContent)).toEqual([
+    'Pending District Briefing',
+    'Accepted Volunteer Briefing',
+    'New Volunteer Invitation',
+  ])
+  const teamsLink = within(panel).getByRole('link', {
+    name: 'Join Pending District Briefing in a new tab',
+  })
+  expect(teamsLink).toHaveTextContent('Join Link')
+  expect(teamsLink).toHaveAttribute(
+    'href',
+    'https://teams.microsoft.com/l/meetup-join/pending-district-briefing',
+  )
+  expect(teamsLink).toHaveAttribute('target', '_blank')
+  expect(teamsLink).toHaveAttribute('rel', 'noreferrer')
+  expect(teamsLink.querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
+  expect(within(panel).getByRole('link', {
+    name: 'Join Accepted Volunteer Briefing in a new tab',
+  })).toHaveAttribute(
+    'href',
+    'https://outlook.office.com/calendar/item/accepted-volunteer-briefing',
+  )
+  const unavailableRow = rows[2]
+  expect(within(unavailableRow).getByText('Link unavailable')).toBeInTheDocument()
+  expect(within(unavailableRow).queryByRole('link')).not.toBeInTheDocument()
+  expect(within(panel).queryByText('Advocacy Coordination Call')).not.toBeInTheDocument()
+  expect(within(panel).queryByText('Training: CRM Walkthrough')).not.toBeInTheDocument()
+})
+
+test('shows loading, error with retry, and empty states for upcoming meetings', async () => {
+  const actor = userEvent.setup()
+  vi.mocked(useHomeDashboardData).mockReturnValue(dashboardData({
+    upcomingMeetings: [],
+    invitesStatus: 'loading',
+  }))
+  const { rerender } = renderHome()
+  let panel = screen.getByRole('heading', { name: 'Upcoming Meetings' }).closest('article')!
+  expect(within(panel).getByText(/Loading upcoming meetings/)).toBeInTheDocument()
+
+  vi.mocked(useHomeDashboardData).mockReturnValue(dashboardData({
+    upcomingMeetings: [],
+    invitesStatus: 'error',
+  }))
+  rerender(<MemoryRouter><Home contactId="11111111-1111-1111-1111-111111111111" /></MemoryRouter>)
+  panel = screen.getByRole('heading', { name: 'Upcoming Meetings' }).closest('article')!
+  expect(within(panel).getByText('Upcoming meetings could not be loaded.')).toBeInTheDocument()
+  await actor.click(within(panel).getByRole('button', {
+    name: 'Try loading upcoming meetings again',
+  }))
+  expect(retryInvites).toHaveBeenCalledOnce()
+
+  vi.mocked(useHomeDashboardData).mockReturnValue(dashboardData({
+    upcomingMeetings: [],
+    invitesStatus: 'ready',
+  }))
+  rerender(<MemoryRouter><Home contactId="11111111-1111-1111-1111-111111111111" /></MemoryRouter>)
+  panel = screen.getByRole('heading', { name: 'Upcoming Meetings' }).closest('article')!
+  expect(within(panel).getByText('No upcoming meetings.')).toBeInTheDocument()
 })
 
 test('renders live meeting invites with Accepted read-only and Accept for every actionable status', async () => {

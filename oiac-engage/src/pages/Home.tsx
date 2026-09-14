@@ -9,6 +9,7 @@ import {
   LuHandshake,
   LuHash,
   LuExternalLink,
+  LuVideo,
 } from 'react-icons/lu'
 import { Link } from 'react-router-dom'
 import ComingSoonBadge from '../components/ComingSoonBadge'
@@ -33,7 +34,6 @@ const dashboardShortcuts = [
 ] as const
 
 const teamResourceIcons = {
-  'upcoming-meetings': LuCalendarDays,
   'important-channels': LuHash,
   'recent-documents': LuFileText,
 } as const
@@ -103,6 +103,7 @@ export default function Home({ contactId }: HomeProps) {
     reportsStatus,
     registrationsStatus,
     meetingInvites,
+    upcomingMeetings,
     invitesStatus,
     acceptingInviteIds,
     inviteError,
@@ -398,19 +399,70 @@ export default function Home({ contactId }: HomeProps) {
         </div>
       </section>
 
-      <section
-        className="dashboard-section dashboard-section--coming-soon"
-        aria-labelledby="teams-resources-title"
-        aria-disabled="true"
-      >
+      <section className="dashboard-section" aria-labelledby="teams-resources-title">
         <div className="dashboard-section__heading">
           <h2 id="teams-resources-title">Teams &amp; Resources</h2>
           <div className="dashboard-section__labels">
             <span className="dashboard-admin-label">Managed by Admin</span>
-            <ComingSoonBadge />
           </div>
         </div>
         <div className="dashboard-resource-grid">
+          <ContentCard
+            title="Upcoming Meetings"
+            headingLevel="h3"
+            className="dashboard-panel dashboard-team-card"
+            meta={<span className="dashboard-team-card__marker" aria-hidden="true"><LuCalendarDays /></span>}
+          >
+            {invitesStatus === 'loading' ? (
+              <p className="dashboard-report-state" role="status">Loading upcoming meetings…</p>
+            ) : null}
+            {invitesStatus === 'error' ? (
+              <div className="form-alert dashboard-report-state dashboard-report-state--error" role="alert">
+                <span>Upcoming meetings could not be loaded.</span>
+                <button
+                  className="button button--quiet"
+                  type="button"
+                  aria-label="Try loading upcoming meetings again"
+                  onClick={retryInvites}
+                >
+                  Try again
+                </button>
+              </div>
+            ) : null}
+            {invitesStatus === 'ready' && upcomingMeetings.length === 0 ? (
+              <p className="dashboard-report-state" role="status">No upcoming meetings.</p>
+            ) : null}
+            {invitesStatus === 'ready' && upcomingMeetings.length > 0 ? (
+              <ul className="dashboard-team-list">
+                {upcomingMeetings.map((meeting) => (
+                  <li key={meeting.id}>
+                    <div>
+                      <strong>{meeting.title}</strong>
+                      <time dateTime={meeting.startDateTime}>
+                        {formatInviteDate(meeting.startDateTime)}
+                      </time>
+                    </div>
+                    {meeting.meetingLink ? (
+                      <a
+                        className="dashboard-team-list__action dashboard-team-list__action--link"
+                        href={meeting.meetingLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={`Join ${meeting.title} in a new tab`}
+                      >
+                        <LuVideo aria-hidden="true" />
+                        <span>Join Link</span>
+                      </a>
+                    ) : (
+                      <span className="dashboard-team-list__action dashboard-team-list__action--unavailable">
+                        Link unavailable
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </ContentCard>
           {teamResourceGroups.map((group) => {
             const GroupIcon = teamResourceIcons[group.id as keyof typeof teamResourceIcons]
             return (
@@ -418,8 +470,14 @@ export default function Home({ contactId }: HomeProps) {
                 key={group.id}
                 title={group.title}
                 headingLevel="h3"
-                className="dashboard-panel dashboard-team-card"
-                meta={<span className="dashboard-team-card__marker" aria-hidden="true"><GroupIcon /></span>}
+                className="dashboard-panel dashboard-team-card dashboard-panel--coming-soon"
+                ariaDisabled
+                meta={(
+                  <>
+                    <span className="dashboard-team-card__marker" aria-hidden="true"><GroupIcon /></span>
+                    <ComingSoonBadge />
+                  </>
+                )}
               >
                 <ul className="dashboard-team-list">
                   {group.items.map((item) => (
