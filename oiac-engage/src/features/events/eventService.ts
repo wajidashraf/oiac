@@ -26,6 +26,7 @@ const EVENT_SELECT = [
 
 const FORMATTED_VALUE = '@OData.Community.Display.V1.FormattedValue'
 const EVENT_PREFER = `odata.include-annotations="OData.Community.Display.V1.FormattedValue"`
+const CALENDAR_EVENT_BATCH_SIZE = 50
 const EVENT_FORMAT_LABELS: Readonly<Record<number, string>> = {
   866530000: 'In Person',
   866530001: 'Virtual',
@@ -137,25 +138,39 @@ export async function getCalendarEvents(
 ): Promise<readonly EventItem[]> {
   const normalizedIds = Array.from(new Set(eventIds.map(normalizeEventId)))
   if (normalizedIds.length === 0) return []
-  if (normalizedIds.length > 100) throw new Error('Registered events could not be loaded.')
 
-  const statusFilter = '(mss_eventstatus eq 866530001 or mss_eventstatus eq 866530002'
-    + ' or mss_eventstatus eq 866530003 or mss_eventstatus eq 866530004)'
-  const idFilter = `(${normalizedIds.map((id) => `mss_eventsid eq ${id}`).join(' or ')})`
-  const params = new URLSearchParams({
-    $select: EVENT_SELECT.join(','),
-    $filter: `${statusFilter} and mss_startdatetime ge ${new Date().toISOString()} and ${idFilter}`,
-    $orderby: 'mss_startdatetime asc',
-  })
-  const response = await powerPagesFetch<unknown>(`/_api/mss_eventses?${params.toString()}`, {
-    signal,
-    headers: { Prefer: EVENT_PREFER },
-  })
-  if (!isRecord(response) || !Array.isArray(response.value)) {
-    throw new Error('Registered events could not be loaded.')
+  const batches: string[][] = []
+  for (let index = 0; index < normalizedIds.length; index += CALENDAR_EVENT_BATCH_SIZE) {
+    batches.push(normalizedIds.slice(index, index + CALENDAR_EVENT_BATCH_SIZE))
   }
+
   try {
-    return response.value.map(mapEventRecord)
+    const pages = await Promise.all(batches.map(async (batch) => {
+      const statusFilter = '(mss_eventstatus eq 866530001 or mss_eventstatus eq 866530002'
+        + ' or mss_eventstatus eq 866530003 or mss_eventstatus eq 866530004)'
+      const idFilter = `(${batch.map((id) => `mss_eventsid eq ${id}`).join(' or ')})`
+      const params = new URLSearchParams({
+        $select: EVENT_SELECT.join(','),
+        $filter: `${statusFilter} and ${idFilter}`,
+        $orderby: 'mss_startdatetime asc',
+      })
+      const response = await powerPagesFetch<unknown>(`/_api/mss_eventses?${params.toString()}`, {
+        signal,
+        headers: { Prefer: EVENT_PREFER },
+      })
+      if (!isRecord(response) || !Array.isArray(response.value)) {
+        throw new Error('Registered events could not be loaded.')
+      }
+      return response.value.map(mapEventRecord)
+    }))
+
+    return pages.flat().sort((left, right) => {
+      const leftTime = left.startDateTime ? Date.parse(left.startDateTime) : Number.POSITIVE_INFINITY
+      const rightTime = right.startDateTime ? Date.parse(right.startDateTime) : Number.POSITIVE_INFINITY
+      const normalizedLeftTime = Number.isFinite(leftTime) ? leftTime : Number.POSITIVE_INFINITY
+      const normalizedRightTime = Number.isFinite(rightTime) ? rightTime : Number.POSITIVE_INFINITY
+      return normalizedLeftTime - normalizedRightTime || left.id.localeCompare(right.id)
+    })
   } catch {
     throw new Error('Registered events could not be loaded.')
   }

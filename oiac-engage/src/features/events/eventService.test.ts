@@ -113,9 +113,7 @@ describe('eventService', () => {
     await expect(getEvents(true)).resolves.toEqual([event])
   })
 
-  test('loads future registered Event details directly through the Events Web API', async () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-08-31T12:34:56.000Z'))
+  test('loads past and future registered Event details without a current-time cutoff', async () => {
     const controller = new AbortController()
     powerPagesFetchMock.mockResolvedValue({
       value: [{ ...eventApiRecord, mss_eventsid: calendarEventId }],
@@ -133,14 +131,43 @@ describe('eventService', () => {
     expect(url.searchParams.get('$filter')).toBe(
       '(mss_eventstatus eq 866530001 or mss_eventstatus eq 866530002'
       + ' or mss_eventstatus eq 866530003 or mss_eventstatus eq 866530004)'
-      + ' and mss_startdatetime ge 2026-08-31T12:34:56.000Z'
       + ` and (mss_eventsid eq ${calendarEventId})`,
     )
+    expect(url.searchParams.get('$filter')).not.toContain('mss_startdatetime ge')
     expect(url.searchParams.get('$orderby')).toBe('mss_startdatetime asc')
     expect(options).toEqual({
       signal: controller.signal,
       headers: { Prefer: 'odata.include-annotations="OData.Community.Display.V1.FormattedValue"' },
     })
+  })
+
+  test('batches more than 100 registered Event IDs and merges them chronologically', async () => {
+    const ids = Array.from({ length: 101 }, (_, index) => (
+      `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`
+    ))
+    powerPagesFetchMock.mockImplementation(async (path) => {
+      const filter = new URL(path, 'https://powerpages.local').searchParams.get('$filter') ?? ''
+      const matchingIds = ids.filter((id) => filter.includes(id))
+      return {
+        value: matchingIds.map((id) => ({
+          ...eventApiRecord,
+          mss_eventsid: id,
+          mss_startdatetime: id === ids[100]
+            ? '2025-01-01T09:00:00Z'
+            : '2027-01-01T09:00:00Z',
+        })),
+      }
+    })
+
+    const result = await getCalendarEvents(ids)
+
+    expect(powerPagesFetchMock).toHaveBeenCalledTimes(3)
+    expect(powerPagesFetchMock.mock.calls.every(([path]) => (
+      ((new URL(path, 'https://powerpages.local').searchParams.get('$filter') ?? '')
+        .match(/mss_eventsid eq/g)?.length ?? 0) <= 50
+    ))).toBe(true)
+    expect(result).toHaveLength(101)
+    expect(result[0].id).toBe(ids[100])
   })
 
   test('does not call the Events Web API when there are no Registered event IDs', async () => {
