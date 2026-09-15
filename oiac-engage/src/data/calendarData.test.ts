@@ -1,6 +1,11 @@
 import { describe, expect, test } from 'vitest'
 import type { EventItem } from '../features/events/eventTypes'
 import {
+  MEETING_INVITATION_STATUS,
+  type MeetingInvite,
+} from '../features/meetingInvites/meetingInviteTypes'
+import {
+  acceptedMeetingInviteToCalendarItem,
   buildMonthCells,
   eventToCalendarItem,
   itemsForMonth,
@@ -15,6 +20,7 @@ const records: readonly CalendarItem[] = [
     title: 'Congressional Outreach Training Session',
     kind: 'meeting',
     status: 'Accepted',
+    startDateTime: '2026-09-18T18:00:00Z',
     time: '2:00 PM ET',
     location: 'Microsoft Teams',
     joinUrl: 'https://teams.microsoft.com/l/meetup-join/example',
@@ -25,6 +31,7 @@ const records: readonly CalendarItem[] = [
     title: 'Capitol Hill Advocacy Day',
     kind: 'event',
     status: 'Registered',
+    startDateTime: '2026-09-08T12:00:00Z',
     time: 'All Day',
     location: 'Washington, D.C.',
     joinUrl: 'https://outlook.office.com/calendar/item/example',
@@ -35,6 +42,7 @@ const records: readonly CalendarItem[] = [
     title: 'OIAC National Convention 2026',
     kind: 'event',
     status: 'Registered',
+    startDateTime: '2026-10-15T12:00:00Z',
     time: 'All Day',
     location: 'Washington, D.C.',
     joinUrl: 'https://outlook.office.com/calendar/item/convention',
@@ -57,6 +65,27 @@ describe('calendar date helpers', () => {
 
     expect(septemberItems.map((item) => item.id)).toEqual(['event-001', 'meeting-002'])
     expect(records.map((item) => item.id)).toEqual(['meeting-002', 'event-001', 'event-003'])
+  })
+
+  test('sorts same-day items by their start timestamp instead of display text', () => {
+    const sameDayItems: readonly CalendarItem[] = [
+      {
+        ...records[0],
+        id: 'late',
+        date: '2026-09-18',
+        startDateTime: '2026-09-18T21:00:00Z',
+        time: '10:00 PM',
+      },
+      {
+        ...records[0],
+        id: 'early',
+        date: '2026-09-18',
+        startDateTime: '2026-09-18T10:00:00Z',
+        time: '9:00 AM',
+      },
+    ]
+
+    expect(itemsForMonth(sameDayItems, 2026, 8).map(({ id }) => id)).toEqual(['early', 'late'])
   })
 
   test('formats a stable English month heading', () => {
@@ -86,6 +115,7 @@ describe('calendar date helpers', () => {
       title: event.title,
       kind: 'event',
       status: 'Registered',
+      startDateTime: event.startDateTime,
       time: '9:00 PM–10:30 PM',
       location: 'Online meeting',
       joinUrl: event.meetingUrl,
@@ -114,5 +144,70 @@ describe('calendar date helpers', () => {
       joinUrl: null,
     })
     expect(eventToCalendarItem({ ...event, startDateTime: null })).toBeNull()
+  })
+
+  test('maps an accepted Meeting Invite into a past calendar item', () => {
+    const acceptedMeeting: MeetingInvite = {
+      id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      title: 'District Briefing',
+      startDateTime: '2025-08-12T18:00:00Z',
+      endDateTime: '2025-08-12T19:00:00Z',
+      meetingLink: 'https://teams.microsoft.com/l/meetup-join/district-briefing',
+      participant: {
+        id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+        contactId: '11111111-1111-4111-8111-111111111111',
+        meetingInviteId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        status: MEETING_INVITATION_STATUS.accepted,
+        acceptedOn: '2025-08-01T12:00:00Z',
+        name: 'District Briefing - Sara Rahimi',
+      },
+    }
+
+    expect(acceptedMeetingInviteToCalendarItem(acceptedMeeting)).toMatchObject({
+      id: acceptedMeeting.id,
+      date: '2025-08-12',
+      title: acceptedMeeting.title,
+      kind: 'meeting',
+      status: 'Accepted',
+      startDateTime: acceptedMeeting.startDateTime,
+      location: 'Online meeting',
+      joinUrl: acceptedMeeting.meetingLink,
+    })
+  })
+
+  test('excludes non-accepted and invalid Meeting Invites from the calendar', () => {
+    const acceptedMeeting: MeetingInvite = {
+      id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      title: 'District Briefing',
+      startDateTime: '2026-09-18T18:00:00Z',
+      endDateTime: null,
+      meetingLink: null,
+      participant: {
+        id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+        contactId: '11111111-1111-4111-8111-111111111111',
+        meetingInviteId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        status: MEETING_INVITATION_STATUS.accepted,
+        acceptedOn: '2026-09-01T12:00:00Z',
+        name: 'District Briefing - Sara Rahimi',
+      },
+    }
+
+    expect(acceptedMeetingInviteToCalendarItem(acceptedMeeting)).toMatchObject({
+      location: 'Meeting location unavailable',
+      joinUrl: null,
+    })
+    expect(acceptedMeetingInviteToCalendarItem({
+      ...acceptedMeeting,
+      participant: { ...acceptedMeeting.participant!, status: MEETING_INVITATION_STATUS.pending },
+    })).toBeNull()
+    expect(acceptedMeetingInviteToCalendarItem({
+      ...acceptedMeeting,
+      participant: { ...acceptedMeeting.participant!, status: MEETING_INVITATION_STATUS.rejected },
+    })).toBeNull()
+    expect(acceptedMeetingInviteToCalendarItem({ ...acceptedMeeting, participant: null })).toBeNull()
+    expect(acceptedMeetingInviteToCalendarItem({
+      ...acceptedMeeting,
+      startDateTime: 'not-a-date',
+    })).toBeNull()
   })
 })

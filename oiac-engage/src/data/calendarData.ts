@@ -1,5 +1,9 @@
 import { eventCalendarDate, eventLocationLabel } from './eventsData'
 import type { EventItem } from '../features/events/eventTypes'
+import {
+  MEETING_INVITATION_STATUS,
+  type MeetingInvite,
+} from '../features/meetingInvites/meetingInviteTypes'
 
 export type CalendarItem = {
   id: string
@@ -7,6 +11,7 @@ export type CalendarItem = {
   title: string
   kind: 'meeting' | 'event'
   status: 'Accepted' | 'Registered'
+  startDateTime: string
   time: string
   location: string
   joinUrl: string | null
@@ -46,9 +51,28 @@ export function eventToCalendarItem(event: EventItem): CalendarItem | null {
     title: event.title,
     kind: 'event',
     status: 'Registered',
+    startDateTime: event.startDateTime,
     time: eventTimeLabel(event.startDateTime, event.endDateTime),
     location: eventLocationLabel(event.eventFormat, event.venueName, event.meetingUrl),
     joinUrl: safeHttpUrl(event.meetingUrl),
+  }
+}
+
+export function acceptedMeetingInviteToCalendarItem(invite: MeetingInvite): CalendarItem | null {
+  if (invite.participant?.status !== MEETING_INVITATION_STATUS.accepted) return null
+  const date = eventCalendarDate(invite.startDateTime)
+  if (!date) return null
+  const joinUrl = safeHttpUrl(invite.meetingLink)
+  return {
+    id: invite.id,
+    date,
+    title: invite.title,
+    kind: 'meeting',
+    status: 'Accepted',
+    startDateTime: invite.startDateTime,
+    time: eventTimeLabel(invite.startDateTime, invite.endDateTime),
+    location: joinUrl ? 'Online meeting' : 'Meeting location unavailable',
+    joinUrl,
   }
 }
 
@@ -77,7 +101,8 @@ export function itemsForMonth(
   const prefix = `${year}-${String(monthIndex + 1).padStart(2, '0')}-`
   return items
     .filter((item) => item.date.startsWith(prefix))
-    .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
+    .sort((a, b) => Date.parse(a.startDateTime) - Date.parse(b.startDateTime)
+      || a.id.localeCompare(b.id))
 }
 
 export function monthLabel(year: number, monthIndex: number): string {
