@@ -147,7 +147,7 @@ describe('eventService', () => {
     ))
     powerPagesFetchMock.mockImplementation(async (path) => {
       const filter = new URL(path, 'https://powerpages.local').searchParams.get('$filter') ?? ''
-      const matchingIds = ids.filter((id) => filter.includes(id))
+      const matchingIds = ids.filter((id) => filter.includes(id)).reverse()
       return {
         value: matchingIds.map((id) => ({
           ...eventApiRecord,
@@ -168,6 +168,7 @@ describe('eventService', () => {
     ))).toBe(true)
     expect(result).toHaveLength(101)
     expect(result[0].id).toBe(ids[100])
+    expect(result.slice(1, 3).map(({ id }) => id)).toEqual([ids[0], ids[1]])
   })
 
   test('does not call the Events Web API when there are no Registered event IDs', async () => {

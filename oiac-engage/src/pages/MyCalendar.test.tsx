@@ -128,24 +128,26 @@ describe('My Calendar', () => {
       ...registeredEvent,
       id: registeredEventId,
       title: 'Past Registered Event',
-      startDateTime: '2026-09-08T18:00:00Z',
+      startDateTime: '2026-08-08T18:00:00Z',
+      endDateTime: '2026-08-08T19:00:00Z',
     }
     const futureEvent = {
       ...registeredEvent,
       id: secondRegisteredEventId,
       title: 'Future Registered Event',
-      startDateTime: '2026-09-22T18:00:00Z',
+      startDateTime: '2026-10-22T18:00:00Z',
+      endDateTime: '2026-10-22T19:00:00Z',
     }
     const pastMeeting = meetingInvite(
       '77777777-7777-4777-8777-777777777777',
       'Past Accepted Meeting',
-      '2026-09-09T18:00:00Z',
+      '2026-08-09T18:00:00Z',
       MEETING_INVITATION_STATUS.accepted,
     )
     const futureMeeting = meetingInvite(
       '88888888-8888-4888-8888-888888888888',
       'Future Accepted Meeting',
-      '2026-09-23T18:00:00Z',
+      '2026-10-23T18:00:00Z',
       MEETING_INVITATION_STATUS.accepted,
     )
     const loadRegistrations = vi.fn().mockResolvedValue([
@@ -162,14 +164,21 @@ describe('My Calendar', () => {
       invites: [pastMeeting, futureMeeting],
     })
 
+    const user = userEvent.setup()
     renderCalendar({ loadRegistrations, loadRegisteredEvents, loadMeetingInvites })
 
-    const grid = await screen.findByRole('grid', { name: 'September 2026 calendar' })
-    expect(within(grid).getByText('Past Registered Event')).toBeInTheDocument()
-    expect(within(grid).getByText('Future Registered Event')).toBeInTheDocument()
-    expect(within(grid).getByText('Past Accepted Meeting')).toBeInTheDocument()
-    expect(within(grid).getByText('Future Accepted Meeting')).toBeInTheDocument()
+    await screen.findByRole('grid', { name: 'September 2026 calendar' })
+    await user.click(screen.getByRole('button', { name: 'Show August 2026' }))
+    const pastGrid = screen.getByRole('grid', { name: 'August 2026 calendar' })
+    expect(within(pastGrid).getByText('Past Registered Event')).toBeInTheDocument()
+    expect(within(pastGrid).getByText('Past Accepted Meeting')).toBeInTheDocument()
     expect(screen.getAllByText('Past Registered Event')).toHaveLength(2)
+
+    await user.click(screen.getByRole('button', { name: 'Show September 2026' }))
+    await user.click(screen.getByRole('button', { name: 'Show October 2026' }))
+    const futureGrid = screen.getByRole('grid', { name: 'October 2026 calendar' })
+    expect(within(futureGrid).getByText('Future Registered Event')).toBeInTheDocument()
+    expect(within(futureGrid).getByText('Future Accepted Meeting')).toBeInTheDocument()
     expect(screen.getAllByText('Future Accepted Meeting')).toHaveLength(2)
     expect(loadRegisteredEvents).toHaveBeenCalledWith(
       [registeredEventId, secondRegisteredEventId],
@@ -296,5 +305,23 @@ describe('My Calendar', () => {
 
     await waitFor(() => expect(loadRegistrations).toHaveBeenCalledTimes(2))
     expect(await screen.findByRole('grid', { name: 'September 2026 calendar' })).toBeInTheDocument()
+  })
+
+  test('retries both calendar branches when Meeting Invites cannot be loaded', async () => {
+    const user = userEvent.setup()
+    const loadRegistrations = vi.fn().mockResolvedValue(registrations)
+    const loadRegisteredEvents = vi.fn().mockResolvedValue([registeredEvent])
+    const loadMeetingInvites = vi.fn()
+      .mockRejectedValueOnce(new Error('network failed'))
+      .mockResolvedValueOnce({ contactFullName: 'Sara Rahimi', invites: [] })
+    renderCalendar({ loadRegistrations, loadRegisteredEvents, loadMeetingInvites })
+
+    expect(await screen.findByRole('heading', { name: 'Your calendar could not be loaded' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Try again' }))
+
+    expect(await screen.findByRole('grid', { name: 'September 2026 calendar' })).toBeInTheDocument()
+    expect(loadMeetingInvites).toHaveBeenCalledTimes(2)
+    expect(loadRegistrations).toHaveBeenCalledTimes(2)
+    expect(loadRegisteredEvents).toHaveBeenCalledTimes(2)
   })
 })
