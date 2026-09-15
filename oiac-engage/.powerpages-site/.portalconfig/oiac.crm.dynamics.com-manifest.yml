@@ -452,7 +452,7 @@ adx_sitesetting:
   IsDeleted: false
 - RecordId: a819a91f-3b5e-4014-8691-63093aa9cc59
   DisplayName: a819a91f-3b5e-4014-8691-63093aa9cc59
-  CheckSum: e07fea7dbb8802636f52e0c939a8c377251d628af151ca98147b1c159ef962c5
+  CheckSum: b495e49c63365721a072e878e5e13a676ba517894b856a9b11a5e772f1141497
   IsDeleted: false
 - RecordId: ab721811-ecba-48ee-b81a-bdc7e8baa4d6
   DisplayName: ab721811-ecba-48ee-b81a-bdc7e8baa4d6
@@ -595,9 +595,13 @@ adx_webfile:
   DisplayName: 75ca6a4d-852e-4319-8312-c9f70301899e
   CheckSum: dd38ca4fb5f04251aeb5b507346d3cd462e3c16bafac9c39da72c617719563fc
   IsDeleted: false
+- RecordId: 857df5da-822b-47da-97c2-e1b7f78b2302
+  DisplayName: 857df5da-822b-47da-97c2-e1b7f78b2302
+  CheckSum: 33bb112aab64e3e7a45d1f0ce91c3e181da5d582d90baffa9a659be6b30d5150
+  IsDeleted: false
 - RecordId: 8f607af5-905b-48cb-aee8-e80e065dad40
   DisplayName: 8f607af5-905b-48cb-aee8-e80e065dad40
-  CheckSum: 2d2f40fb38ec21dd6fb2e84981d6ff3b71025348a73704bc26c3c04e76837529
+  CheckSum: 3c746d07b8c9ce58fe60eb58be92d76f57edebbf62e392e5ecff5f21ae14e204
   IsDeleted: false
 - RecordId: 98c794cf-8c42-4880-837a-648c750f26a4
   DisplayName: 98c794cf-8c42-4880-837a-648c750f26a4
@@ -656,7 +660,7 @@ adx_webpage:
   IsDeleted: false
 - RecordId: 71591c4f-0e93-46f1-b1c4-91008a9f143a
   DisplayName: 71591c4f-0e93-46f1-b1c4-91008a9f143a
-  CheckSum: b8449e6db241010ea1b012fb176b549473fbb4853b0d48c2013ab8f2193dca13
+  CheckSum: e85c3bc2b8f98f50a44ee07df1baaea70ae76efa18c8111dfea294bd96e1a24a
   IsDeleted: false
 - RecordId: 950db54f-769f-4242-88c4-2fc0329bb3e8
   DisplayName: 950db54f-769f-4242-88c4-2fc0329bb3e8
@@ -835,9 +839,13 @@ annotation:
   DisplayName: bootstrap.min.css
   CheckSum: ddb7f6c751720d8189640f5d2582c97fd72d3f47bc824ac0f8210c5ec31bbdaf
   IsDeleted: false
+- RecordId: 857df5da-822b-47da-97c2-e1b7f78b2302
+  DisplayName: index-D-bkU34D.css
+  CheckSum: 89f3a39b77b829b98deac51f7d788852518f1726221081dec54fca169673058b
+  IsDeleted: false
 - RecordId: 8f607af5-905b-48cb-aee8-e80e065dad40
   DisplayName: index.html
-  CheckSum: e448b1375edc0ec873bd70b38c8d10b3ffb156b63c67ea991124901f0dd2f049
+  CheckSum: 7f05f487cf2961ce53c0bd53baac953f9ae5b45bc8afcf9d0f49509cd7cd6171
   IsDeleted: false
 - RecordId: 98c794cf-8c42-4880-837a-648c750f26a4
   DisplayName: logo.png
