@@ -3,6 +3,7 @@ import { LuChevronLeft } from 'react-icons/lu'
 import { Link } from 'react-router-dom'
 import MonthCalendar from '../components/MonthCalendar'
 import {
+  acceptedMeetingInviteToCalendarItem,
   acceptedMeetingItems,
   eventToCalendarItem,
   itemsForMonth,
@@ -15,6 +16,8 @@ import {
 import type { EventRegistration } from '../features/eventRegistrations/eventRegistrationTypes'
 import { getCalendarEvents } from '../features/events/eventService'
 import type { EventItem } from '../features/events/eventTypes'
+import { getMeetingInvites } from '../features/meetingInvites/meetingInviteService'
+import type { MeetingInviteCollection } from '../features/meetingInvites/meetingInviteTypes'
 
 type MyCalendarProps = {
   readonly contactId?: string
@@ -28,6 +31,10 @@ type MyCalendarProps = {
     eventIds: readonly string[],
     signal?: AbortSignal,
   ) => Promise<readonly EventItem[]>
+  readonly loadMeetingInvites?: (
+    contactId: string,
+    signal?: AbortSignal,
+  ) => Promise<MeetingInviteCollection>
 }
 
 const defaultMonth = new Date()
@@ -88,12 +95,13 @@ export default function MyCalendar({
   initialMonth = defaultMonth,
   loadRegistrations = getEventRegistrations,
   loadRegisteredEvents = getCalendarEvents,
+  loadMeetingInvites = getMeetingInvites,
 }: MyCalendarProps) {
   const [selectedMonth, setSelectedMonth] = useState(
     () => new Date(initialMonth.getFullYear(), initialMonth.getMonth(), 1),
   )
   const [items, setItems] = useState<readonly CalendarItem[]>(acceptedItems)
-  const [registeredEventCount, setRegisteredEventCount] = useState(0)
+  const [liveItemCount, setLiveItemCount] = useState(0)
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
   const [requestNumber, setRequestNumber] = useState(0)
   const year = selectedMonth.getFullYear()
@@ -107,7 +115,7 @@ export default function MyCalendar({
   useEffect(() => {
     const controller = new AbortController()
     setItems(acceptedItems)
-    setRegisteredEventCount(0)
+    setLiveItemCount(0)
     setLoadState('loading')
 
     if (!contactId) {
@@ -116,34 +124,46 @@ export default function MyCalendar({
     }
 
     const load = async () => {
-      const registrations = await loadRegistrations(contactId, controller.signal)
-      const registeredIds = Array.from(new Set(
-        registrations
-          .filter((registration) => registration.status === EVENT_REGISTRATION_STATUS.registered)
-          .map((registration) => registration.eventId),
-      ))
-      const events = registeredIds.length > 0
-        ? await loadRegisteredEvents(registeredIds, controller.signal)
-        : []
+      const meetingInvitesPromise = loadMeetingInvites(contactId, controller.signal)
+      const registeredEventsPromise = loadRegistrations(contactId, controller.signal)
+        .then(async (registrations) => {
+          const registeredIds = Array.from(new Set(
+            registrations
+              .filter((registration) => registration.status === EVENT_REGISTRATION_STATUS.registered)
+              .map((registration) => registration.eventId),
+          ))
+          return registeredIds.length > 0
+            ? loadRegisteredEvents(registeredIds, controller.signal)
+            : []
+        })
+      const [events, meetingCollection] = await Promise.all([
+        registeredEventsPromise,
+        meetingInvitesPromise,
+      ])
       const registeredItems = events.flatMap((event) => {
         const item = eventToCalendarItem(event)
         return item ? [item] : []
       })
+      const acceptedMeetingInviteItems = meetingCollection.invites.flatMap((invite) => {
+        const item = acceptedMeetingInviteToCalendarItem(invite)
+        return item ? [item] : []
+      })
+      const liveItems = [...registeredItems, ...acceptedMeetingInviteItems]
       if (controller.signal.aborted) return
-      setItems([...acceptedItems, ...registeredItems])
-      setRegisteredEventCount(registeredItems.length)
+      setItems([...acceptedItems, ...liveItems])
+      setLiveItemCount(liveItems.length)
       setLoadState('ready')
     }
 
     load().catch(() => {
       if (controller.signal.aborted) return
       setItems(acceptedItems)
-      setRegisteredEventCount(0)
+      setLiveItemCount(0)
       setLoadState('error')
     })
 
     return () => controller.abort()
-  }, [acceptedItems, contactId, loadRegisteredEvents, loadRegistrations, requestNumber])
+  }, [acceptedItems, contactId, loadMeetingInvites, loadRegisteredEvents, loadRegistrations, requestNumber])
 
   const retry = () => setRequestNumber((value) => value + 1)
 
@@ -167,7 +187,7 @@ export default function MyCalendar({
       {loadState === 'loading' ? (
         <section className="oiac-calendar-page__state" role="status" aria-live="polite">
           <h2>Loading your calendar…</h2>
-          <p>Your registered events are being retrieved.</p>
+          <p>Your registered events and accepted meetings are being retrieved.</p>
         </section>
       ) : loadState === 'error' ? (
         <section className="oiac-calendar-page__state oiac-calendar-page__state--error" role="alert">
@@ -175,10 +195,10 @@ export default function MyCalendar({
           <p>Please try again. If the problem continues, contact an administrator.</p>
           <button type="button" onClick={retry}>Try again</button>
         </section>
-      ) : registeredEventCount === 0 && acceptedItems.length === 0 ? (
+      ) : liveItemCount === 0 && acceptedItems.length === 0 ? (
         <section className="oiac-calendar-page__state">
-          <h2>No registered events yet</h2>
-          <p>Choose Add to Calendar on an open event to register and add it here.</p>
+          <h2>No registered events or accepted meetings yet</h2>
+          <p>Register for an event or accept a meeting invitation to add it here.</p>
           <Link to="/activity/events">Browse events</Link>
         </section>
       ) : (
