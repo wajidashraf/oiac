@@ -17,9 +17,10 @@ test.each([
         acceptedItems={[]}
         initialMonth={new Date(2026, 8, 1)}
         loadRegistrations={() => Promise.resolve([])}
+        loadMeetingInvites={() => Promise.resolve({ contactFullName: 'Sara Rahimi', invites: [] })}
       />
     </MemoryRouter>,
-    'No registered events yet',
+    'No registered events or accepted meetings yet',
     2,
   ],
   [<ActivityLog items={[]} />, 'No activity yet', 2],
