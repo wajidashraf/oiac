@@ -12,6 +12,7 @@ import {
   type MeetingInviteCollection,
 } from '../features/meetingInvites/meetingInviteTypes'
 import MyCalendar from './MyCalendar'
+import { PowerPagesApiError, PowerPagesDataError } from '../shared/powerPagesApi'
 
 const contactId = '11111111-1111-4111-8111-111111111111'
 const registeredEventId = '22222222-2222-4222-8222-222222222222'
@@ -292,36 +293,78 @@ describe('My Calendar', () => {
     expect(loadRegisteredEvents).not.toHaveBeenCalled()
   })
 
-  test('shows a retry action when registrations or event details cannot be loaded', async () => {
+  test('keeps accepted meetings visible when registered Events cannot be loaded', async () => {
     const user = userEvent.setup()
+    const accepted = meetingInvite(
+      '77777777-7777-4777-8777-777777777777',
+      'Accepted Meeting Still Available',
+      '2026-09-09T18:00:00Z',
+      MEETING_INVITATION_STATUS.accepted,
+    )
     const loadRegistrations = vi.fn()
-      .mockRejectedValueOnce(new Error('network failed'))
+      .mockRejectedValueOnce(new PowerPagesApiError('network failed'))
       .mockResolvedValueOnce(registrations)
     const loadRegisteredEvents = vi.fn().mockResolvedValue([registeredEvent])
-    renderCalendar({ loadRegistrations, loadRegisteredEvents })
+    const loadMeetingInvites = vi.fn().mockResolvedValue({
+      contactFullName: 'Sara Rahimi',
+      invites: [accepted],
+    })
+    renderCalendar({ loadRegistrations, loadRegisteredEvents, loadMeetingInvites })
 
-    expect(await screen.findByRole('heading', { name: 'Your calendar could not be loaded' })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Try again' }))
+    const grid = await screen.findByRole('grid', { name: 'September 2026 calendar' })
+    expect(within(grid).getByText('Accepted Meeting Still Available')).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Registered events could not be loaded. Accepted meetings are still shown.',
+    )
+    expect(screen.queryByRole('heading', { name: 'Your calendar could not be loaded' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Try loading all calendar data again' }))
 
     await waitFor(() => expect(loadRegistrations).toHaveBeenCalledTimes(2))
-    expect(await screen.findByRole('grid', { name: 'September 2026 calendar' })).toBeInTheDocument()
+    expect(await screen.findAllByText('Volunteer Orientation Webinar')).toHaveLength(2)
   })
 
-  test('retries both calendar branches when Meeting Invites cannot be loaded', async () => {
+  test('keeps registered Events visible and retries both branches when meetings fail', async () => {
     const user = userEvent.setup()
     const loadRegistrations = vi.fn().mockResolvedValue(registrations)
     const loadRegisteredEvents = vi.fn().mockResolvedValue([registeredEvent])
     const loadMeetingInvites = vi.fn()
-      .mockRejectedValueOnce(new Error('network failed'))
+      .mockRejectedValueOnce(new PowerPagesApiError('network failed'))
       .mockResolvedValueOnce({ contactFullName: 'Sara Rahimi', invites: [] })
     renderCalendar({ loadRegistrations, loadRegisteredEvents, loadMeetingInvites })
 
-    expect(await screen.findByRole('heading', { name: 'Your calendar could not be loaded' })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Try again' }))
+    const grid = await screen.findByRole('grid', { name: 'September 2026 calendar' })
+    expect(within(grid).getByText('Volunteer Orientation Webinar')).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Accepted meetings could not be loaded. Registered events are still shown.',
+    )
+    await user.click(screen.getByRole('button', { name: 'Try loading all calendar data again' }))
 
-    expect(await screen.findByRole('grid', { name: 'September 2026 calendar' })).toBeInTheDocument()
+    await waitFor(() => expect(loadMeetingInvites).toHaveBeenCalledTimes(2))
     expect(loadMeetingInvites).toHaveBeenCalledTimes(2)
     expect(loadRegistrations).toHaveBeenCalledTimes(2)
     expect(loadRegisteredEvents).toHaveBeenCalledTimes(2)
+  })
+
+  test('shows the full Calendar error only when both data branches fail', async () => {
+    renderCalendar({
+      loadRegistrations: vi.fn().mockRejectedValue(new PowerPagesApiError('events unavailable')),
+      loadMeetingInvites: vi.fn().mockRejectedValue(new PowerPagesApiError('meetings unavailable')),
+    })
+
+    expect(await screen.findByRole('heading', { name: 'Your calendar could not be loaded' })).toBeInTheDocument()
+    expect(screen.queryByRole('grid')).not.toBeInTheDocument()
+  })
+
+  test('explains successful-response processing failures separately from API failures', async () => {
+    renderCalendar({
+      loadRegistrations: vi.fn().mockResolvedValue(registrations),
+      loadRegisteredEvents: vi.fn().mockResolvedValue([registeredEvent]),
+      loadMeetingInvites: vi.fn().mockRejectedValue(new PowerPagesDataError()),
+    })
+
+    await screen.findByRole('grid', { name: 'September 2026 calendar' })
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Some accepted meeting data could not be processed.',
+    )
   })
 })

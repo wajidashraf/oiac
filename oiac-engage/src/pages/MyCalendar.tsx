@@ -18,6 +18,10 @@ import { getCalendarEvents } from '../features/events/eventService'
 import type { EventItem } from '../features/events/eventTypes'
 import { getMeetingInvites } from '../features/meetingInvites/meetingInviteService'
 import type { MeetingInviteCollection } from '../features/meetingInvites/meetingInviteTypes'
+import {
+  classifyPowerPagesLoadFailure,
+  type PowerPagesLoadFailureKind,
+} from '../shared/powerPagesApi'
 
 type MyCalendarProps = {
   readonly contactId?: string
@@ -100,13 +104,25 @@ export default function MyCalendar({
   const [selectedMonth, setSelectedMonth] = useState(
     () => new Date(initialMonth.getFullYear(), initialMonth.getMonth(), 1),
   )
-  const [items, setItems] = useState<readonly CalendarItem[]>(acceptedItems)
-  const [liveItemCount, setLiveItemCount] = useState(0)
-  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [registeredItems, setRegisteredItems] = useState<readonly CalendarItem[]>([])
+  const [meetingItems, setMeetingItems] = useState<readonly CalendarItem[]>([])
+  const [eventsStatus, setEventsStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [meetingsStatus, setMeetingsStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [eventsFailureKind, setEventsFailureKind] = useState<PowerPagesLoadFailureKind | null>(null)
+  const [meetingsFailureKind, setMeetingsFailureKind] = useState<PowerPagesLoadFailureKind | null>(null)
   const [requestNumber, setRequestNumber] = useState(0)
   const year = selectedMonth.getFullYear()
   const monthIndex = selectedMonth.getMonth()
+  const items = useMemo(
+    () => [...acceptedItems, ...registeredItems, ...meetingItems],
+    [acceptedItems, meetingItems, registeredItems],
+  )
   const visibleItems = useMemo(() => itemsForMonth(items, year, monthIndex), [items, monthIndex, year])
+  const isLoading = eventsStatus === 'loading' || meetingsStatus === 'loading'
+  const bothFailed = eventsStatus === 'error' && meetingsStatus === 'error'
+  const isEmpty = eventsStatus === 'ready'
+    && meetingsStatus === 'ready'
+    && items.length === 0
 
   useEffect(() => {
     document.title = 'My Calendar — OIAC Engage'
@@ -114,17 +130,27 @@ export default function MyCalendar({
 
   useEffect(() => {
     const controller = new AbortController()
-    setItems(acceptedItems)
-    setLiveItemCount(0)
-    setLoadState('loading')
+    setRegisteredItems([])
+    setMeetingItems([])
+    setEventsStatus('loading')
+    setMeetingsStatus('loading')
+    setEventsFailureKind(null)
+    setMeetingsFailureKind(null)
 
     if (!contactId) {
-      setLoadState('error')
+      setEventsFailureKind('processing')
+      setMeetingsFailureKind('processing')
+      setEventsStatus('error')
+      setMeetingsStatus('error')
       return () => controller.abort()
     }
 
     const load = async () => {
       const meetingInvitesPromise = loadMeetingInvites(contactId, controller.signal)
+        .then((meetingCollection) => meetingCollection.invites.flatMap((invite) => {
+          const item = acceptedMeetingInviteToCalendarItem(invite)
+          return item ? [item] : []
+        }))
       const registeredEventsPromise = loadRegistrations(contactId, controller.signal)
         .then(async (registrations) => {
           const registeredIds = Array.from(new Set(
@@ -132,35 +158,42 @@ export default function MyCalendar({
               .filter((registration) => registration.status === EVENT_REGISTRATION_STATUS.registered)
               .map((registration) => registration.eventId),
           ))
-          return registeredIds.length > 0
+          const events = registeredIds.length > 0
             ? loadRegisteredEvents(registeredIds, controller.signal)
             : []
+          return (await events).flatMap((event) => {
+            const item = eventToCalendarItem(event)
+            return item ? [item] : []
+          })
         })
-      const [events, meetingCollection] = await Promise.all([
+      const [eventsResult, meetingsResult] = await Promise.allSettled([
         registeredEventsPromise,
         meetingInvitesPromise,
       ])
-      const registeredItems = events.flatMap((event) => {
-        const item = eventToCalendarItem(event)
-        return item ? [item] : []
-      })
-      const acceptedMeetingInviteItems = meetingCollection.invites.flatMap((invite) => {
-        const item = acceptedMeetingInviteToCalendarItem(invite)
-        return item ? [item] : []
-      })
-      const liveItems = [...registeredItems, ...acceptedMeetingInviteItems]
       if (controller.signal.aborted) return
-      setItems([...acceptedItems, ...liveItems])
-      setLiveItemCount(liveItems.length)
-      setLoadState('ready')
+
+      if (eventsResult.status === 'fulfilled') {
+        setRegisteredItems(eventsResult.value)
+        setEventsFailureKind(null)
+        setEventsStatus('ready')
+      } else {
+        setRegisteredItems([])
+        setEventsFailureKind(classifyPowerPagesLoadFailure(eventsResult.reason))
+        setEventsStatus('error')
+      }
+
+      if (meetingsResult.status === 'fulfilled') {
+        setMeetingItems(meetingsResult.value)
+        setMeetingsFailureKind(null)
+        setMeetingsStatus('ready')
+      } else {
+        setMeetingItems([])
+        setMeetingsFailureKind(classifyPowerPagesLoadFailure(meetingsResult.reason))
+        setMeetingsStatus('error')
+      }
     }
 
-    load().catch(() => {
-      if (controller.signal.aborted) return
-      setItems(acceptedItems)
-      setLiveItemCount(0)
-      setLoadState('error')
-    })
+    void load()
 
     return () => controller.abort()
   }, [acceptedItems, contactId, loadMeetingInvites, loadRegisteredEvents, loadRegistrations, requestNumber])
@@ -184,18 +217,22 @@ export default function MyCalendar({
         <li><span className="oiac-calendar-page__legend-key oiac-calendar-page__legend-key--event" aria-hidden="true" />Registered events</li>
       </ul>
 
-      {loadState === 'loading' ? (
+      {isLoading ? (
         <section className="oiac-calendar-page__state" role="status" aria-live="polite">
           <h2>Loading your calendar…</h2>
           <p>Your registered events and accepted meetings are being retrieved.</p>
         </section>
-      ) : loadState === 'error' ? (
+      ) : bothFailed ? (
         <section className="oiac-calendar-page__state oiac-calendar-page__state--error" role="alert">
           <h2>Your calendar could not be loaded</h2>
-          <p>Please try again. If the problem continues, contact an administrator.</p>
+          <p>
+            {eventsFailureKind === 'processing' || meetingsFailureKind === 'processing'
+              ? 'Some calendar data was returned but could not be processed. Please try again.'
+              : 'Please try again. If the problem continues, contact an administrator.'}
+          </p>
           <button type="button" onClick={retry}>Try again</button>
         </section>
-      ) : liveItemCount === 0 && acceptedItems.length === 0 ? (
+      ) : isEmpty ? (
         <section className="oiac-calendar-page__state">
           <h2>No registered events or accepted meetings yet</h2>
           <p>Register for an event or accept a meeting invitation to add it here.</p>
@@ -203,6 +240,26 @@ export default function MyCalendar({
         </section>
       ) : (
         <>
+          {eventsStatus === 'error' ? (
+            <section className="form-alert oiac-calendar-page__partial-error" role="alert">
+              <p>
+                {eventsFailureKind === 'processing'
+                  ? 'Some saved event registration data could not be processed.'
+                  : 'Registered events could not be loaded. Accepted meetings are still shown.'}
+              </p>
+              <button type="button" onClick={retry}>Try loading all calendar data again</button>
+            </section>
+          ) : null}
+          {meetingsStatus === 'error' ? (
+            <section className="form-alert oiac-calendar-page__partial-error" role="alert">
+              <p>
+                {meetingsFailureKind === 'processing'
+                  ? 'Some accepted meeting data could not be processed.'
+                  : 'Accepted meetings could not be loaded. Registered events are still shown.'}
+              </p>
+              <button type="button" onClick={retry}>Try loading all calendar data again</button>
+            </section>
+          ) : null}
           <MonthCalendar
             items={items}
             initialMonth={initialMonth}
