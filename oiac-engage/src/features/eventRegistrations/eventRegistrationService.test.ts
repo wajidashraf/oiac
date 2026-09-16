@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { powerPagesFetch, powerPagesRequest } from '../../shared/powerPagesApi'
+import { PowerPagesDataError, powerPagesFetch, powerPagesRequest } from '../../shared/powerPagesApi'
 import {
   EVENT_REGISTRATION_STATUS,
   getEventRegistrations,
   registerForEvent,
 } from './eventRegistrationService'
 
-vi.mock('../../shared/powerPagesApi', () => ({
+vi.mock('../../shared/powerPagesApi', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../../shared/powerPagesApi')>(),
   powerPagesFetch: vi.fn(),
   powerPagesRequest: vi.fn(),
 }))
@@ -55,6 +56,40 @@ describe('Event Registration service', () => {
     expect(requestUrl.searchParams.get('$filter')).toBe(`_mss_contact_value eq ${contactId}`)
     expect(requestUrl.searchParams.get('$select')).toContain('_mss_event_value')
     expect(fetchMock.mock.calls[0][1]).toEqual({ signal: controller.signal })
+  })
+
+  test('keeps valid registrations when an older orphan row has a null Event lookup', async () => {
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    fetchMock.mockResolvedValue({
+      value: [{
+        mss_eventregistrationid: '5a60fe67-4bb0-f111-aaac-7ced8d3c2947',
+        _mss_contact_value: '{11111111-1111-4111-8111-111111111111}',
+        _mss_event_value: null,
+        mss_registrationdate: '2026-09-14T14:48:53Z',
+        mss_registrationnumber: 'REG-1006',
+        mss_registrationstatus: EVENT_REGISTRATION_STATUS.registered,
+      }, registrationRow(EVENT_REGISTRATION_STATUS.registered)],
+    })
+
+    await expect(getEventRegistrations(contactId)).resolves.toEqual([
+      expect.objectContaining({ id: registrationId, contactId, eventId }),
+    ])
+    expect(warning).toHaveBeenCalledWith(
+      '[EventRegistrations] skipped invalid rows',
+      { skippedCount: 1, totalCount: 2 },
+    )
+  })
+
+  test('treats an empty registration collection as a successful empty result', async () => {
+    fetchMock.mockResolvedValue({ value: [] })
+
+    await expect(getEventRegistrations(contactId)).resolves.toEqual([])
+  })
+
+  test('classifies a malformed successful collection envelope as a processing failure', async () => {
+    fetchMock.mockResolvedValue({ value: null })
+
+    await expect(getEventRegistrations(contactId)).rejects.toBeInstanceOf(PowerPagesDataError)
   })
 
   test('rejects invalid Contact and Event identifiers before sending a request', async () => {

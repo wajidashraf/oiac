@@ -1,4 +1,4 @@
-import { powerPagesFetch, powerPagesRequest } from '../../shared/powerPagesApi'
+import { PowerPagesDataError, powerPagesFetch, powerPagesRequest } from '../../shared/powerPagesApi'
 import {
   EVENT_REGISTRATION_STATUS,
   type EventRegistration,
@@ -26,9 +26,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-function normalizeGuid(value: string, label: 'Contact' | 'Event' | 'Event Registration'): string {
+function normalizeGuidOrNull(value: unknown): string | null {
+  if (typeof value !== 'string') return null
   const normalized = value.trim().replace(/^\{+|\}+$/g, '').toLowerCase()
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(normalized)) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(normalized)
+    ? normalized
+    : null
+}
+
+function normalizeGuid(value: string, label: 'Contact' | 'Event' | 'Event Registration'): string {
+  const normalized = normalizeGuidOrNull(value)
+  if (!normalized) {
     throw new Error(`A valid ${label} ID is required.`)
   }
   return normalized
@@ -40,22 +48,16 @@ function isRegistrationStatus(value: unknown): value is RegistrationStatus {
     || value === EVENT_REGISTRATION_STATUS.waitlisted
 }
 
-function mapRegistration(value: unknown): EventRegistration {
-  if (!isRecord(value)) throw new Error('Event registrations could not be loaded.')
+function mapRegistration(value: unknown): EventRegistration | null {
+  if (!isRecord(value)) return null
 
-  const id = typeof value.mss_eventregistrationid === 'string'
-    ? normalizeGuid(value.mss_eventregistrationid, 'Event Registration')
-    : ''
-  const contactId = typeof value._mss_contact_value === 'string'
-    ? normalizeGuid(value._mss_contact_value, 'Contact')
-    : ''
-  const eventId = typeof value._mss_event_value === 'string'
-    ? normalizeGuid(value._mss_event_value, 'Event')
-    : ''
+  const id = normalizeGuidOrNull(value.mss_eventregistrationid)
+  const contactId = normalizeGuidOrNull(value._mss_contact_value)
+  const eventId = normalizeGuidOrNull(value._mss_event_value)
   const status = value.mss_registrationstatus
 
   if (!id || !contactId || !eventId || !isRegistrationStatus(status)) {
-    throw new Error('Event registrations could not be loaded.')
+    return null
   }
 
   return {
@@ -88,8 +90,21 @@ async function loadRegistrations(
     buildRegistrationQuery(contactId, eventId),
     { signal },
   )
-  if (!Array.isArray(envelope?.value)) throw new Error('Event registrations could not be loaded.')
-  return envelope.value.map(mapRegistration)
+  if (!Array.isArray(envelope?.value)) {
+    throw new PowerPagesDataError('Event registrations could not be processed.')
+  }
+
+  const registrations = envelope.value
+    .map(mapRegistration)
+    .filter((item): item is EventRegistration => item !== null)
+  const skippedCount = envelope.value.length - registrations.length
+  if (skippedCount > 0) {
+    console.warn('[EventRegistrations] skipped invalid rows', {
+      skippedCount,
+      totalCount: envelope.value.length,
+    })
+  }
+  return registrations
 }
 
 export async function getEventRegistrations(
