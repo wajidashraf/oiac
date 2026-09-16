@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import {
+  classifyPowerPagesLoadFailure,
   clearPowerPagesRequestVerificationToken,
   PowerPagesApiError,
+  PowerPagesDataError,
   powerPagesFetch,
   powerPagesRequest,
 } from './powerPagesApi'
@@ -197,5 +199,26 @@ describe('powerPagesFetch', () => {
     } as unknown as Response))
 
     await expect(powerPagesFetch<void>('/_api/contacts')).resolves.toBeUndefined()
+  })
+
+  test('classifies invalid JSON from a successful response as a processing failure', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: vi.fn().mockRejectedValue(new SyntaxError('Unexpected token')),
+    } as unknown as Response))
+
+    const request = powerPagesFetch('/_api/contacts')
+
+    await expect(request).rejects.toBeInstanceOf(PowerPagesDataError)
+    await expect(request).rejects.toMatchObject({
+      message: 'The Power Pages response could not be processed.',
+    })
+  })
+
+  test('distinguishes API failures from successful-response processing failures', () => {
+    expect(classifyPowerPagesLoadFailure(new PowerPagesApiError('API failure', 503))).toBe('api')
+    expect(classifyPowerPagesLoadFailure(new PowerPagesDataError())).toBe('processing')
+    expect(classifyPowerPagesLoadFailure(new Error('mapper failed'))).toBe('processing')
   })
 })

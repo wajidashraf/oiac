@@ -2,6 +2,8 @@ export type PowerPagesRequestOptions = Omit<RequestInit, 'headers'> & {
   readonly headers?: HeadersInit
 }
 
+export type PowerPagesLoadFailureKind = 'api' | 'processing'
+
 let cachedRequestVerificationToken: string | null = null
 let requestVerificationTokenPromise: Promise<string> | null = null
 
@@ -43,6 +45,17 @@ export class PowerPagesApiError extends Error {
       { code, diagnosticMessage },
     )
   }
+}
+
+export class PowerPagesDataError extends Error {
+  constructor(message = 'The Power Pages response could not be processed.') {
+    super(message)
+    this.name = 'PowerPagesDataError'
+  }
+}
+
+export function classifyPowerPagesLoadFailure(error: unknown): PowerPagesLoadFailureKind {
+  return error instanceof PowerPagesApiError ? 'api' : 'processing'
 }
 
 function normalizeRequestVerificationToken(value: unknown): string {
@@ -115,7 +128,11 @@ export async function powerPagesFetch<T>(
   const response = await powerPagesRequest(path, options)
 
   if (response.status === 204) return undefined as T
-  return response.json() as Promise<T>
+  try {
+    return await response.json() as T
+  } catch {
+    throw new PowerPagesDataError()
+  }
 }
 
 export async function powerPagesRequest(
@@ -182,6 +199,9 @@ export async function powerPagesRequest(
       errorCode: error instanceof PowerPagesApiError ? error.code : undefined,
       diagnosticMessage: error instanceof PowerPagesApiError ? error.diagnosticMessage : undefined,
     })
-    throw error
+    if (error instanceof PowerPagesApiError || (error instanceof DOMException && error.name === 'AbortError')) {
+      throw error
+    }
+    throw new PowerPagesApiError('The Power Pages request could not be completed.')
   }
 }
