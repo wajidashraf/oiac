@@ -102,9 +102,11 @@ export default function Home({ contactId }: HomeProps) {
     upcomingEvents,
     reportsStatus,
     registrationsStatus,
+    registrationsFailureKind,
     meetingInvites,
     upcomingMeetings,
     invitesStatus,
+    invitesFailureKind,
     acceptingInviteIds,
     inviteError,
     teamAnnouncements,
@@ -118,6 +120,15 @@ export default function Home({ contactId }: HomeProps) {
     readonly announcement: TeamAnnouncement
     readonly trigger: HTMLButtonElement
   } | null>(null)
+  const registeredEventsError = registrationsFailureKind === 'processing'
+    ? 'Some saved event registration data could not be processed.'
+    : 'Your registered events could not be loaded.'
+  const meetingInvitesError = invitesFailureKind === 'processing'
+    ? 'Some meeting invitation data for this account could not be processed.'
+    : 'Meeting invites could not be loaded.'
+  const upcomingMeetingsError = invitesFailureKind === 'processing'
+    ? 'Returned meeting data could not be processed.'
+    : 'Upcoming meetings could not be loaded.'
 
   useEffect(() => {
     document.title = 'Volunteer Dashboard — OIAC Engage'
@@ -220,7 +231,7 @@ export default function Home({ contactId }: HomeProps) {
           ) : null}
           {registrationsStatus === 'error' ? (
             <div className="form-alert dashboard-report-state dashboard-report-state--error" role="alert">
-              <span>Your registered events could not be loaded.</span>
+              <span>{registeredEventsError}</span>
               <button className="button button--quiet" type="button" onClick={retry}>Try again</button>
             </div>
           ) : null}
@@ -257,7 +268,7 @@ export default function Home({ contactId }: HomeProps) {
           ) : null}
           {invitesStatus === 'error' ? (
             <div className="form-alert dashboard-report-state dashboard-report-state--error" role="alert">
-              <span>Meeting invites could not be loaded.</span>
+              <span>{meetingInvitesError}</span>
               <button
                 className="button button--quiet"
                 type="button"
@@ -418,7 +429,7 @@ export default function Home({ contactId }: HomeProps) {
             ) : null}
             {invitesStatus === 'error' ? (
               <div className="form-alert dashboard-report-state dashboard-report-state--error" role="alert">
-                <span>Upcoming meetings could not be loaded.</span>
+                <span>{upcomingMeetingsError}</span>
                 <button
                   className="button button--quiet"
                   type="button"

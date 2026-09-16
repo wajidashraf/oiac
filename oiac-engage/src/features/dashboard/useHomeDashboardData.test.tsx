@@ -14,6 +14,7 @@ import {
 import type { MeetingInvite } from '../meetingInvites/meetingInviteTypes'
 import { getActiveTeamAnnouncements } from '../teamAnnouncements/teamAnnouncementService'
 import type { TeamAnnouncement } from '../teamAnnouncements/teamAnnouncementTypes'
+import { PowerPagesApiError, PowerPagesDataError } from '../../shared/powerPagesApi'
 import { useHomeDashboardData } from './useHomeDashboardData'
 
 vi.mock('../events/eventService', () => ({ getCalendarEvents: vi.fn() }))
@@ -200,7 +201,32 @@ test('returns a friendly-ready empty event state when the Contact has no active 
   await waitFor(() => expect(result.current.registrationsStatus).toBe('ready'))
   expect(result.current.registeredEventCount).toBe(0)
   expect(result.current.upcomingEvents).toEqual([])
+  expect(result.current.registrationsFailureKind).toBeNull()
   expect(getCalendarEvents).not.toHaveBeenCalled()
+})
+
+test('classifies registration API failures without failing other dashboard widgets', async () => {
+  vi.mocked(getEventRegistrations).mockRejectedValue(new PowerPagesApiError('Unavailable', 503))
+
+  const { result } = renderHook(() => useHomeDashboardData(contactId))
+
+  await waitFor(() => expect(result.current.registrationsStatus).toBe('error'))
+  await waitFor(() => expect(result.current.invitesStatus).toBe('ready'))
+  expect(result.current.registrationsFailureKind).toBe('api')
+  expect(result.current.reportsStatus).toBe('ready')
+  expect(result.current.announcementsStatus).toBe('ready')
+})
+
+test('classifies invite processing failures without failing other dashboard widgets', async () => {
+  vi.mocked(getMeetingInvites).mockRejectedValue(new PowerPagesDataError())
+
+  const { result } = renderHook(() => useHomeDashboardData(contactId))
+
+  await waitFor(() => expect(result.current.invitesStatus).toBe('error'))
+  await waitFor(() => expect(result.current.registrationsStatus).toBe('ready'))
+  expect(result.current.invitesFailureKind).toBe('processing')
+  expect(result.current.reportsStatus).toBe('ready')
+  expect(result.current.announcementsStatus).toBe('ready')
 })
 
 test('keeps the latest reports available if only the report count request fails', async () => {
@@ -287,6 +313,7 @@ test('loads eligible meeting invites independently for the signed-in Contact', a
 
   await waitFor(() => expect(result.current.invitesStatus).toBe('ready'))
   expect(result.current.meetingInvites).toEqual([meetingInvite])
+  expect(result.current.invitesFailureKind).toBeNull()
   expect(result.current.inviteError).toBeNull()
   expect(getMeetingInvites).toHaveBeenCalledWith(contactId, expect.any(AbortSignal))
 })

@@ -18,6 +18,10 @@ import type { MeetingInvite } from '../meetingInvites/meetingInviteTypes'
 import { getActiveTeamAnnouncements } from '../teamAnnouncements/teamAnnouncementService'
 import type { TeamAnnouncement } from '../teamAnnouncements/teamAnnouncementTypes'
 import { selectUpcomingMeetings } from './upcomingMeetings'
+import {
+  classifyPowerPagesLoadFailure,
+  type PowerPagesLoadFailureKind,
+} from '../../shared/powerPagesApi'
 
 export type DashboardLoadStatus = 'loading' | 'ready' | 'error'
 
@@ -28,9 +32,11 @@ export type HomeDashboardData = {
   readonly upcomingEvents: readonly EventItem[]
   readonly reportsStatus: DashboardLoadStatus
   readonly registrationsStatus: DashboardLoadStatus
+  readonly registrationsFailureKind: PowerPagesLoadFailureKind | null
   readonly meetingInvites: readonly MeetingInvite[]
   readonly upcomingMeetings: readonly MeetingInvite[]
   readonly invitesStatus: DashboardLoadStatus
+  readonly invitesFailureKind: PowerPagesLoadFailureKind | null
   readonly teamAnnouncements: readonly TeamAnnouncement[]
   readonly announcementsStatus: DashboardLoadStatus
   readonly acceptingInviteIds: ReadonlySet<string>
@@ -48,8 +54,10 @@ export function useHomeDashboardData(contactId?: string): HomeDashboardData {
   const [upcomingEvents, setUpcomingEvents] = useState<readonly EventItem[]>([])
   const [reportsStatus, setReportsStatus] = useState<DashboardLoadStatus>('loading')
   const [registrationsStatus, setRegistrationsStatus] = useState<DashboardLoadStatus>('loading')
+  const [registrationsFailureKind, setRegistrationsFailureKind] = useState<PowerPagesLoadFailureKind | null>(null)
   const [meetingInvites, setMeetingInvites] = useState<readonly MeetingInvite[]>([])
   const [invitesStatus, setInvitesStatus] = useState<DashboardLoadStatus>('loading')
+  const [invitesFailureKind, setInvitesFailureKind] = useState<PowerPagesLoadFailureKind | null>(null)
   const [teamAnnouncements, setTeamAnnouncements] = useState<readonly TeamAnnouncement[]>([])
   const [announcementsStatus, setAnnouncementsStatus] = useState<DashboardLoadStatus>('loading')
   const [acceptingInviteIds, setAcceptingInviteIds] = useState<ReadonlySet<string>>(new Set())
@@ -93,9 +101,11 @@ export function useHomeDashboardData(contactId?: string): HomeDashboardData {
     })
 
     setRegistrationsStatus('loading')
+    setRegistrationsFailureKind(null)
     setRegisteredEventCount(null)
     setUpcomingEvents([])
     if (!contactId) {
+      setRegistrationsFailureKind('processing')
       setRegistrationsStatus('error')
     } else {
       void getEventRegistrations(contactId, signal).then((registrations) => {
@@ -114,16 +124,19 @@ export function useHomeDashboardData(contactId?: string): HomeDashboardData {
         void getCalendarEvents(activeEventIds, signal).then((events) => {
           if (signal.aborted) return
           setUpcomingEvents(events.slice(0, 3))
+          setRegistrationsFailureKind(null)
           setRegistrationsStatus('ready')
-        }).catch(() => {
+        }).catch((error: unknown) => {
           if (signal.aborted) return
           setUpcomingEvents([])
+          setRegistrationsFailureKind(classifyPowerPagesLoadFailure(error))
           setRegistrationsStatus('error')
         })
-      }).catch(() => {
+      }).catch((error: unknown) => {
         if (signal.aborted) return
         setRegisteredEventCount(null)
         setUpcomingEvents([])
+        setRegistrationsFailureKind(classifyPowerPagesLoadFailure(error))
         setRegistrationsStatus('error')
       })
     }
@@ -136,12 +149,14 @@ export function useHomeDashboardData(contactId?: string): HomeDashboardData {
     const { signal } = controller
 
     setInvitesStatus('loading')
+    setInvitesFailureKind(null)
     setInviteError(null)
     setMeetingInvites([])
     meetingInvitesRef.current = []
     contactFullNameRef.current = ''
 
     if (!contactId) {
+      setInvitesFailureKind('processing')
       setInvitesStatus('error')
       return () => controller.abort()
     }
@@ -151,11 +166,13 @@ export function useHomeDashboardData(contactId?: string): HomeDashboardData {
       contactFullNameRef.current = collection.contactFullName
       meetingInvitesRef.current = collection.invites
       setMeetingInvites(collection.invites)
+      setInvitesFailureKind(null)
       setInvitesStatus('ready')
-    }).catch(() => {
+    }).catch((error: unknown) => {
       if (signal.aborted) return
       meetingInvitesRef.current = []
       setMeetingInvites([])
+      setInvitesFailureKind(classifyPowerPagesLoadFailure(error))
       setInvitesStatus('error')
     })
 
@@ -220,9 +237,11 @@ export function useHomeDashboardData(contactId?: string): HomeDashboardData {
     upcomingEvents,
     reportsStatus,
     registrationsStatus,
+    registrationsFailureKind,
     meetingInvites,
     upcomingMeetings,
     invitesStatus,
+    invitesFailureKind,
     teamAnnouncements,
     announcementsStatus,
     acceptingInviteIds,

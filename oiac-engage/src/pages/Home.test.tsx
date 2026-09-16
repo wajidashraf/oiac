@@ -112,9 +112,11 @@ function dashboardData(overrides: Partial<HomeDashboardData> = {}): HomeDashboar
     upcomingEvents,
     reportsStatus: 'ready',
     registrationsStatus: 'ready',
+    registrationsFailureKind: null,
     meetingInvites: dashboardInvites,
     upcomingMeetings: dashboardInvites,
     invitesStatus: 'ready',
+    invitesFailureKind: null,
     teamAnnouncements: dashboardAnnouncements,
     announcementsStatus: 'ready',
     acceptingInviteIds: new Set(),
@@ -328,6 +330,24 @@ test('shows invitation load and accept errors through inline dashboard UI', asyn
   expect(screen.getByText('District Briefing could not be accepted. Try again.')).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Try loading meeting invites again' }))
   expect(retryInvites).toHaveBeenCalledOnce()
+})
+
+test('distinguishes successful-response processing errors from API load errors', () => {
+  vi.mocked(useHomeDashboardData).mockReturnValue(dashboardData({
+    upcomingEvents: [],
+    registrationsStatus: 'error',
+    registrationsFailureKind: 'processing',
+    meetingInvites: [],
+    upcomingMeetings: [],
+    invitesStatus: 'error',
+    invitesFailureKind: 'processing',
+  }))
+  renderHome()
+
+  expect(screen.getByText('Some saved event registration data could not be processed.')).toBeInTheDocument()
+  expect(screen.getByText('Some meeting invitation data for this account could not be processed.')).toBeInTheDocument()
+  expect(screen.getByText('Returned meeting data could not be processed.')).toBeInTheDocument()
+  expect(screen.queryByText('Your registered events could not be loaded.')).not.toBeInTheDocument()
 })
 
 test('limits the invite viewport to five rows and hides only the scrollbar chrome', () => {
