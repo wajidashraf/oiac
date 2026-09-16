@@ -44,7 +44,10 @@ export default function App({ session: suppliedSession }: AppProps) {
       session={session}
     >
       {(completedSession) => (
-        <RequirePortalRole session={completedSession}>
+        <RequirePortalRole
+          session={completedSession}
+          calendarElement={<MyCalendar contactId={completedSession.user.contactId} />}
+        >
           <AppShell user={completedSession.user}>
             <Routes>
               <Route path="/" element={<Home contactId={completedSession.user.contactId} />} />

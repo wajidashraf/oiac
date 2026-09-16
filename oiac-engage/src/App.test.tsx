@@ -57,7 +57,6 @@ const authenticatedSession: AuthSession = {
 const protectedRoutes = [
   '/',
   '/my-reports',
-  '/my-calendar',
   '/contact',
   '/user-profile',
   '/activity',
@@ -260,6 +259,31 @@ test.each(protectedRoutes)('redirects a denied signed-in user from %s', async (r
   await waitFor(() => {
     expect(screen.getByTestId('current-path')).toHaveTextContent('/pending-approval')
   })
+})
+
+test('renders My Calendar for an authenticated user without a functional Web Role', () => {
+  renderApp('/my-calendar', deniedSession)
+
+  expect(screen.getByRole('heading', { name: 'My Calendar', level: 1 })).toBeInTheDocument()
+  expect(screen.getByTestId('current-path')).toHaveTextContent('/my-calendar')
+  expect(screen.queryByRole('navigation', { name: 'Primary navigation' })).not.toBeInTheDocument()
+})
+
+test.each([
+  ['administrator', ['Authenticated Users', 'Administrators']],
+  ['multi-role user', ['Authenticated Users', 'Staff', 'Volunteer']],
+])('renders My Calendar for an %s', (_label, userRoles) => {
+  renderApp('/my-calendar', {
+    status: 'authenticated',
+    user: {
+      userName: 'calendar-user@oiac.org',
+      contactId: '11111111-1111-4111-8111-111111111111',
+      userRoles,
+    },
+  })
+
+  expect(screen.getByRole('heading', { name: 'My Calendar', level: 1 })).toBeInTheDocument()
+  expect(screen.getByTestId('current-path')).toHaveTextContent('/my-calendar')
 })
 
 test.each(['Administrators', 'Staff', 'Volunteer', 'Applicant'])(

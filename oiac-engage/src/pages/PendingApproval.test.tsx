@@ -16,6 +16,7 @@ test('renders the approved pending-profile copy and minimal actions', () => {
   expect(screen.getByText('Thank you for creating your OIAC Engage account. Our team is reviewing your profile. We’ll notify you as soon as your access is approved.')).toBeInTheDocument()
   expect(screen.getByText('After approval, sign in again to access the portal.')).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'OIAC Engage pending approval' })).toHaveAttribute('href', '/pending-approval')
+  expect(screen.getByRole('link', { name: 'View My Calendar' })).toHaveAttribute('href', '/my-calendar')
   expect(screen.getByRole('link', { name: 'Sign Out' })).toHaveAttribute('href', '/Account/Login/LogOff?returnUrl=%2F')
   expect(screen.queryByRole('navigation', { name: 'Primary navigation' })).not.toBeInTheDocument()
   expect(screen.queryByRole('navigation', { name: 'Footer navigation' })).not.toBeInTheDocument()

@@ -122,6 +122,19 @@ test('shows the functional Power Pages web role in the account zone', () => {
   expect(within(account).queryByText('Volunteer')).not.toBeInTheDocument()
 })
 
+test.each([
+  ['administrator', ['Authenticated Users', 'Administrators']],
+  ['multi-role user', ['Authenticated Users', 'Staff', 'Volunteer']],
+])('keeps My Calendar visible for an %s', (_label, userRoles) => {
+  render(
+    <MemoryRouter>
+      <PortalNav user={{ userName: 'calendar-user@oiac.org', userRoles }} />
+    </MemoryRouter>,
+  )
+
+  expect(screen.getByRole('link', { name: 'My Calendar' })).toHaveAttribute('href', '/my-calendar')
+})
+
 test('opens the account menu from the role badge with Profile and Sign out actions', async () => {
   const user = userEvent.setup()
   render(<MemoryRouter><PortalNav user={volunteerUser} /></MemoryRouter>)
