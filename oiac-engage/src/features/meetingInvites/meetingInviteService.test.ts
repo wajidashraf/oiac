@@ -176,22 +176,35 @@ describe('meeting invite queries and mapping', () => {
         _mss_district_value: DISTRICT_ID,
       })
       .mockResolvedValueOnce({ value: [invite({ mss_meetingforall: true })] })
-      .mockResolvedValueOnce({ value: [{
-        mss_meetinginviteparticipantid: '62b6e1de-4ab0-f111-aaac-7ced8d3c2947',
-        _mss_contact_value: `{${CONTACT_ID.toUpperCase()}}`,
-        _mss_meetinginvite_value: null,
-        mss_invitationstatus: MEETING_INVITATION_STATUS.accepted,
-        mss_acceptedon: '2026-09-14T14:45:07Z',
-        mss_name: 'test - Nabeel1 Ahmad',
-      }] })
+      .mockResolvedValueOnce({ value: [
+        {
+          mss_meetinginviteparticipantid: '62b6e1de-4ab0-f111-aaac-7ced8d3c2947',
+          _mss_contact_value: `{${CONTACT_ID.toUpperCase()}}`,
+          _mss_meetinginvite_value: null,
+          mss_invitationstatus: MEETING_INVITATION_STATUS.accepted,
+          mss_acceptedon: '2026-09-14T14:45:07Z',
+          mss_name: 'test - Nabeel1 Ahmad',
+        },
+        {
+          mss_meetinginviteparticipantid: '33333333-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+          _mss_contact_value: CONTACT_ID,
+          _mss_meetinginvite_value: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+          mss_invitationstatus: MEETING_INVITATION_STATUS.accepted,
+          mss_acceptedon: '2026-09-14T15:00:00Z',
+          mss_name: 'Valid participant',
+        },
+      ] })
 
     await expect(getMeetingInvites(CONTACT_ID)).resolves.toMatchObject({
       contactFullName: 'Nabeel1 Ahmad',
-      invites: [{ id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', participant: null }],
+      invites: [{
+        id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        participant: { id: '33333333-aaaa-4aaa-8aaa-aaaaaaaaaaaa' },
+      }],
     })
     expect(warning).toHaveBeenCalledWith(
       '[MeetingInvites] skipped invalid participant rows',
-      { skippedCount: 1, totalCount: 1 },
+      { skippedCount: 1, totalCount: 2 },
     )
   })
 

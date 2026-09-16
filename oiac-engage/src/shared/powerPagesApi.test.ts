@@ -219,6 +219,7 @@ describe('powerPagesFetch', () => {
   test('distinguishes API failures from successful-response processing failures', () => {
     expect(classifyPowerPagesLoadFailure(new PowerPagesApiError('API failure', 503))).toBe('api')
     expect(classifyPowerPagesLoadFailure(new PowerPagesDataError())).toBe('processing')
-    expect(classifyPowerPagesLoadFailure(new Error('mapper failed'))).toBe('processing')
+    expect(classifyPowerPagesLoadFailure(new TypeError('network failed'))).toBe('api')
+    expect(classifyPowerPagesLoadFailure(new Error('unknown failure'))).toBe('api')
   })
 })

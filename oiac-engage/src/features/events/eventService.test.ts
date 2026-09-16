@@ -122,7 +122,7 @@ describe('eventService', () => {
   test('loads past and future registered Event details without a current-time cutoff', async () => {
     const controller = new AbortController()
     powerPagesFetchMock.mockResolvedValue({
-      value: [{ ...eventApiRecord, mss_eventsid: calendarEventId }],
+      value: [{ ...eventApiRecord, mss_eventsid: `{${calendarEventId.toUpperCase()}}` }],
     })
 
     await expect(getCalendarEvents(

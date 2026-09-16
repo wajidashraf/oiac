@@ -27,6 +27,7 @@ const EVENT_SELECT = [
 const FORMATTED_VALUE = '@OData.Community.Display.V1.FormattedValue'
 const EVENT_PREFER = `odata.include-annotations="OData.Community.Display.V1.FormattedValue"`
 const CALENDAR_EVENT_BATCH_SIZE = 50
+const GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const EVENT_FORMAT_LABELS: Readonly<Record<number, string>> = {
   866530000: 'In Person',
   866530001: 'Virtual',
@@ -63,6 +64,12 @@ function stringOrNull(value: unknown): string | null {
   return typeof value === 'string' ? value : null
 }
 
+function normalizeGuidOrNull(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const normalized = value.trim().replace(/^\{+|\}+$/g, '').toLowerCase()
+  return GUID_PATTERN.test(normalized) ? normalized : null
+}
+
 function choiceLabel(
   record: Record<string, unknown>,
   field: 'mss_eventformat' | 'mss_eventstatus' | 'mss_eventtype',
@@ -77,7 +84,7 @@ function choiceLabel(
 
 function mapEventRecord(value: unknown): EventItem {
   if (!isRecord(value)) throw new Error('Events could not be loaded.')
-  const id = typeof value.mss_eventsid === 'string' ? value.mss_eventsid.trim() : ''
+  const id = normalizeGuidOrNull(value.mss_eventsid)
   if (!id) throw new Error('Events could not be loaded.')
 
   return {
@@ -125,8 +132,8 @@ export async function getEvents(isAdmin: boolean, signal?: AbortSignal): Promise
 }
 
 function normalizeEventId(value: string): string {
-  const normalized = value.trim().replace(/^\{+|\}+$/g, '').toLowerCase()
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(normalized)) {
+  const normalized = normalizeGuidOrNull(value)
+  if (!normalized) {
     throw new Error('Registered events could not be loaded.')
   }
   return normalized
@@ -145,26 +152,26 @@ export async function getCalendarEvents(
   }
 
   const pages = await Promise.all(batches.map(async (batch) => {
-      const statusFilter = '(mss_eventstatus eq 866530001 or mss_eventstatus eq 866530002'
-        + ' or mss_eventstatus eq 866530003 or mss_eventstatus eq 866530004)'
-      const idFilter = `(${batch.map((id) => `mss_eventsid eq ${id}`).join(' or ')})`
-      const params = new URLSearchParams({
-        $select: EVENT_SELECT.join(','),
-        $filter: `${statusFilter} and ${idFilter}`,
-        $orderby: 'mss_startdatetime asc',
-      })
-      const response = await powerPagesFetch<unknown>(`/_api/mss_eventses?${params.toString()}`, {
-        signal,
-        headers: { Prefer: EVENT_PREFER },
-      })
-      if (!isRecord(response) || !Array.isArray(response.value)) {
-        throw new PowerPagesDataError('Registered event data could not be processed.')
-      }
-      try {
-        return response.value.map(mapEventRecord)
-      } catch {
-        throw new PowerPagesDataError('Registered event data could not be processed.')
-      }
+    const statusFilter = '(mss_eventstatus eq 866530001 or mss_eventstatus eq 866530002'
+      + ' or mss_eventstatus eq 866530003 or mss_eventstatus eq 866530004)'
+    const idFilter = `(${batch.map((id) => `mss_eventsid eq ${id}`).join(' or ')})`
+    const params = new URLSearchParams({
+      $select: EVENT_SELECT.join(','),
+      $filter: `${statusFilter} and ${idFilter}`,
+      $orderby: 'mss_startdatetime asc',
+    })
+    const response = await powerPagesFetch<unknown>(`/_api/mss_eventses?${params.toString()}`, {
+      signal,
+      headers: { Prefer: EVENT_PREFER },
+    })
+    if (!isRecord(response) || !Array.isArray(response.value)) {
+      throw new PowerPagesDataError('Registered event data could not be processed.')
+    }
+    try {
+      return response.value.map(mapEventRecord)
+    } catch {
+      throw new PowerPagesDataError('Registered event data could not be processed.')
+    }
   }))
 
   return pages.flat().sort((left, right) => {

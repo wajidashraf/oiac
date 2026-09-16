@@ -55,7 +55,7 @@ export class PowerPagesDataError extends Error {
 }
 
 export function classifyPowerPagesLoadFailure(error: unknown): PowerPagesLoadFailureKind {
-  return error instanceof PowerPagesApiError ? 'api' : 'processing'
+  return error instanceof PowerPagesDataError ? 'processing' : 'api'
 }
 
 function normalizeRequestVerificationToken(value: unknown): string {
