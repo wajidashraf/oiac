@@ -241,6 +241,46 @@ describe('meeting invite queries and mapping', () => {
     })
   })
 
+  test('keeps meeting-for-all and direct invites when the user has no District', async () => {
+    vi.mocked(powerPagesFetch)
+      .mockResolvedValueOnce({
+        contactid: CONTACT_ID,
+        fullname: 'User Without District',
+        _mss_district_value: null,
+      })
+      .mockResolvedValueOnce({ value: [
+        invite({ mss_meetingforall: true }),
+        invite({
+          mss_meetinginvitesid: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+          mss_MeetingInvites_Contact_Contact: [{ contactid: CONTACT_ID }],
+        }),
+        invite({
+          mss_meetinginvitesid: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+          mss_MeetingInvites_mss_District_mss_District: [{ mss_districtid: DISTRICT_ID }],
+        }),
+      ] })
+      .mockResolvedValueOnce({ value: [] })
+
+    const result = await getMeetingInvites(CONTACT_ID)
+
+    expect(result.invites.map(({ id }) => id)).toEqual([
+      'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    ])
+  })
+
+  test('treats empty invite and participant collections as a successful empty result', async () => {
+    vi.mocked(powerPagesFetch)
+      .mockResolvedValueOnce({ contactid: CONTACT_ID, fullname: 'New User' })
+      .mockResolvedValueOnce({ value: [] })
+      .mockResolvedValueOnce({ value: [] })
+
+    await expect(getMeetingInvites(CONTACT_ID)).resolves.toEqual({
+      contactFullName: 'New User',
+      invites: [],
+    })
+  })
+
   test('sorts invalid dates last and rejects malformed response envelopes', async () => {
     vi.mocked(powerPagesFetch)
       .mockResolvedValueOnce({ contactid: CONTACT_ID, fullname: 'Sara Rahimi' })
