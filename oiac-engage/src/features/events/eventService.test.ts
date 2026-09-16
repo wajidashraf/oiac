@@ -1,9 +1,15 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { powerPagesFetch, powerPagesRequest } from '../../shared/powerPagesApi'
+import {
+  PowerPagesApiError,
+  PowerPagesDataError,
+  powerPagesFetch,
+  powerPagesRequest,
+} from '../../shared/powerPagesApi'
 import { createEvent, getCalendarEvents, getEvents, updateEvent } from './eventService'
 import type { EventInput, EventItem } from './eventTypes'
 
-vi.mock('../../shared/powerPagesApi', () => ({
+vi.mock('../../shared/powerPagesApi', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../../shared/powerPagesApi')>(),
   powerPagesFetch: vi.fn(),
   powerPagesRequest: vi.fn(),
 }))
@@ -178,9 +184,14 @@ describe('eventService', () => {
 
   test('rejects malformed registered Events Web API responses', async () => {
     powerPagesFetchMock.mockResolvedValue({ value: null })
-    await expect(getCalendarEvents([calendarEventId])).rejects.toThrow(
-      'Registered events could not be loaded.',
-    )
+    await expect(getCalendarEvents([calendarEventId])).rejects.toBeInstanceOf(PowerPagesDataError)
+  })
+
+  test('preserves registered Event API failures for accurate UI classification', async () => {
+    const apiError = new PowerPagesApiError('Unavailable', 503)
+    powerPagesFetchMock.mockRejectedValue(apiError)
+
+    await expect(getCalendarEvents([calendarEventId])).rejects.toBe(apiError)
   })
 
   test('rejects malformed Event Web API responses', async () => {

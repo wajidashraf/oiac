@@ -1,4 +1,4 @@
-import { powerPagesFetch, powerPagesRequest } from '../../shared/powerPagesApi'
+import { PowerPagesDataError, powerPagesFetch, powerPagesRequest } from '../../shared/powerPagesApi'
 import type { EventInput, EventItem } from './eventTypes'
 
 export type EventMutationResult = {
@@ -144,8 +144,7 @@ export async function getCalendarEvents(
     batches.push(normalizedIds.slice(index, index + CALENDAR_EVENT_BATCH_SIZE))
   }
 
-  try {
-    const pages = await Promise.all(batches.map(async (batch) => {
+  const pages = await Promise.all(batches.map(async (batch) => {
       const statusFilter = '(mss_eventstatus eq 866530001 or mss_eventstatus eq 866530002'
         + ' or mss_eventstatus eq 866530003 or mss_eventstatus eq 866530004)'
       const idFilter = `(${batch.map((id) => `mss_eventsid eq ${id}`).join(' or ')})`
@@ -159,21 +158,22 @@ export async function getCalendarEvents(
         headers: { Prefer: EVENT_PREFER },
       })
       if (!isRecord(response) || !Array.isArray(response.value)) {
-        throw new Error('Registered events could not be loaded.')
+        throw new PowerPagesDataError('Registered event data could not be processed.')
       }
-      return response.value.map(mapEventRecord)
-    }))
+      try {
+        return response.value.map(mapEventRecord)
+      } catch {
+        throw new PowerPagesDataError('Registered event data could not be processed.')
+      }
+  }))
 
-    return pages.flat().sort((left, right) => {
-      const leftTime = left.startDateTime ? Date.parse(left.startDateTime) : Number.POSITIVE_INFINITY
-      const rightTime = right.startDateTime ? Date.parse(right.startDateTime) : Number.POSITIVE_INFINITY
-      const normalizedLeftTime = Number.isFinite(leftTime) ? leftTime : Number.POSITIVE_INFINITY
-      const normalizedRightTime = Number.isFinite(rightTime) ? rightTime : Number.POSITIVE_INFINITY
-      return normalizedLeftTime - normalizedRightTime || left.id.localeCompare(right.id)
-    })
-  } catch {
-    throw new Error('Registered events could not be loaded.')
-  }
+  return pages.flat().sort((left, right) => {
+    const leftTime = left.startDateTime ? Date.parse(left.startDateTime) : Number.POSITIVE_INFINITY
+    const rightTime = right.startDateTime ? Date.parse(right.startDateTime) : Number.POSITIVE_INFINITY
+    const normalizedLeftTime = Number.isFinite(leftTime) ? leftTime : Number.POSITIVE_INFINITY
+    const normalizedRightTime = Number.isFinite(rightTime) ? rightTime : Number.POSITIVE_INFINITY
+    return normalizedLeftTime - normalizedRightTime || left.id.localeCompare(right.id)
+  })
 }
 
 function buildEventPayload(input: EventInput): Record<string, string | number | null> {
