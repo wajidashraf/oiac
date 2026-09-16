@@ -1,4 +1,4 @@
-import { powerPagesFetch, powerPagesRequest } from '../../shared/powerPagesApi'
+import { PowerPagesDataError, powerPagesFetch, powerPagesRequest } from '../../shared/powerPagesApi'
 import {
   MEETING_INVITATION_STATUS,
   type AcceptMeetingInviteInput,
@@ -48,23 +48,27 @@ function normalizeEntityId(value: string | null): string | null {
   return match ? match[0].toLowerCase() : null
 }
 
-function normalizeGuid(value: unknown, label: string): string {
+function normalizeGuidOrNull(value: unknown): string | null {
   const normalized = typeof value === 'string'
     ? value.trim().replace(/^\{+|\}+$/g, '').toLowerCase()
     : ''
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(normalized)) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(normalized)
+    ? normalized
+    : null
+}
+
+function normalizeGuid(value: unknown, label: string): string {
+  const normalized = normalizeGuidOrNull(value)
+  if (!normalized) {
     throw new Error(`A valid ${label} ID is required.`)
   }
   return normalized
 }
 
-function optionalGuid(value: unknown, label: string): string | null {
-  if (value === null || value === undefined || value === '') return null
-  return normalizeGuid(value, label)
-}
-
 function collectionRows(envelope: CollectionEnvelope): readonly unknown[] {
-  if (!Array.isArray(envelope?.value)) throw new Error('Meeting invites could not be loaded.')
+  if (!Array.isArray(envelope?.value)) {
+    throw new PowerPagesDataError('Meeting invites could not be processed.')
+  }
   return envelope.value
 }
 
@@ -84,15 +88,20 @@ function isStatus(value: unknown): value is MeetingInvitationStatus {
     || value === MEETING_INVITATION_STATUS.rejected
 }
 
-function mapParticipant(value: unknown): MeetingInviteParticipant {
+function mapParticipant(value: unknown): MeetingInviteParticipant | null {
   if (!isRecord(value) || !isStatus(value.mss_invitationstatus)) {
-    throw new Error('Meeting invites could not be loaded.')
+    return null
   }
 
+  const id = normalizeGuidOrNull(value.mss_meetinginviteparticipantid)
+  const contactId = normalizeGuidOrNull(value._mss_contact_value)
+  const meetingInviteId = normalizeGuidOrNull(value._mss_meetinginvite_value)
+  if (!id || !contactId || !meetingInviteId) return null
+
   return {
-    id: normalizeGuid(value.mss_meetinginviteparticipantid, 'Meeting Invite Participant'),
-    contactId: normalizeGuid(value._mss_contact_value, 'Contact'),
-    meetingInviteId: normalizeGuid(value._mss_meetinginvite_value, 'Meeting Invite'),
+    id,
+    contactId,
+    meetingInviteId,
     status: value.mss_invitationstatus,
     acceptedOn: typeof value.mss_acceptedon === 'string' ? value.mss_acceptedon : null,
     name: typeof value.mss_name === 'string' ? value.mss_name : null,
@@ -100,10 +109,10 @@ function mapParticipant(value: unknown): MeetingInviteParticipant {
 }
 
 function relatedIds(value: unknown, key: 'contactid' | 'mss_districtid'): readonly string[] {
-  if (!Array.isArray(value)) throw new Error('Meeting invites could not be loaded.')
-  return value.map((item) => {
-    if (!isRecord(item)) throw new Error('Meeting invites could not be loaded.')
-    return normalizeGuid(item[key], key === 'contactid' ? 'Contact' : 'District')
+  if (!Array.isArray(value)) return []
+  return value.flatMap((item) => {
+    const id = isRecord(item) ? normalizeGuidOrNull(item[key]) : null
+    return id ? [id] : []
   })
 }
 
@@ -163,21 +172,45 @@ export async function getMeetingInvites(
     ),
   ])
 
-  if (!isRecord(profileValue) || typeof profileValue.fullname !== 'string') {
-    throw new Error('Meeting invites could not be loaded.')
+  if (!isRecord(profileValue)) {
+    throw new PowerPagesDataError('Meeting invite profile data could not be processed.')
   }
-  const profileContactId = normalizeGuid(profileValue.contactid, 'Contact')
-  if (profileContactId !== contactId) throw new Error('Meeting invites could not be loaded.')
-  const districtId = optionalGuid(profileValue._mss_district_value, 'District')
-  const participants = collectionRows(participantEnvelope).map(mapParticipant)
+  const profileContactId = normalizeGuidOrNull(profileValue.contactid)
+  if (profileContactId !== contactId) {
+    throw new PowerPagesDataError('Meeting invite profile data could not be processed.')
+  }
+  const contactFullName = typeof profileValue.fullname === 'string' && profileValue.fullname.trim()
+    ? profileValue.fullname.trim()
+    : 'Portal user'
+  const districtId = normalizeGuidOrNull(profileValue._mss_district_value)
+  const participantRows = collectionRows(participantEnvelope)
+  const participants = participantRows
+    .map(mapParticipant)
+    .filter((participant): participant is MeetingInviteParticipant => (
+      participant !== null && participant.contactId === contactId
+    ))
+  const skippedParticipantCount = participantRows.length - participants.length
+  if (skippedParticipantCount > 0) {
+    console.warn('[MeetingInvites] skipped invalid participant rows', {
+      skippedCount: skippedParticipantCount,
+      totalCount: participantRows.length,
+    })
+  }
 
-  const invites = collectionRows(inviteEnvelope).flatMap((value): MeetingInvite[] => {
+  const inviteRows = collectionRows(inviteEnvelope)
+  let skippedInviteCount = 0
+  const invites = inviteRows.flatMap((value): MeetingInvite[] => {
     if (!isRecord(value)
       || typeof value.mss_meetingtitle !== 'string'
       || typeof value.mss_meetingstartdate !== 'string') {
-      throw new Error('Meeting invites could not be loaded.')
+      skippedInviteCount += 1
+      return []
     }
-    const id = normalizeGuid(value.mss_meetinginvitesid, 'Meeting Invite')
+    const id = normalizeGuidOrNull(value.mss_meetinginvitesid)
+    if (!id) {
+      skippedInviteCount += 1
+      return []
+    }
     const contactIds = relatedIds(value.mss_MeetingInvites_Contact_Contact, 'contactid')
     const districtIds = relatedIds(
       value.mss_MeetingInvites_mss_District_mss_District,
@@ -199,7 +232,14 @@ export async function getMeetingInvites(
   }).sort((left, right) => inviteStartTime(left.startDateTime) - inviteStartTime(right.startDateTime)
     || left.id.localeCompare(right.id))
 
-  return { contactFullName: profileValue.fullname, invites }
+  if (skippedInviteCount > 0) {
+    console.warn('[MeetingInvites] skipped invalid invite rows', {
+      skippedCount: skippedInviteCount,
+      totalCount: inviteRows.length,
+    })
+  }
+
+  return { contactFullName, invites }
 }
 
 function participantQuery(contactId: string, inviteId: string): string {
@@ -215,7 +255,9 @@ async function recoverAcceptedParticipant(
   inviteId: string,
 ): Promise<MeetingInviteParticipant | null> {
   const envelope = await powerPagesFetch<CollectionEnvelope>(participantQuery(contactId, inviteId))
-  const participants = collectionRows(envelope).map(mapParticipant)
+  const participants = collectionRows(envelope)
+    .map(mapParticipant)
+    .filter((participant): participant is MeetingInviteParticipant => participant !== null)
   const selected = selectParticipant(participants, inviteId)
   return selected?.status === MEETING_INVITATION_STATUS.accepted ? selected : null
 }

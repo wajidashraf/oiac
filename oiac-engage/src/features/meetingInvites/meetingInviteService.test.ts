@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { powerPagesFetch, powerPagesRequest } from '../../shared/powerPagesApi'
+import { PowerPagesDataError, powerPagesFetch, powerPagesRequest } from '../../shared/powerPagesApi'
 import {
   acceptMeetingInvite,
   getMeetingInvites,
@@ -7,7 +7,8 @@ import {
 } from './meetingInviteService'
 import type { MeetingInvite } from './meetingInviteTypes'
 
-vi.mock('../../shared/powerPagesApi', () => ({
+vi.mock('../../shared/powerPagesApi', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../../shared/powerPagesApi')>(),
   powerPagesFetch: vi.fn(),
   powerPagesRequest: vi.fn(),
 }))
@@ -166,6 +167,80 @@ describe('meeting invite queries and mapping', () => {
     expect(result.invites[0].participant?.id).toBe('22222222-aaaa-4aaa-8aaa-aaaaaaaaaaaa')
   })
 
+  test('skips an older orphan participant with a null Meeting Invite lookup', async () => {
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    vi.mocked(powerPagesFetch)
+      .mockResolvedValueOnce({
+        contactid: `{${CONTACT_ID.toUpperCase()}}`,
+        fullname: 'Nabeel1 Ahmad',
+        _mss_district_value: DISTRICT_ID,
+      })
+      .mockResolvedValueOnce({ value: [invite({ mss_meetingforall: true })] })
+      .mockResolvedValueOnce({ value: [{
+        mss_meetinginviteparticipantid: '62b6e1de-4ab0-f111-aaac-7ced8d3c2947',
+        _mss_contact_value: `{${CONTACT_ID.toUpperCase()}}`,
+        _mss_meetinginvite_value: null,
+        mss_invitationstatus: MEETING_INVITATION_STATUS.accepted,
+        mss_acceptedon: '2026-09-14T14:45:07Z',
+        mss_name: 'test - Nabeel1 Ahmad',
+      }] })
+
+    await expect(getMeetingInvites(CONTACT_ID)).resolves.toMatchObject({
+      contactFullName: 'Nabeel1 Ahmad',
+      invites: [{ id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', participant: null }],
+    })
+    expect(warning).toHaveBeenCalledWith(
+      '[MeetingInvites] skipped invalid participant rows',
+      { skippedCount: 1, totalCount: 1 },
+    )
+  })
+
+  test('accepts missing profile fields, district, and relationship expansions as empty values', async () => {
+    vi.mocked(powerPagesFetch)
+      .mockResolvedValueOnce({ contactid: CONTACT_ID })
+      .mockResolvedValueOnce({ value: [
+        invite({
+          mss_meetingforall: true,
+          mss_MeetingInvites_Contact_Contact: undefined,
+          mss_MeetingInvites_mss_District_mss_District: null,
+        }),
+      ] })
+      .mockResolvedValueOnce({ value: [] })
+
+    await expect(getMeetingInvites(CONTACT_ID)).resolves.toMatchObject({
+      contactFullName: 'Portal user',
+      invites: [{ id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' }],
+    })
+  })
+
+  test('normalizes Contact and District GUIDs before evaluating invite eligibility', async () => {
+    vi.mocked(powerPagesFetch)
+      .mockResolvedValueOnce({
+        contactid: `{${CONTACT_ID.toUpperCase()}}`,
+        fullname: 'Multi Role User',
+        _mss_district_value: `{${DISTRICT_ID.toUpperCase()}}`,
+      })
+      .mockResolvedValueOnce({ value: [
+        invite({
+          mss_MeetingInvites_Contact_Contact: [{ contactid: `{${CONTACT_ID.toUpperCase()}}` }],
+        }),
+        invite({
+          mss_meetinginvitesid: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+          mss_MeetingInvites_mss_District_mss_District: [
+            { mss_districtid: `{${DISTRICT_ID.toUpperCase()}}` },
+          ],
+        }),
+      ] })
+      .mockResolvedValueOnce({ value: [] })
+
+    await expect(getMeetingInvites(CONTACT_ID)).resolves.toMatchObject({
+      invites: [
+        { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' },
+        { id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' },
+      ],
+    })
+  })
+
   test('sorts invalid dates last and rejects malformed response envelopes', async () => {
     vi.mocked(powerPagesFetch)
       .mockResolvedValueOnce({ contactid: CONTACT_ID, fullname: 'Sara Rahimi' })
@@ -189,7 +264,7 @@ describe('meeting invite queries and mapping', () => {
       .mockResolvedValueOnce({ contactid: CONTACT_ID, fullname: 'Sara Rahimi' })
       .mockResolvedValueOnce({ value: 'invalid' })
       .mockResolvedValueOnce({ value: [] })
-    await expect(getMeetingInvites(CONTACT_ID)).rejects.toThrow('Meeting invites could not be loaded.')
+    await expect(getMeetingInvites(CONTACT_ID)).rejects.toBeInstanceOf(PowerPagesDataError)
   })
 })
 
