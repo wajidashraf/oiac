@@ -16,6 +16,8 @@ import ComingSoonBadge from '../components/ComingSoonBadge'
 import ContentCard from '../components/ContentCard'
 import StatusBadge from '../components/StatusBadge'
 import { useHomeDashboardData } from '../features/dashboard/useHomeDashboardData'
+import { EventDetailsModal } from '../features/events/EventDetailsModal'
+import type { EventItem } from '../features/events/eventTypes'
 import { MEETING_INVITATION_STATUS } from '../features/meetingInvites/meetingInviteTypes'
 import { TeamAnnouncementModal } from '../features/teamAnnouncements/TeamAnnouncementModal'
 import type { TeamAnnouncement } from '../features/teamAnnouncements/teamAnnouncementTypes'
@@ -118,6 +120,10 @@ export default function Home({ contactId }: HomeProps) {
   } = useHomeDashboardData(contactId)
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<{
     readonly announcement: TeamAnnouncement
+    readonly trigger: HTMLButtonElement
+  } | null>(null)
+  const [selectedEvent, setSelectedEvent] = useState<{
+    readonly event: EventItem
     readonly trigger: HTMLButtonElement
   } | null>(null)
   const registeredEventsError = registrationsFailureKind === 'processing'
@@ -251,7 +257,16 @@ export default function Home({ contactId }: HomeProps) {
                       <strong>{date.day}</strong>
                       <span>{date.month}</span>
                     </time>
-                    <span>{event.title}</span>
+                    <button
+                      className="event-title-button dashboard-event-list__title"
+                      type="button"
+                      onClick={(clickEvent) => setSelectedEvent({
+                        event,
+                        trigger: clickEvent.currentTarget,
+                      })}
+                    >
+                      {event.title}
+                    </button>
                   </li>
                 )
               })}
@@ -549,6 +564,13 @@ export default function Home({ contactId }: HomeProps) {
           formattedStartDate={formatInviteDate(selectedAnnouncement.announcement.startDateTime)}
           returnFocusTo={selectedAnnouncement.trigger}
           onClose={() => setSelectedAnnouncement(null)}
+        />
+      ) : null}
+      {selectedEvent ? (
+        <EventDetailsModal
+          event={selectedEvent.event}
+          returnFocusTo={selectedEvent.trigger}
+          onClose={() => setSelectedEvent(null)}
         />
       ) : null}
     </div>

@@ -421,7 +421,7 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 
 .dashboard-event-list li { display: flex; min-height: var(--dashboard-row-height); align-items: center; gap: var(--space-3); padding: 0.5rem 1rem; }
 
-.dashboard-event-list li > span:last-child { color: var(--color-text); font-size: 0.78rem; font-weight: 600; line-height: 1.4; }
+.dashboard-event-list__title { color: var(--color-text); font-size: 0.78rem; font-weight: 600; line-height: 1.4; }
 
 .dashboard-date-tile { display: grid; width: 2.55rem; height: 2.55rem; flex: none; place-content: center; border-radius: var(--radius-sm); background: var(--color-primary-soft); color: var(--color-primary-strong); text-align: center; }
 
@@ -3582,7 +3582,7 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   .dashboard-panel .content-card__header h2,
   .dashboard-panel .content-card__header h3,
   .dashboard-section__heading h2,
-  .dashboard-event-list li > span:last-child,
+  .dashboard-event-list__title,
   .dashboard-invite-list strong,
   .dashboard-announcement-list strong,
   .dashboard-training-list__label,

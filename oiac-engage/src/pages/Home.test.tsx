@@ -227,6 +227,26 @@ test('keeps unfinished dashboard features visible while training resources are l
   expect(within(upcomingEvents).getByRole('link', { name: /My Calendar/ })).toHaveAttribute('href', '/my-calendar')
 })
 
+test('opens Event details only from an Upcoming Event title', async () => {
+  const actor = userEvent.setup()
+  renderHome()
+  const panel = screen.getByRole('heading', { name: 'Upcoming Events' }).closest('article')!
+  const rows = within(panel).getAllByRole('listitem')
+  const titleButton = within(rows[0]).getByRole('button', { name: 'Registered Capitol Briefing' })
+
+  expect(within(rows[0]).getByRole('time')).toHaveAttribute('datetime', upcomingEvents[0].startDateTime)
+  expect(within(rows[0]).queryByRole('link')).not.toBeInTheDocument()
+  await actor.click(titleButton)
+
+  const dialog = screen.getByRole('dialog', { name: 'Registered Capitol Briefing' })
+  expect(within(dialog).getByText('Virtual')).toBeInTheDocument()
+  expect(within(dialog).getByText('Meeting')).toBeInTheDocument()
+  expect(within(dialog).getByRole('link', { name: 'Join meeting' })).toHaveAttribute(
+    'href',
+    'https://example.com/meeting',
+  )
+})
+
 test('renders every upcoming meeting with provider-neutral join links and unavailable fallback', () => {
   renderHome()
   const panel = screen.getByRole('heading', { name: 'Upcoming Meetings' }).closest('article')!
