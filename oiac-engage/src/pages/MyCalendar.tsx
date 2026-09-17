@@ -14,6 +14,7 @@ import {
   getEventRegistrations,
 } from '../features/eventRegistrations/eventRegistrationService'
 import type { EventRegistration } from '../features/eventRegistrations/eventRegistrationTypes'
+import { EventDetailsModal } from '../features/events/EventDetailsModal'
 import { getCalendarEvents } from '../features/events/eventService'
 import type { EventItem } from '../features/events/eventTypes'
 import { getMeetingInvites } from '../features/meetingInvites/meetingInviteService'
@@ -57,8 +58,24 @@ function joinLabel(item: CalendarItem): string {
   return `Join ${item.title} (opens in a new tab)`
 }
 
-function renderCalendarItem(item: CalendarItem): ReactNode {
+function renderCalendarItem(
+  item: CalendarItem,
+  event: EventItem | undefined,
+  onViewDetails: (event: EventItem, trigger: HTMLButtonElement) => void,
+): ReactNode {
   const className = `oiac-calendar__item oiac-calendar__item--${item.kind}`
+  if (event) {
+    return (
+      <button
+        className={`event-title-button ${className}`}
+        type="button"
+        title={item.title}
+        onClick={(clickEvent) => onViewDetails(event, clickEvent.currentTarget)}
+      >
+        {item.title}
+      </button>
+    )
+  }
   if (!item.joinUrl) return <span className={className} title={item.title}>{item.title}</span>
   return (
     <a
@@ -74,7 +91,7 @@ function renderCalendarItem(item: CalendarItem): ReactNode {
   )
 }
 
-function upcomingItemContents(item: CalendarItem): ReactNode {
+function upcomingItemContents(item: CalendarItem, title: ReactNode = <strong>{item.title}</strong>): ReactNode {
   const date = dateParts(item.date)
   return (
     <>
@@ -83,7 +100,7 @@ function upcomingItemContents(item: CalendarItem): ReactNode {
         <span>{date.month}</span>
       </time>
       <span className="oiac-calendar-upcoming__details">
-        <strong>{item.title}</strong>
+        {title}
         <span>{item.time} · {item.location}</span>
       </span>
       <span className={`oiac-calendar-upcoming__status oiac-calendar-upcoming__status--${item.kind}`}>
@@ -104,6 +121,7 @@ export default function MyCalendar({
   const [selectedMonth, setSelectedMonth] = useState(
     () => new Date(initialMonth.getFullYear(), initialMonth.getMonth(), 1),
   )
+  const [registeredEvents, setRegisteredEvents] = useState<readonly EventItem[]>([])
   const [registeredItems, setRegisteredItems] = useState<readonly CalendarItem[]>([])
   const [meetingItems, setMeetingItems] = useState<readonly CalendarItem[]>([])
   const [eventsStatus, setEventsStatus] = useState<'loading' | 'ready' | 'error'>('loading')
@@ -111,6 +129,10 @@ export default function MyCalendar({
   const [eventsFailureKind, setEventsFailureKind] = useState<PowerPagesLoadFailureKind | null>(null)
   const [meetingsFailureKind, setMeetingsFailureKind] = useState<PowerPagesLoadFailureKind | null>(null)
   const [requestNumber, setRequestNumber] = useState(0)
+  const [selectedEvent, setSelectedEvent] = useState<{
+    readonly event: EventItem
+    readonly trigger: HTMLButtonElement
+  } | null>(null)
   const year = selectedMonth.getFullYear()
   const monthIndex = selectedMonth.getMonth()
   const items = useMemo(
@@ -118,6 +140,10 @@ export default function MyCalendar({
     [acceptedItems, meetingItems, registeredItems],
   )
   const visibleItems = useMemo(() => itemsForMonth(items, year, monthIndex), [items, monthIndex, year])
+  const registeredEventsById = useMemo(
+    () => new Map(registeredEvents.map((event) => [event.id, event])),
+    [registeredEvents],
+  )
   const isLoading = eventsStatus === 'loading' || meetingsStatus === 'loading'
   const bothFailed = eventsStatus === 'error' && meetingsStatus === 'error'
   const isEmpty = eventsStatus === 'ready'
@@ -130,6 +156,7 @@ export default function MyCalendar({
 
   useEffect(() => {
     const controller = new AbortController()
+    setRegisteredEvents([])
     setRegisteredItems([])
     setMeetingItems([])
     setEventsStatus('loading')
@@ -159,12 +186,13 @@ export default function MyCalendar({
               .map((registration) => registration.eventId),
           ))
           const events = registeredIds.length > 0
-            ? loadRegisteredEvents(registeredIds, controller.signal)
+            ? await loadRegisteredEvents(registeredIds, controller.signal)
             : []
-          return (await events).flatMap((event) => {
+          const eventItems = events.flatMap((event) => {
             const item = eventToCalendarItem(event)
             return item ? [item] : []
           })
+          return { events, eventItems }
         })
       const [eventsResult, meetingsResult] = await Promise.allSettled([
         registeredEventsPromise,
@@ -173,10 +201,12 @@ export default function MyCalendar({
       if (controller.signal.aborted) return
 
       if (eventsResult.status === 'fulfilled') {
-        setRegisteredItems(eventsResult.value)
+        setRegisteredEvents(eventsResult.value.events)
+        setRegisteredItems(eventsResult.value.eventItems)
         setEventsFailureKind(null)
         setEventsStatus('ready')
       } else {
+        setRegisteredEvents([])
         setRegisteredItems([])
         setEventsFailureKind(classifyPowerPagesLoadFailure(eventsResult.reason))
         setEventsStatus('error')
@@ -199,6 +229,9 @@ export default function MyCalendar({
   }, [acceptedItems, contactId, loadMeetingInvites, loadRegisteredEvents, loadRegistrations, requestNumber])
 
   const retry = () => setRequestNumber((value) => value + 1)
+  const openEventDetails = (event: EventItem, trigger: HTMLButtonElement) => {
+    setSelectedEvent({ event, trigger })
+  }
 
   return (
     <div className="page oiac-calendar-page">
@@ -265,7 +298,11 @@ export default function MyCalendar({
             initialMonth={initialMonth}
             ariaLabelPrefix=""
             onMonthChange={setSelectedMonth}
-            renderItem={renderCalendarItem}
+            renderItem={(item) => renderCalendarItem(
+              item,
+              item.kind === 'event' ? registeredEventsById.get(item.id) : undefined,
+              openEventDetails,
+            )}
           />
 
           <section className="oiac-calendar-upcoming" aria-labelledby="calendar-upcoming-heading">
@@ -274,7 +311,22 @@ export default function MyCalendar({
               <ol className="oiac-calendar-upcoming__list">
                 {visibleItems.map((item) => (
                   <li key={item.id}>
-                    {item.joinUrl ? (
+                    {item.kind === 'event' && registeredEventsById.has(item.id) ? (
+                      <div className="oiac-calendar-upcoming__item">
+                        {upcomingItemContents(item, (
+                          <button
+                            className="event-title-button"
+                            type="button"
+                            onClick={(clickEvent) => openEventDetails(
+                              registeredEventsById.get(item.id)!,
+                              clickEvent.currentTarget,
+                            )}
+                          >
+                            <strong>{item.title}</strong>
+                          </button>
+                        ))}
+                      </div>
+                    ) : item.joinUrl ? (
                       <a
                         className="oiac-calendar-upcoming__item"
                         href={item.joinUrl}
@@ -301,6 +353,13 @@ export default function MyCalendar({
           </section>
         </>
       )}
+      {selectedEvent ? (
+        <EventDetailsModal
+          event={selectedEvent.event}
+          returnFocusTo={selectedEvent.trigger}
+          onClose={() => setSelectedEvent(null)}
+        />
+      ) : null}
     </div>
   )
 }

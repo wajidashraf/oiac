@@ -104,14 +104,21 @@ function renderCalendar({
 
 describe('My Calendar', () => {
   test('loads only Registered event details and renders them in the grid and upcoming list', async () => {
+    const user = userEvent.setup()
     const loadRegistrations = vi.fn().mockResolvedValue(registrations)
     const loadRegisteredEvents = vi.fn().mockResolvedValue([registeredEvent])
     renderCalendar({ loadRegistrations, loadRegisteredEvents })
 
     expect(screen.getByRole('status')).toHaveTextContent('Loading your calendar')
     const grid = await screen.findByRole('grid', { name: 'September 2026 calendar' })
-    expect(within(grid).getByRole('link', { name: /Join Volunteer Orientation Webinar/i })).toBeInTheDocument()
-    expect(screen.getAllByRole('link', { name: /Join Volunteer Orientation Webinar/i })).toHaveLength(2)
+    await user.click(within(grid).getByRole('button', { name: 'Volunteer Orientation Webinar' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Volunteer Orientation Webinar' })
+    expect(within(dialog).getByText('Virtual')).toBeInTheDocument()
+    expect(within(dialog).getByRole('link', { name: 'Join meeting' })).toHaveAttribute(
+      'href',
+      registeredEvent.meetingUrl,
+    )
     expect(loadRegistrations).toHaveBeenCalledWith(contactId, expect.any(AbortSignal))
     expect(loadRegisteredEvents).toHaveBeenCalledWith(
       [registeredEventId],
@@ -188,7 +195,7 @@ describe('My Calendar', () => {
     expect(loadMeetingInvites).toHaveBeenCalledWith(contactId, expect.any(AbortSignal))
   })
 
-  test('excludes pending, rejected, and unanswered Meeting Invites', async () => {
+  test('keeps accepted Meeting Invites as join links and excludes other statuses', async () => {
     const accepted = meetingInvite(
       '77777777-7777-4777-8777-777777777777',
       'Accepted Meeting',
@@ -214,6 +221,7 @@ describe('My Calendar', () => {
       null,
     )
 
+    const user = userEvent.setup()
     renderCalendar({
       loadRegistrations: vi.fn().mockResolvedValue([]),
       loadMeetingInvites: vi.fn().mockResolvedValue({
@@ -223,7 +231,10 @@ describe('My Calendar', () => {
     })
 
     const grid = await screen.findByRole('grid', { name: 'September 2026 calendar' })
-    expect(within(grid).getByText('Accepted Meeting')).toBeInTheDocument()
+    const acceptedMeetingLink = within(grid).getByRole('link', { name: /Join Accepted Meeting/i })
+    expect(acceptedMeetingLink).toHaveAttribute('href', accepted.meetingLink)
+    await user.click(acceptedMeetingLink)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.queryByText('Pending Meeting')).not.toBeInTheDocument()
     expect(screen.queryByText('Rejected Meeting')).not.toBeInTheDocument()
     expect(screen.queryByText('Unanswered Meeting')).not.toBeInTheDocument()
@@ -249,7 +260,8 @@ describe('My Calendar', () => {
     expect(meetingRequestSignal?.aborted).toBe(true)
   })
 
-  test('renders an in-person event without a safe meeting URL as non-link content', async () => {
+  test('opens an in-person Event title without exposing an unsafe meeting URL', async () => {
+    const user = userEvent.setup()
     renderCalendar({
       loadRegisteredEvents: vi.fn().mockResolvedValue([{
         ...registeredEvent,
@@ -261,9 +273,12 @@ describe('My Calendar', () => {
     })
 
     const grid = await screen.findByRole('grid', { name: 'September 2026 calendar' })
-    expect(within(grid).getByText('Volunteer Orientation Webinar')).toBeInTheDocument()
+    await user.click(within(grid).getByRole('button', { name: 'Volunteer Orientation Webinar' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Volunteer Orientation Webinar' })
+    expect(within(dialog).getByText('District Office Meeting Room')).toBeInTheDocument()
+    expect(within(dialog).queryByRole('link', { name: 'Join meeting' })).not.toBeInTheDocument()
     expect(within(grid).queryByRole('link', { name: /Volunteer Orientation Webinar/i })).not.toBeInTheDocument()
-    expect(screen.getByText(/District Office Meeting Room/)).toBeInTheDocument()
   })
 
   test('moves between months and explains a month with no registered items', async () => {
