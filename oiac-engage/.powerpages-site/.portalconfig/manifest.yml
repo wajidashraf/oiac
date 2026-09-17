@@ -25,6 +25,10 @@ adx_serverlogic_adx_webrole:
   CheckSum: 
   IsDeleted: true
 adx_webfile:
+- RecordId: 02139b3f-ea2b-42e1-b424-619846ef899f
+  DisplayName: index-ZX1X8V9l.js
+  CheckSum: 
+  IsDeleted: true
 - RecordId: 06c9ea33-d1dc-4add-bff3-74cbf4f3011d
   DisplayName: index-DMgqoVWE.js
   CheckSum: 
@@ -135,6 +139,10 @@ adx_webfile:
   IsDeleted: true
 - RecordId: 7cc65c3d-a7b7-4bf5-8d6a-c6140d863667
   DisplayName: index-P7GnCAK4.js
+  CheckSum: 
+  IsDeleted: true
+- RecordId: 857df5da-822b-47da-97c2-e1b7f78b2302
+  DisplayName: index-D-bkU34D.css
   CheckSum: 
   IsDeleted: true
 - RecordId: 86994569-a669-4c26-be37-9da6ac375e58
@@ -300,6 +308,10 @@ annotation:
   IsDeleted: true
 - RecordId: 667e7142-0092-441a-8a2f-7c498c2ed024
   DisplayName: index-Vc-tUEFz.css
+  CheckSum: 
+  IsDeleted: true
+- RecordId: 857df5da-822b-47da-97c2-e1b7f78b2302
+  DisplayName: index-D-bkU34D.css
   CheckSum: 
   IsDeleted: true
 - RecordId: cafd0dfc-4ea3-4dab-9da2-4da8db9a911f

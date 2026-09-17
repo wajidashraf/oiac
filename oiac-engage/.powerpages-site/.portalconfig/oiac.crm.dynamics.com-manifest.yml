@@ -452,7 +452,7 @@ adx_sitesetting:
   IsDeleted: false
 - RecordId: a819a91f-3b5e-4014-8691-63093aa9cc59
   DisplayName: a819a91f-3b5e-4014-8691-63093aa9cc59
-  CheckSum: 074be0f5881b522ab96be23ad0cf182d63669ffe0f6364592392a349bff6b82c
+  CheckSum: d284d12bdfe281ce5c4022aa00e1b8f95eaf85aa4af8d208c652112ebca7f8dd
   IsDeleted: false
 - RecordId: ab721811-ecba-48ee-b81a-bdc7e8baa4d6
   DisplayName: ab721811-ecba-48ee-b81a-bdc7e8baa4d6
@@ -598,10 +598,10 @@ adx_webfile:
 - RecordId: 857df5da-822b-47da-97c2-e1b7f78b2302
   DisplayName: 857df5da-822b-47da-97c2-e1b7f78b2302
   CheckSum: 33bb112aab64e3e7a45d1f0ce91c3e181da5d582d90baffa9a659be6b30d5150
-  IsDeleted: false
+  IsDeleted: true
 - RecordId: 8f607af5-905b-48cb-aee8-e80e065dad40
   DisplayName: 8f607af5-905b-48cb-aee8-e80e065dad40
-  CheckSum: 64da379d7fa58251472c1026d66634e2995c8d2e649746d8883cb4f8e58a75e9
+  CheckSum: b2973bd43d974e5e1585129967f596e0a4e2cd6489fb14633b1870c37f0bd59e
   IsDeleted: false
 - RecordId: 98c794cf-8c42-4880-837a-648c750f26a4
   DisplayName: 98c794cf-8c42-4880-837a-648c750f26a4
@@ -660,7 +660,7 @@ adx_webpage:
   IsDeleted: false
 - RecordId: 71591c4f-0e93-46f1-b1c4-91008a9f143a
   DisplayName: 71591c4f-0e93-46f1-b1c4-91008a9f143a
-  CheckSum: 63f6762b3c39947b56491163f23bd772966ef39a09e8206c2bbd13d864508dd6
+  CheckSum: b422f36a35817e9afdf06ace9dd7da40b8bf0760ce22a539d4e2f5e979c6b72f
   IsDeleted: false
 - RecordId: 950db54f-769f-4242-88c4-2fc0329bb3e8
   DisplayName: 950db54f-769f-4242-88c4-2fc0329bb3e8
@@ -842,10 +842,10 @@ annotation:
 - RecordId: 857df5da-822b-47da-97c2-e1b7f78b2302
   DisplayName: index-D-bkU34D.css
   CheckSum: 89f3a39b77b829b98deac51f7d788852518f1726221081dec54fca169673058b
-  IsDeleted: false
+  IsDeleted: true
 - RecordId: 8f607af5-905b-48cb-aee8-e80e065dad40
   DisplayName: index.html
-  CheckSum: 83fe3f22158f7428c773ee70416e572c45cd349cfa363608cd74101c7272cddb
+  CheckSum: ea498ff9b9e0b21b03f47165bcbbada8033582999aa94970ef67d5db3d6da4c3
   IsDeleted: false
 - RecordId: 98c794cf-8c42-4880-837a-648c750f26a4
   DisplayName: logo.png
