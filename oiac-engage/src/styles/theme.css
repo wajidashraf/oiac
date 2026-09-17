@@ -544,7 +544,7 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 .event-details-modal__schedule > div { min-width: 0; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: #f7f9f8; padding: 0.8rem 0.9rem; }
 
 .event-details-modal__metadata dt,
-.event-details-modal__schedule dt { margin: 0 0 0.2rem; color: var(--color-muted); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.event-details-modal__schedule dt { margin: 0 0 0.2rem; color: var(--color-text-muted); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 
 .event-details-modal__metadata dd,
 .event-details-modal__schedule dd { margin: 0; color: var(--color-text); font-size: 0.9rem; font-weight: 600; line-height: 1.45; overflow-wrap: anywhere; }
@@ -1076,6 +1076,19 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   white-space: nowrap;
 }
 
+.oiac-calendar-page .oiac-calendar-upcoming__details > .event-title-button {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--calendar-ink);
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.oiac-calendar-page .oiac-calendar-upcoming__details > .event-title-button strong { font: inherit; }
+
 .oiac-calendar-page .oiac-calendar-upcoming__details > span { color: var(--calendar-muted); font-size: 0.75rem; }
 
 .oiac-calendar-page .oiac-calendar-upcoming__status {
@@ -1458,8 +1471,6 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 }
 
 .oiac-events-page .oiac-calendar__panel { border-color: #d9e1df; }
-
-.oiac-events-page .oiac-events-calendar__item { cursor: default; }
 
 .oiac-events-page .oiac-event-form {
   margin: 1.5rem 0 0;

@@ -102,6 +102,14 @@ test('keeps Events supporting text at WCAG AA contrast', () => {
   expect(contrastRatio(mutedColor!, '#ffffff')).toBeGreaterThanOrEqual(4.5)
 })
 
+test('keeps interactive Event titles visibly interactive and aligned with calendar typography', () => {
+  const modalLabels = css.match(/\.event-details-modal__metadata dt,[^{]+\{([^}]*)\}/s)?.[1]
+
+  expect(modalLabels).toContain('color: var(--color-text-muted)')
+  expect(css).toMatch(/\.oiac-calendar-upcoming__details > \.event-title-button\s*\{[^}]*font-size:\s*0\.86rem[^}]*text-overflow:\s*ellipsis[^}]*white-space:\s*nowrap/s)
+  expect(css).not.toMatch(/\.oiac-events-page \.oiac-events-calendar__item\s*\{[^}]*cursor:\s*default/)
+})
+
 test('uses explicit, targeted disabled styling for Coming Soon features', () => {
   expect(css).toContain('.portal-nav__link--coming-soon')
   expect(css).toContain('.dashboard-shortcut--coming-soon')

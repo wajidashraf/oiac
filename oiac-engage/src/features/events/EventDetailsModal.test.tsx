@@ -123,4 +123,34 @@ describe('EventDetailsModal', () => {
     expect(trigger).toHaveFocus()
     trigger.remove()
   })
+
+  test('does not restore focus during a parent rerender with a new close callback', () => {
+    const trigger = document.createElement('button')
+    trigger.textContent = event.title
+    document.body.append(trigger)
+    const focusTrigger = vi.spyOn(trigger, 'focus')
+    const firstOnClose = vi.fn()
+    const nextOnClose = vi.fn()
+
+    const { rerender, unmount } = render(
+      <EventDetailsModal event={event} returnFocusTo={trigger} onClose={firstOnClose} />,
+    )
+    expect(screen.getByRole('button', { name: 'Close event details' })).toHaveFocus()
+
+    rerender(
+      <EventDetailsModal event={event} returnFocusTo={trigger} onClose={nextOnClose} />,
+    )
+
+    expect(focusTrigger).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Close event details' })).toHaveFocus()
+    expect(document.body.style.overflow).toBe('hidden')
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(firstOnClose).not.toHaveBeenCalled()
+    expect(nextOnClose).toHaveBeenCalledTimes(1)
+
+    unmount()
+    expect(focusTrigger).toHaveBeenCalledTimes(1)
+    trigger.remove()
+  })
 })

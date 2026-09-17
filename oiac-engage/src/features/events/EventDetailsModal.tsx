@@ -49,6 +49,10 @@ export function EventDetailsModal({ event, returnFocusTo, onClose }: EventDetail
   const titleId = useId()
   const dialogRef = useRef<HTMLElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const onCloseRef = useRef(onClose)
+  const returnFocusToRef = useRef(returnFocusTo)
+  onCloseRef.current = onClose
+  returnFocusToRef.current = returnFocusTo
   const start = dateTimeDetails(event.startDateTime)
   const end = dateTimeDetails(event.endDateTime)
   const venue = displayValue(event.venueName)
@@ -63,7 +67,7 @@ export function EventDetailsModal({ event, returnFocusTo, onClose }: EventDetail
     const handleKeyDown = (keyEvent: KeyboardEvent) => {
       if (keyEvent.key === 'Escape') {
         keyEvent.preventDefault()
-        onClose()
+        onCloseRef.current()
         return
       }
       if (keyEvent.key !== 'Tab') return
@@ -91,9 +95,9 @@ export function EventDetailsModal({ event, returnFocusTo, onClose }: EventDetail
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
       document.body.style.overflow = previousOverflow
-      returnFocusTo?.focus()
+      returnFocusToRef.current?.focus()
     }
-  }, [onClose, returnFocusTo])
+  }, [])
 
   return (
     <div

@@ -119,6 +119,11 @@ describe('My Calendar', () => {
       'href',
       registeredEvent.meetingUrl,
     )
+    await user.click(within(dialog).getByRole('button', { name: 'Close event details' }))
+
+    const upcoming = screen.getByRole('heading', { name: 'Upcoming' }).closest('section')!
+    await user.click(within(upcoming).getByRole('button', { name: registeredEvent.title }))
+    expect(screen.getByRole('dialog', { name: registeredEvent.title })).toBeInTheDocument()
     expect(loadRegistrations).toHaveBeenCalledWith(contactId, expect.any(AbortSignal))
     expect(loadRegisteredEvents).toHaveBeenCalledWith(
       [registeredEventId],
