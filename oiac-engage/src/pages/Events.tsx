@@ -13,6 +13,7 @@ import type {
   RegistrationOutcome,
 } from '../features/eventRegistrations/eventRegistrationTypes'
 import EventForm from '../features/events/EventForm'
+import { EventDetailsModal } from '../features/events/EventDetailsModal'
 import { createEvent, getEvents, updateEvent } from '../features/events/eventService'
 import type { EventMutationResult } from '../features/events/eventService'
 import type { EventInput, EventItem } from '../features/events/eventTypes'
@@ -58,6 +59,7 @@ function EventCard({
   registrationAvailable,
   onRegister,
   onEdit,
+  onViewDetails,
 }: {
   readonly item: EventItem
   readonly isAdmin: boolean
@@ -68,6 +70,7 @@ function EventCard({
   readonly registrationAvailable: boolean
   readonly onRegister: (item: EventItem, action: 'register' | 'calendar') => void
   readonly onEdit: (item: EventItem, trigger: HTMLButtonElement) => void
+  readonly onViewDetails: (item: EventItem, trigger: HTMLButtonElement) => void
 }) {
   const isPublished = item.eventStatusValue === 866530001
   const isRegistrationOpen = item.eventStatusValue === 866530002
@@ -101,7 +104,15 @@ function EventCard({
         </span>
       </div>
 
-      <h3>{item.title}</h3>
+      <h3>
+        <button
+          className="event-title-button"
+          type="button"
+          onClick={(clickEvent) => onViewDetails(item, clickEvent.currentTarget)}
+        >
+          {item.title}
+        </button>
+      </h3>
 
       <div className="oiac-event-card__details">
         <span>
@@ -149,14 +160,6 @@ function EventCard({
   )
 }
 
-function renderCalendarEvent(item: EventCalendarItem) {
-  return (
-    <span className="oiac-calendar__item oiac-calendar__item--event oiac-events-calendar__item" title={item.title}>
-      {item.title}
-    </span>
-  )
-}
-
 export default function Events({
   isAdmin,
   contactId,
@@ -172,6 +175,10 @@ export default function Events({
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
   const [requestNumber, setRequestNumber] = useState(0)
   const [activeForm, setActiveForm] = useState<ActiveEventForm | null>(null)
+  const [selectedEvent, setSelectedEvent] = useState<{
+    readonly event: EventItem
+    readonly trigger: HTMLButtonElement
+  } | null>(null)
   const [mutationPending, setMutationPending] = useState(false)
   const [mutationError, setMutationError] = useState<string | null>(null)
   const [registrations, setRegistrations] = useState<readonly EventRegistration[]>([])
@@ -204,6 +211,10 @@ export default function Events({
     setActiveForm(null)
     setMutationError(null)
     formTriggerRef.current?.focus()
+  }
+
+  const openEventDetails = (event: EventItem, trigger: HTMLButtonElement) => {
+    setSelectedEvent({ event, trigger })
   }
 
   const saveActiveEvent = async (input: EventInput) => {
@@ -449,6 +460,7 @@ export default function Events({
                 registrationAvailable={registrationLoadState === 'ready'}
                 onRegister={registerSelectedEvent}
                 onEdit={openEditForm}
+                onViewDetails={openEventDetails}
                 key={item.id}
               />
             ))}
@@ -465,9 +477,25 @@ export default function Events({
           items={calendarItems}
           initialMonth={calendarMonth}
           ariaLabelPrefix="Events"
-          renderItem={renderCalendarEvent}
+          renderItem={(item) => (
+            <button
+              className="event-title-button oiac-calendar__item oiac-calendar__item--event oiac-events-calendar__item"
+              type="button"
+              title={item.title}
+              onClick={(clickEvent) => openEventDetails(item, clickEvent.currentTarget)}
+            >
+              {item.title}
+            </button>
+          )}
         />
       )}
+      {selectedEvent ? (
+        <EventDetailsModal
+          event={selectedEvent.event}
+          returnFocusTo={selectedEvent.trigger}
+          onClose={() => setSelectedEvent(null)}
+        />
+      ) : null}
     </div>
   )
 }

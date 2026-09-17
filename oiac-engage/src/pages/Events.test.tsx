@@ -145,6 +145,48 @@ describe('Events', () => {
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
   })
 
+  test('opens Event details only from a list-card title and keeps card actions separate', async () => {
+    const user = userEvent.setup()
+    renderEvents({
+      isAdmin: true,
+      loadEvents: vi.fn().mockResolvedValue(adminEvents),
+    })
+
+    const card = (await screen.findByRole('heading', {
+      name: 'Volunteer Orientation Webinar',
+    })).closest('article')!
+    const titleButton = within(card).getByRole('button', {
+      name: 'Volunteer Orientation Webinar',
+    })
+    expect(within(card).getByRole('button', { name: 'Register' })).toBeInTheDocument()
+    expect(within(card).getByRole('button', { name: 'Add to Calendar' })).toBeInTheDocument()
+    expect(within(card).getByRole('button', { name: 'Edit' })).toBeInTheDocument()
+
+    await user.click(titleButton)
+
+    const dialog = screen.getByRole('dialog', { name: 'Volunteer Orientation Webinar' })
+    expect(within(dialog).getByText('Volunteer orientation details.')).toBeInTheDocument()
+    expect(within(dialog).getByRole('link', { name: 'Join meeting' })).toHaveAttribute(
+      'href',
+      volunteerEvents[0].meetingUrl,
+    )
+  })
+
+  test('opens Event details from an Event title in Calendar view', async () => {
+    const user = userEvent.setup()
+    renderEvents()
+
+    await screen.findByRole('heading', { name: 'Volunteer Orientation Webinar' })
+    await user.click(screen.getByRole('button', { name: 'Calendar' }))
+    const grid = screen.getByRole('grid', { name: 'Events September 2026 calendar' })
+    await user.click(within(grid).getByRole('button', { name: 'Community Engagement Meeting' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Community Engagement Meeting' })
+    expect(within(dialog).getByText('In Person')).toBeInTheDocument()
+    expect(within(dialog).getByText('District Office Meeting Room')).toBeInTheDocument()
+    expect(within(dialog).queryByRole('link', { name: 'Join meeting' })).not.toBeInTheDocument()
+  })
+
   test('registers through Add to Calendar and marks the event as part of My Calendar', async () => {
     const user = userEvent.setup()
     const registration = registrationFor('open-event', EVENT_REGISTRATION_STATUS.registered)
