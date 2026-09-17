@@ -519,6 +519,54 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
 
 .team-announcement-modal__footer svg { width: 1rem; height: 1rem; }
 
+.event-details-modal { position: fixed; z-index: 220; inset: 0; display: grid; place-items: center; overflow-y: auto; background: rgb(15 31 28 / 72%); padding: 1rem; }
+
+.event-details-modal__dialog { display: grid; width: min(40rem, 100%); max-height: calc(100vh - 2rem); overflow: auto; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: 0 1.5rem 4rem rgb(15 31 28 / 24%); padding: clamp(1.25rem, 4vw, 2rem); }
+
+.event-details-modal__header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); }
+
+.event-details-modal__header h2 { margin: 0; color: var(--color-text); font-family: var(--font-display); font-size: clamp(1.4rem, 3vw, 1.85rem); line-height: 1.2; text-wrap: balance; }
+
+.event-details-modal__eyebrow { margin: 0 0 var(--space-2); color: var(--color-primary); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; }
+
+.event-details-modal__dialog .event-details-modal__close { display: inline-grid; width: 2.75rem; min-width: 2.75rem; height: 2.75rem; place-items: center; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-primary-strong); padding: 0; }
+
+.event-details-modal__dialog .event-details-modal__close:hover { border-color: var(--color-primary); background: var(--color-primary-soft); color: var(--color-primary-strong); }
+
+.event-details-modal__dialog .event-details-modal__close:focus-visible { border-color: var(--color-primary); outline: 0; box-shadow: 0 0 0 2px rgb(60 92 87 / 18%); }
+
+.event-details-modal__dialog .event-details-modal__close svg { display: block; width: 1.2rem; height: 1.2rem; fill: none; stroke: currentColor; stroke-width: 2; }
+
+.event-details-modal__metadata,
+.event-details-modal__schedule { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); margin: var(--space-5) 0 0; }
+
+.event-details-modal__metadata > div,
+.event-details-modal__schedule > div { min-width: 0; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: #f7f9f8; padding: 0.8rem 0.9rem; }
+
+.event-details-modal__metadata dt,
+.event-details-modal__schedule dt { margin: 0 0 0.2rem; color: var(--color-muted); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+
+.event-details-modal__metadata dd,
+.event-details-modal__schedule dd { margin: 0; color: var(--color-text); font-size: 0.9rem; font-weight: 600; line-height: 1.45; overflow-wrap: anywhere; }
+
+.event-details-modal__section { margin-top: var(--space-5); }
+
+.event-details-modal__section h3 { margin: 0 0 var(--space-2); color: var(--color-primary); font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; }
+
+.event-details-modal__section p { margin: 0; color: var(--color-text); font-size: 0.94rem; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.event-details-modal__footer { display: flex; justify-content: flex-end; margin-top: var(--space-6); padding-top: var(--space-4); border-top: 1px solid var(--color-border); }
+
+.event-details-modal__footer .button { gap: var(--space-2); text-decoration: none; }
+
+.event-details-modal__footer svg { width: 1rem; height: 1rem; }
+
+.event-title-button { display: inline; max-width: 100%; border: 0; background: transparent; color: inherit; font: inherit; font-weight: inherit; line-height: inherit; text-align: left; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 0.18em; cursor: pointer; padding: 0; }
+
+.event-title-button:hover { color: var(--color-primary-strong); text-decoration-color: currentColor; }
+
+.event-title-button:focus-visible { border-radius: 0.15rem; outline: 2px solid var(--color-primary); outline-offset: 3px; }
+
 .admin-contact-modal { position: fixed; z-index: 220; inset: 0; display: grid; place-items: center; overflow-y: auto; background: rgb(15 31 28 / 72%); padding: 1rem; }
 
 .admin-contact-modal__dialog { width: min(40rem, 100%); max-height: calc(100vh - 2rem); overflow: auto; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: 0 1.5rem 4rem rgb(15 31 28 / 24%); }
@@ -3559,9 +3607,14 @@ h1, h2, h3 { color: var(--color-text); font-family: var(--font-display); line-he
   .dashboard-date-tile strong { font-size: 1rem; }
   .dashboard-invite-accept { min-height: 2.75rem; font-size: 0.875rem; }
   .team-announcement-modal,
+  .event-details-modal,
   .admin-contact-modal { align-items: end; padding: 0.75rem; }
   .team-announcement-modal__dialog { width: 100%; max-height: calc(100vh - 1.5rem); border-radius: var(--radius-lg); }
   .team-announcement-modal__footer .button { width: 100%; }
+  .event-details-modal__dialog { width: 100%; max-height: calc(100vh - 1.5rem); border-radius: var(--radius-lg); }
+  .event-details-modal__metadata,
+  .event-details-modal__schedule { grid-template-columns: 1fr; }
+  .event-details-modal__footer .button { width: 100%; }
   .admin-contact-modal__dialog { width: 100%; max-height: calc(100vh - 1.5rem); }
   .admin-contact-modal__grid { grid-template-columns: 1fr; }
   .admin-contact-modal__wide { grid-column: auto; }
