@@ -490,6 +490,7 @@ export default function Home({ contactId }: HomeProps) {
             ) : null}
           </ContentCard>
           {teamResourceGroups.map((group) => {
+            if (group.id === 'recent-documents') return null
             const GroupIcon = teamResourceIcons[group.id as keyof typeof teamResourceIcons]
             return (
               <ContentCard

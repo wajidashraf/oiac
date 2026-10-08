@@ -179,7 +179,7 @@ test('keeps unfinished dashboard features visible while training resources are l
   const teams = screen.getByRole('heading', { name: 'Teams & Resources' }).closest('section')!
   const upcomingMeetings = within(teams).getByRole('heading', { name: 'Upcoming Meetings' }).closest('article')!
   const importantChannels = within(teams).getByRole('heading', { name: 'Important Channels' }).closest('article')!
-  const recentDocuments = within(teams).getByRole('heading', { name: 'Recent Documents' }).closest('article')!
+  expect(within(teams).queryByRole('heading', { name: 'Recent Documents', hidden: true })).not.toBeInTheDocument()
   const submissions = screen.getByRole('heading', { name: 'Volunteer Submissions' }).closest('section')!
 
   expect(within(meetingInvites).queryByText('Coming Soon')).not.toBeInTheDocument()
@@ -207,7 +207,7 @@ test('keeps unfinished dashboard features visible while training resources are l
   expect(teams).not.toHaveAttribute('aria-disabled')
   expect(upcomingMeetings).not.toHaveClass('dashboard-panel--coming-soon')
   expect(upcomingMeetings).not.toHaveAttribute('aria-disabled')
-  for (const placeholder of [importantChannels, recentDocuments]) {
+  for (const placeholder of [importantChannels]) {
     expect(within(placeholder).getByText('Coming Soon')).toBeInTheDocument()
     expect(placeholder).toHaveClass('dashboard-panel--coming-soon')
     expect(placeholder).toHaveAttribute('aria-disabled', 'true')
@@ -518,7 +518,7 @@ test('uses consistent vector icons for dashboard resources', () => {
   expect(training?.querySelectorAll('.dashboard-list-icon svg')).toHaveLength(3)
 
   const teamResources = screen.getByRole('heading', { name: 'Teams & Resources' }).closest('section')
-  expect(teamResources?.querySelectorAll('.dashboard-team-card__marker svg')).toHaveLength(3)
+  expect(teamResources?.querySelectorAll('.dashboard-team-card__marker svg')).toHaveLength(2)
 })
 
 test('keeps operational headings outside the bordered list cards', () => {
