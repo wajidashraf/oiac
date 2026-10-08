@@ -452,7 +452,7 @@ adx_sitesetting:
   IsDeleted: false
 - RecordId: a819a91f-3b5e-4014-8691-63093aa9cc59
   DisplayName: a819a91f-3b5e-4014-8691-63093aa9cc59
-  CheckSum: d284d12bdfe281ce5c4022aa00e1b8f95eaf85aa4af8d208c652112ebca7f8dd
+  CheckSum: 4fcc3b0c483c28e0bb49581ca2187176ccbdea95a4f5c21abd5b327aacadf150
   IsDeleted: false
 - RecordId: ab721811-ecba-48ee-b81a-bdc7e8baa4d6
   DisplayName: ab721811-ecba-48ee-b81a-bdc7e8baa4d6
@@ -565,11 +565,11 @@ adx_sitesetting:
 adx_webfile:
 - RecordId: 03ede0b8-be75-48f1-a5c6-742c4b96bd3b
   DisplayName: 03ede0b8-be75-48f1-a5c6-742c4b96bd3b
-  CheckSum: 7a9697bc3054332983f51b613a5b6e3a75fe254f1adc2a025200817a30a1d14b
+  CheckSum: 5998fa456148f5c446338b8aa8775edfa2d50bdf7f3229f9da6245de225cbed3
   IsDeleted: false
 - RecordId: 12eca2d3-b169-4553-881d-ffff34a60d91
   DisplayName: 12eca2d3-b169-4553-881d-ffff34a60d91
-  CheckSum: 78c16cb34fc8978129ffcb96ce0e4759617194784a435775f0475bc58117de07
+  CheckSum: fe013f8969d83363335a7872a9214ba2a3be5a08389e55b00620cafe62b150b2
   IsDeleted: false
 - RecordId: 253700a7-d51b-4f17-bfb5-aaa2a6e69210
   DisplayName: 253700a7-d51b-4f17-bfb5-aaa2a6e69210
@@ -585,7 +585,7 @@ adx_webfile:
   IsDeleted: true
 - RecordId: 50b46c02-6e17-4abe-b56b-281c1313efc4
   DisplayName: 50b46c02-6e17-4abe-b56b-281c1313efc4
-  CheckSum: d59c0de3033b131e5688b02fa358298f463169ee25d6fcb821e7e189a4f70724
+  CheckSum: e8801615e81f9d77bae214ca66844668244b4dadb618a367dab14a1b2a8e21d9
   IsDeleted: false
 - RecordId: 6051e4f0-dca2-4401-bbc8-960a55eceb07
   DisplayName: 6051e4f0-dca2-4401-bbc8-960a55eceb07
@@ -601,7 +601,7 @@ adx_webfile:
   IsDeleted: true
 - RecordId: 8f607af5-905b-48cb-aee8-e80e065dad40
   DisplayName: 8f607af5-905b-48cb-aee8-e80e065dad40
-  CheckSum: b2973bd43d974e5e1585129967f596e0a4e2cd6489fb14633b1870c37f0bd59e
+  CheckSum: 297583652b98f3c9dcb86d70934df31b65e2bd4a7bce0ac3446d4f410deed515
   IsDeleted: false
 - RecordId: 98c794cf-8c42-4880-837a-648c750f26a4
   DisplayName: 98c794cf-8c42-4880-837a-648c750f26a4
@@ -610,6 +610,10 @@ adx_webfile:
 - RecordId: a0af0346-42d2-4872-b589-24c7447691f9
   DisplayName: a0af0346-42d2-4872-b589-24c7447691f9
   CheckSum: b0ebc075a4390b449df624e7b8f02b5899104ebeabfe91514bda1bc0099a5fa6
+  IsDeleted: false
+- RecordId: b07082fe-e92f-47fb-9a67-768a0dcfd9f0
+  DisplayName: b07082fe-e92f-47fb-9a67-768a0dcfd9f0
+  CheckSum: fdbedfe74b5e21a2395e9f6cb1927da2dd1f4e87c21b7b97e7c91fffc7e07aff
   IsDeleted: false
 - RecordId: f576e1cc-a3dd-450e-937b-2de0549fa187
   DisplayName: f576e1cc-a3dd-450e-937b-2de0549fa187
@@ -660,11 +664,11 @@ adx_webpage:
   IsDeleted: false
 - RecordId: 71591c4f-0e93-46f1-b1c4-91008a9f143a
   DisplayName: 71591c4f-0e93-46f1-b1c4-91008a9f143a
-  CheckSum: b422f36a35817e9afdf06ace9dd7da40b8bf0760ce22a539d4e2f5e979c6b72f
+  CheckSum: dceec9c8dab00e767d4998c159a335ec911333070491f0d6b5bfcc197b4553ec
   IsDeleted: false
 - RecordId: 950db54f-769f-4242-88c4-2fc0329bb3e8
   DisplayName: 950db54f-769f-4242-88c4-2fc0329bb3e8
-  CheckSum: 49f0dd5a663e3b7b8ffbfd65513574fc0fe13a6ba0cccafa2deba3b9babb3faf
+  CheckSum: 7edf91829cc5140cecbe217b2762136ace14451920aa75872ee887962e134d25
   IsDeleted: false
 - RecordId: c9bac49e-aa8f-4073-8b9e-ec522c53137e
   DisplayName: c9bac49e-aa8f-4073-8b9e-ec522c53137e
@@ -748,7 +752,7 @@ adx_websitelanguage:
 adx_webtemplate:
 - RecordId: 1a8d7f5c-7e6b-4a4f-b9d5-2f3c6a1e8b70
   DisplayName: 1a8d7f5c-7e6b-4a4f-b9d5-2f3c6a1e8b70
-  CheckSum: 98ef3a69b23f2e42209b169eac62fda687ae4cf142011daa906be958962516b1
+  CheckSum: 2d055810007b016ffc7c82fb8c385c0956105849820916b3c329012fe701f3e1
   IsDeleted: false
 - RecordId: 2a0ba60d-ee3a-4469-aeec-fc5a3b7c7b5c
   DisplayName: 2a0ba60d-ee3a-4469-aeec-fc5a3b7c7b5c
@@ -780,7 +784,7 @@ adx_webtemplate:
   IsDeleted: false
 - RecordId: 9ba53058-2cfd-4b7e-96a8-77ba4010d249
   DisplayName: 9ba53058-2cfd-4b7e-96a8-77ba4010d249
-  CheckSum: 9460741643dc0be959e8c6cb83ac03bdcd85575d64a69820ad120e0b3132644e
+  CheckSum: ad1af058ab667b985c4d31caf0e107858b877e31e5a17b9119365f94c12090a6
   IsDeleted: false
 - RecordId: c48098ee-f189-4c61-9c4a-f723483683de
   DisplayName: c48098ee-f189-4c61-9c4a-f723483683de
@@ -809,11 +813,11 @@ adx_webtemplate:
 annotation:
 - RecordId: 03ede0b8-be75-48f1-a5c6-742c4b96bd3b
   DisplayName: registration-profile.js
-  CheckSum: 8c23f1add7d55c7d9480ba3344aac3693f96172d7d07cba0ccc0faace15dc0bb
+  CheckSum: 9ea7cf77d5a43620ef2c299de8728e7bd2a53a78eb7a2afe2ea9548546e2ee54
   IsDeleted: false
 - RecordId: 12eca2d3-b169-4553-881d-ffff34a60d91
   DisplayName: theme.css
-  CheckSum: 302c680bf710ffc86992d34a7e3f0c13df29cc84d24347d1e8fd285077c6adb7
+  CheckSum: d3834abde35903978ea08423b0face32dcd19fc670df11e17552880c47f39b9d
   IsDeleted: false
 - RecordId: 253700a7-d51b-4f17-bfb5-aaa2a6e69210
   DisplayName: Cat-PC.png
@@ -829,7 +833,7 @@ annotation:
   IsDeleted: true
 - RecordId: 50b46c02-6e17-4abe-b56b-281c1313efc4
   DisplayName: auth.css
-  CheckSum: b482b212485856a82f93a9d905eb37ce0834b916e0995570f28b00e7fe1d5db2
+  CheckSum: e7ffebd23674196f6658d943dd6941e0ece0403dca9c7b560546c53bdd0427eb
   IsDeleted: false
 - RecordId: 6051e4f0-dca2-4401-bbc8-960a55eceb07
   DisplayName: index-DYGkLvVC.css
@@ -845,7 +849,7 @@ annotation:
   IsDeleted: true
 - RecordId: 8f607af5-905b-48cb-aee8-e80e065dad40
   DisplayName: index.html
-  CheckSum: ea498ff9b9e0b21b03f47165bcbbada8033582999aa94970ef67d5db3d6da4c3
+  CheckSum: 67340781f30cdabe6095e5f8352b862d14a5d40b8c2ab714229e2be34c88ebce
   IsDeleted: false
 - RecordId: 98c794cf-8c42-4880-837a-648c750f26a4
   DisplayName: logo.png
@@ -854,6 +858,10 @@ annotation:
 - RecordId: a0af0346-42d2-4872-b589-24c7447691f9
   DisplayName: Logo-sm-64.png
   CheckSum: 7366b2f5a4f4c9aea14fa3723159aee561022a8a874ffb5f8d69884af1e6f66e
+  IsDeleted: false
+- RecordId: b07082fe-e92f-47fb-9a67-768a0dcfd9f0
+  DisplayName: index-DiwxZ9wP.css
+  CheckSum: 14d00d3f916a9be16c0ffc9494969a5ead6c7242f0111e5d29d05578fad492e2
   IsDeleted: false
 - RecordId: f576e1cc-a3dd-450e-937b-2de0549fa187
   DisplayName: MainHomeImage.jpg
