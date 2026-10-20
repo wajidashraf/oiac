@@ -57,6 +57,50 @@ test('opens an inline request above both lists, uses eligible contacts, and rese
   await waitFor(() => expect(screen.getByRole('button', { name: '+ New Appointment' })).toHaveFocus())
 })
 
+test('closes the appointment Contact dropdown when another field is clicked and reopens on return', async () => {
+  show()
+  const user = await openRequest()
+  const contact = screen.getByRole('combobox', { name: 'Contact' })
+  await user.click(contact)
+  expect(await screen.findByRole('option', { name: 'Alice Adams' })).toBeInTheDocument()
+
+  await user.click(screen.getByLabelText('Appointment Title'))
+  expect(contact).toHaveAttribute('aria-expanded', 'false')
+  expect(screen.queryByRole('listbox', { name: 'Contact options' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Clear Contact' })).not.toBeInTheDocument()
+
+  await user.click(contact)
+  await user.click(await screen.findByRole('option', { name: 'Alice Adams' }))
+  expect(screen.getByRole('button', { name: 'Clear Contact' }).parentElement).toHaveTextContent('Alice Adams')
+})
+
+test.each(['mouse', 'touch'] as const)('closes the appointment Contact dropdown on an outside %s pointer', async (pointerType) => {
+  show()
+  const user = await openRequest()
+  const contact = screen.getByRole('combobox', { name: 'Contact' })
+  await user.click(contact)
+  await screen.findByRole('option', { name: 'Alice Adams' })
+
+  fireEvent.pointerDown(screen.getByRole('heading', { name: 'Meeting requests sent to you' }), { pointerType })
+  expect(contact).toHaveAttribute('aria-expanded', 'false')
+  expect(screen.queryByRole('listbox', { name: 'Contact options' })).not.toBeInTheDocument()
+})
+
+test('keeps appointment options selectable by keyboard and closes when focus leaves the lookup', async () => {
+  show()
+  const user = await openRequest()
+  const contact = screen.getByRole('combobox', { name: 'Contact' })
+  await user.click(contact)
+  const option = await screen.findByRole('option', { name: 'Alice Adams' })
+
+  await user.tab()
+  expect(option).toHaveFocus()
+  expect(contact).toHaveAttribute('aria-expanded', 'true')
+  await user.tab()
+  expect(screen.getByLabelText('Meeting Format')).toHaveFocus()
+  expect(contact).toHaveAttribute('aria-expanded', 'false')
+})
+
 test('creates using the selected contact and format then refreshes the lists without a requester field', async () => {
   show(); const user = await openRequest(); await fillRequest(user)
   await user.click(screen.getByRole('button', { name: 'Submit Request' }))

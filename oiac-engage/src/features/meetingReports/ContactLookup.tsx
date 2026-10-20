@@ -16,6 +16,7 @@ type ContactLookupProps = {
   readonly compactSelection?: boolean
   readonly normalizeSearch?: (search: string) => string
   readonly emptyMessage?: string
+  readonly dismissOnOutsideInteraction?: boolean
 }
 
 export function ContactLookup({
@@ -30,8 +31,10 @@ export function ContactLookup({
   compactSelection = false,
   normalizeSearch,
   emptyMessage,
+  dismissOnOutsideInteraction = false,
 }: ContactLookupProps) {
   const id = useId()
+  const root = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
   const lookup = useMeetingReportLookup(loadOptions, debounceMs, normalizeSearch)
   const input = useRef<HTMLInputElement>(null)
@@ -45,8 +48,25 @@ export function ContactLookup({
     else input.current?.focus()
   }, [compactSelection, value?.id, value])
 
+  useEffect(() => {
+    if (!dismissOnOutsideInteraction || !open) return
+
+    function closeOnOutsidePointer(event: PointerEvent) {
+      if (!root.current?.contains(event.target as Node)) setOpen(false)
+    }
+
+    document.addEventListener('pointerdown', closeOnOutsidePointer, true)
+    return () => document.removeEventListener('pointerdown', closeOnOutsidePointer, true)
+  }, [dismissOnOutsideInteraction, open])
+
   return (
-    <div className={`field meeting-report-lookup${compactSelection ? ' meeting-report-lookup--compact' : ''}`}>
+    <div
+      ref={root}
+      className={`field meeting-report-lookup${compactSelection ? ' meeting-report-lookup--compact' : ''}`}
+      onBlur={(event) => {
+        if (dismissOnOutsideInteraction && !event.currentTarget.contains(event.relatedTarget)) setOpen(false)
+      }}
+    >
       <label id={`${id}-label`} htmlFor={selectedCompact ? undefined : id}>
         <span>{label}{required ? <span className="required-mark" aria-hidden="true"> *</span> : null}</span>
       </label>

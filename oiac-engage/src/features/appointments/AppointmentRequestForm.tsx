@@ -46,7 +46,7 @@ export function AppointmentRequestForm({ draft, errors, locked, saving, contactI
         <input id="appointment-title" aria-label="Appointment Title" required maxLength={850} value={draft.title} aria-invalid={Boolean(errors.title)} aria-describedby={errors.title ? 'appointment-title-error' : undefined} placeholder="e.g. Community policy discussion" onChange={(event) => onChange({ ...draft, title: event.target.value })} />
         {errors.title ? <span id="appointment-title-error" className="appointment-error">{errors.title}</span> : null}
       </label>
-      <div className="appointment-field"><ContactLookup label="Contact" compactSelection required normalizeSearch={normalizeAppointmentContactSearch} emptyMessage="No matching contacts found" disabled={locked} value={draft.contact} onChange={(contact) => onChange({ ...draft, contact })} loadOptions={async (search, signal) => (await searchAppointmentContacts(search, signal)).filter((option) => option.id.toLowerCase() !== contactId.toLowerCase())} />
+      <div className="appointment-field"><ContactLookup label="Contact" compactSelection required dismissOnOutsideInteraction normalizeSearch={normalizeAppointmentContactSearch} emptyMessage="No matching contacts found" disabled={locked} value={draft.contact} onChange={(contact) => onChange({ ...draft, contact })} loadOptions={async (search, signal) => (await searchAppointmentContacts(search, signal)).filter((option) => option.id.toLowerCase() !== contactId.toLowerCase())} />
         {errors.contact ? <span className="appointment-error" role="alert">{errors.contact}</span> : null}
       </div>
       <label className="appointment-field" htmlFor="appointment-format"><span>Meeting Format <span aria-hidden="true">*</span></span>
