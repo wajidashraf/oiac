@@ -57,7 +57,7 @@ export default function App({ session: suppliedSession }: AppProps) {
         >
           <AppShell user={completedSession.user}>
             <Routes>
-              <Route path="/" element={<Home contactId={completedSession.user.contactId} />} />
+              <Route path="/" element={<Home contactId={completedSession.user.contactId} user={completedSession.user} />} />
               <Route path="/my-reports" element={<MyReports />} />
               <Route path="/my-calendar" element={<MyCalendar contactId={completedSession.user.contactId} />} />
               <Route

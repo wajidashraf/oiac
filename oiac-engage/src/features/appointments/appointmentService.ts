@@ -1,3 +1,4 @@
+import { normalizeAppointmentContactSearch } from './appointmentContactSearch'
 import { PowerPagesApiError, PowerPagesDataError, powerPagesFetch } from '../../shared/powerPagesApi'
 import type { ContactOption } from '../meetingReports/meetingReportTypes'
 import { appointmentCalendarDate, getEasternTimeOptions } from './appointmentDates'
@@ -146,13 +147,18 @@ export async function getCalendarAppointments(month: string, signal?: AbortSigna
 }
 
 export async function searchAppointmentContacts(search: string, signal?: AbortSignal): Promise<readonly ContactOption[]> {
-  const params = new URLSearchParams({ view: 'contacts', q: search.trim().slice(0, 150) })
+  const params = new URLSearchParams({ view: 'contacts', q: normalizeAppointmentContactSearch(search) })
   const body = envelope(await powerPagesFetch<unknown>(`${endpoint}?${params}`, { signal }))
   if (!Array.isArray(body.contacts) || body.contacts.length > 15) throw new PowerPagesDataError()
-  return body.contacts.map(value => {
+  const options = new Map<string, ContactOption>()
+  for (const value of body.contacts) {
     const raw = object(value)
-    return { id: guid(raw.id), name: text(raw.name), email: null, jobTitle: null }
-  })
+    const id = guid(raw.id)
+    const name = text(raw.name).trim().replace(/\s+/g, ' ')
+    if (!name || /^(unknown(?: contact)?|undefined|null)$/i.test(name) || options.has(id)) continue
+    options.set(id, { id, name, email: null, jobTitle: null })
+  }
+  return [...options.values()]
 }
 
 function inputText(value: string, label: string, max: number, required = false): string {

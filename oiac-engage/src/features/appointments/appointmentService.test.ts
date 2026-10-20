@@ -77,10 +77,29 @@ describe('appointment reads', () => {
     await expect(searchAppointmentContacts(" O'Brien ", signal)).resolves.toEqual([{ id: contactId, name: 'Recipient', email: null, jobTitle: null }])
     expect(fetchMock).toHaveBeenCalledWith(`${endpoint}?view=contacts&q=O%27Brien`, { signal })
     await searchAppointmentContacts('a'.repeat(151))
-    expect(new URL(fetchMock.mock.calls[1][0], window.location.origin).searchParams.get('q')).toHaveLength(150)
+    expect(new URL(fetchMock.mock.calls[1][0], window.location.origin).searchParams.get('q')).toHaveLength(100)
     fetchMock.mockResolvedValue(envelope({ ok: true, contacts: Array(16).fill({ id: contactId, name: 'Recipient' }) }))
     await expect(searchAppointmentContacts('a')).rejects.toThrow()
   })
+  test('normalizes contact search whitespace before querying the complete server directory', async () => {
+    fetchMock.mockResolvedValue(envelope({ ok: true, contacts: [] }))
+    await searchAppointmentContacts('  Muna   Sultana  ')
+    expect(fetchMock).toHaveBeenCalledWith(`${endpoint}?view=contacts&q=Muna+Sultana`, { signal: undefined })
+  })
+  test('drops unusable contact labels and duplicate IDs while preserving valid selection IDs', async () => {
+    const otherId = '77777777-7777-4777-8777-777777777777'
+    fetchMock.mockResolvedValue(envelope({ ok: true, contacts: [
+      { id: contactId, name: '  Muna   Sultana  ' },
+      { id: contactId.toUpperCase(), name: 'Muna Sultana' },
+      { id: otherId, name: 'Unknown contact' },
+      { id: otherId, name: '  ' },
+      { id: otherId, name: 'UNDEFINED' },
+    ] }))
+    await expect(searchAppointmentContacts('Muna')).resolves.toEqual([
+      { id: contactId, name: 'Muna Sultana', email: null, jobTitle: null },
+    ])
+  })
+
 })
 
 describe('appointment writes', () => {

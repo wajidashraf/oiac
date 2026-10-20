@@ -4,14 +4,14 @@ import {
   LuBookOpen,
   LuCalendarDays,
   LuClipboardList,
-  LuFileText,
   LuGraduationCap,
   LuHandshake,
-  LuHash,
   LuExternalLink,
   LuVideo,
 } from 'react-icons/lu'
 import { Link } from 'react-router-dom'
+import { getPrimaryRole } from '../auth/authorization'
+import type { PortalUser } from '../auth/powerPagesSession'
 import ComingSoonBadge from '../components/ComingSoonBadge'
 import ContentCard from '../components/ContentCard'
 import StatusBadge from '../components/StatusBadge'
@@ -23,9 +23,7 @@ import { TeamAnnouncementModal } from '../features/teamAnnouncements/TeamAnnounc
 import type { TeamAnnouncement } from '../features/teamAnnouncements/teamAnnouncementTypes'
 import {
   dashboardMetrics,
-  teamResourceGroups,
   trainingResources,
-  volunteerSubmissions,
 } from '../data/dashboardData'
 
 const dashboardShortcuts = [
@@ -34,11 +32,6 @@ const dashboardShortcuts = [
   { label: 'Appointments', href: '/activity/appointments', comingSoon: false },
   { label: 'Resources', href: '/resources', comingSoon: false },
 ] as const
-
-const teamResourceIcons = {
-  'important-channels': LuHash,
-  'recent-documents': LuFileText,
-} as const
 
 function DashboardTable({ label, children }: PropsWithChildren<{ label: string }>) {
   return (
@@ -51,12 +44,6 @@ function DashboardTable({ label, children }: PropsWithChildren<{ label: string }
       <table className="dashboard-table" aria-label={label}>{children}</table>
     </div>
   )
-}
-
-function submissionTone(status: 'Submitted' | 'Confirmed' | 'Completed') {
-  if (status === 'Confirmed') return 'positive'
-  if (status === 'Submitted') return 'attention'
-  return 'neutral'
 }
 
 function formatInviteDate(value: string): string {
@@ -94,9 +81,10 @@ function formatEventDate(value: string | null): { day: string; month: string } {
 
 type HomeProps = {
   readonly contactId?: string
+  readonly user?: PortalUser
 }
 
-export default function Home({ contactId }: HomeProps) {
+export default function Home({ contactId, user }: HomeProps) {
   const {
     reports,
     reportCount,
@@ -118,6 +106,11 @@ export default function Home({ contactId }: HomeProps) {
     retryAnnouncements,
     retry,
   } = useHomeDashboardData(contactId)
+  const primaryRole = user ? getPrimaryRole({ status: 'authenticated', user }) : undefined
+  const roleLabel = primaryRole === 'Administrators' ? 'Administrator' : primaryRole === 'Staff' ? 'Staff' : 'Volunteer'
+  const newestMeetingInvites = [...meetingInvites].sort(
+    (first, second) => Date.parse(second.startDateTime) - Date.parse(first.startDateTime),
+  )
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<{
     readonly announcement: TeamAnnouncement
     readonly trigger: HTMLButtonElement
@@ -149,7 +142,7 @@ export default function Home({ contactId }: HomeProps) {
           </span>
           <div>
             <p className="dashboard-identity__eyebrow">Dashboard</p>
-            <h1>Volunteer</h1>
+            <h1>{roleLabel}</h1>
           </div>
         </div>
         <nav className="dashboard-shortcuts" aria-label="Dashboard shortcuts">
@@ -308,7 +301,7 @@ export default function Home({ contactId }: HomeProps) {
               tabIndex={0}
             >
               <ul className="dashboard-invite-list">
-                {meetingInvites.map((invite) => {
+                {newestMeetingInvites.map((invite) => {
                   const isAccepted = invite.participant?.status === MEETING_INVITATION_STATUS.accepted
                   const isAccepting = acceptingInviteIds.has(invite.id)
                   return (
@@ -489,76 +482,9 @@ export default function Home({ contactId }: HomeProps) {
               </ul>
             ) : null}
           </ContentCard>
-          {teamResourceGroups.map((group) => {
-            if (group.id === 'recent-documents') return null
-            const GroupIcon = teamResourceIcons[group.id as keyof typeof teamResourceIcons]
-            return (
-              <ContentCard
-                key={group.id}
-                title={group.title}
-                headingLevel="h3"
-                className="dashboard-panel dashboard-team-card dashboard-panel--coming-soon"
-                ariaDisabled
-                meta={(
-                  <>
-                    <span className="dashboard-team-card__marker" aria-hidden="true"><GroupIcon /></span>
-                    <ComingSoonBadge />
-                  </>
-                )}
-              >
-                <ul className="dashboard-team-list">
-                  {group.items.map((item) => (
-                    <li key={item.id}>
-                      <div>
-                        <strong>{item.title}</strong>
-                        <span>{item.detail}</span>
-                      </div>
-                      <span
-                        className="dashboard-team-list__action"
-                        aria-label={`${item.action} ${item.title}`}
-                        aria-disabled="true"
-                      >
-                        <span>{item.action}</span><LuArrowRight aria-hidden="true" />
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </ContentCard>
-            )
-          })}
         </div>
       </section>
 
-      <section
-        className="dashboard-section dashboard-section--coming-soon"
-        aria-labelledby="volunteer-submissions-title"
-        aria-disabled="true"
-      >
-        <div className="dashboard-section__heading">
-          <h2 id="volunteer-submissions-title">Volunteer Submissions</h2>
-          <ComingSoonBadge />
-        </div>
-        <DashboardTable label="Volunteer Submissions">
-          <thead>
-            <tr>
-              <th scope="col">Type</th>
-              <th scope="col">Subject</th>
-              <th scope="col">Date</th>
-              <th scope="col">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {volunteerSubmissions.map((submission) => (
-              <tr key={submission.id}>
-                <td><span className="dashboard-type-label">{submission.type}</span></td>
-                <th scope="row">{submission.subject}</th>
-                <td><time dateTime={submission.dateTime}>{submission.date}</time></td>
-                <td><StatusBadge tone={submissionTone(submission.status)}>{submission.status}</StatusBadge></td>
-              </tr>
-            ))}
-          </tbody>
-        </DashboardTable>
-      </section>
       {selectedAnnouncement ? (
         <TeamAnnouncementModal
           announcement={selectedAnnouncement.announcement}

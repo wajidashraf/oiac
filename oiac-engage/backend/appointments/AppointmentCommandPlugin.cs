@@ -107,12 +107,40 @@ namespace Oiac.Engage.Appointments {
    role.LinkCriteria.AddCondition("powerpagecomponentid",ConditionOperator.In,AdminRole,new Guid("89a4fe62-4c85-48cb-b848-7603374faca2"),new Guid("b743c85b-4db3-484a-bd49-ff5ff975ec2b"),new Guid("c0ff381c-44a5-497b-b738-a442d62b07c1"));
    return service.RetrieveMultiple(q).Entities.Count>0;
   }
+  static readonly string[] UnusableContactNames={"unknown","unknown contact","undefined","null"};
+  static string NormalizeContactName(string value){return Regex.Replace(value??"",@"\s+"," ").Trim();}
+  static bool UsableContactName(string value){return value.Length>0&&!value.Any(char.IsControl)&&value.Any(char.IsLetterOrDigit)&&!UnusableContactNames.Contains(value,StringComparer.OrdinalIgnoreCase);}
+  static string ContactDisplayName(Entity contact){
+   string full=NormalizeContactName(contact.GetAttributeValue<string>("fullname"));
+   if(UsableContactName(full))return full;
+   string combined=NormalizeContactName(contact.GetAttributeValue<string>("firstname")+" "+contact.GetAttributeValue<string>("lastname"));
+   return UsableContactName(combined)?combined:null;
+  }
   static Dictionary<string,object> Contacts(IOrganizationService service,Guid actor,Dictionary<string,object> p){
    if(!FunctionalRole(service,actor))Fail("forbidden");
-   Keys(p,"q");string term=Text(p,"q",100,false);var q=new QueryExpression("contact"){ColumnSet=new ColumnSet("contactid","fullname"),Distinct=true,TopCount=15};q.Criteria.AddCondition("statecode",ConditionOperator.Equal,0);q.Criteria.AddCondition("adx_identity_logonenabled",ConditionOperator.Equal,true);q.Criteria.AddCondition("contactid",ConditionOperator.NotEqual,actor);
-   if(term.Length>0)q.Criteria.AddCondition("fullname",ConditionOperator.Like,"%"+term.Replace("[","[[]").Replace("%","[%]").Replace("_","[_]")+"%");
+   Keys(p,"q");string term=NormalizeContactName(Text(p,"q",100,false));
+   var q=new QueryExpression("contact"){ColumnSet=new ColumnSet("contactid","firstname","lastname","fullname"),Distinct=true,PageInfo=new PagingInfo{Count=15,PageNumber=1}};
+   // Preserve the existing active, signed-in-recipient and self-exclusion rules.
+   q.Criteria.AddCondition("statecode",ConditionOperator.Equal,0);q.Criteria.AddCondition("adx_identity_logonenabled",ConditionOperator.Equal,true);q.Criteria.AddCondition("contactid",ConditionOperator.NotEqual,actor);
+   var named=new FilterExpression(LogicalOperator.Or);
+   foreach(string field in new[]{"firstname","lastname","fullname"}){var usable=new FilterExpression();usable.AddCondition(field,ConditionOperator.NotNull);usable.AddCondition(field,ConditionOperator.NotEqual,"");usable.AddCondition(field,ConditionOperator.NotIn,UnusableContactNames.Cast<object>().ToArray());named.AddFilter(usable);}
+   q.Criteria.AddFilter(named);
+   // AND the name tokens, OR the three fields within each token. Dataverse string
+   // comparisons are case-insensitive; literal wildcard characters stay literal.
+   foreach(string token in term.Split(new[]{' '},StringSplitOptions.RemoveEmptyEntries)){
+    string pattern="%"+token.Replace("[","[[]").Replace("%","[%]").Replace("_","[_]")+"%";
+    var match=new FilterExpression(LogicalOperator.Or);foreach(string field in new[]{"firstname","lastname","fullname"})match.AddCondition(field,ConditionOperator.Like,pattern);q.Criteria.AddFilter(match);
+   }
    var external=q.AddLink("adx_externalidentity","contactid","adx_contactid",JoinOperator.LeftOuter);external.EntityAlias="identity";external.Columns=new ColumnSet(false);var identities=new FilterExpression(LogicalOperator.Or);var local=new FilterExpression();local.AddCondition("adx_identity_username",ConditionOperator.NotNull);local.AddCondition("adx_identity_username",ConditionOperator.NotEqual,"");identities.AddFilter(local);identities.AddCondition("identity","adx_externalidentityid",ConditionOperator.NotNull);q.Criteria.AddFilter(identities);q.AddOrder("fullname",OrderType.Ascending);q.AddOrder("contactid",OrderType.Ascending);
-   var result=service.RetrieveMultiple(q).Entities.Select(c=>(object)D("id",c.Id.ToString(),"name",c.GetAttributeValue<string>("fullname")??"Unknown contact")).ToArray();return D("ok",true,"contacts",result);
+   var result=new List<object>();var seen=new HashSet<Guid>();
+   while(true){
+    var batch=service.RetrieveMultiple(q);
+    foreach(var contact in batch.Entities){string name=ContactDisplayName(contact);if(contact.Id==Guid.Empty||contact.Id==actor||name==null||!seen.Add(contact.Id))continue;result.Add(D("id",contact.Id.ToString(),"name",name));if(result.Count==15)break;}
+    if(result.Count==15||!batch.MoreRecords)break;
+    if(q.PageInfo.PageNumber>=3333)Fail("unavailable");
+    q.PageInfo.PageNumber++;q.PageInfo.PagingCookie=batch.PagingCookie;
+   }
+   return D("ok",true,"contacts",result.ToArray());
   }
   static Dictionary<string,object> List(IOrganizationService service,Guid actor,string command,Dictionary<string,object> p){
    Keys(p,command=="calendar"?new[]{"page","month"}:new[]{"page"});int page=Value(p,"page")==null?1:Number(p,"page",1,3333);if(command=="all"&&!Administrator(service,actor))Fail("forbidden");var q=new QueryExpression(Table){ColumnSet=new ColumnSet(Fields),PageInfo=new PagingInfo{Count=15,PageNumber=page}};

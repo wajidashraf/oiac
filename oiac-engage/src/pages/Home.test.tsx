@@ -129,8 +129,8 @@ function dashboardData(overrides: Partial<HomeDashboardData> = {}): HomeDashboar
   }
 }
 
-function renderHome() {
-  return render(<MemoryRouter><Home contactId="11111111-1111-1111-1111-111111111111" /></MemoryRouter>)
+function renderHome(userRoles: readonly string[] = ['Volunteer']) {
+  return render(<MemoryRouter><Home contactId="11111111-1111-1111-1111-111111111111" user={{ userName: 'home-test@oiac.org', userRoles }} /></MemoryRouter>)
 }
 
 beforeEach(() => {
@@ -154,11 +154,11 @@ test('renders the volunteer dashboard and its operational sections', () => {
   expect(screen.getByRole('heading', { name: 'Teams Announcements' })).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Training Resources' })).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Teams & Resources' })).toBeInTheDocument()
-  expect(screen.getByRole('heading', { name: 'Volunteer Submissions' })).toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Volunteer Submissions' })).not.toBeInTheDocument()
   expect(document.title).toBe('Volunteer Dashboard — OIAC Engage')
 })
 
-test('keeps unfinished dashboard features visible while training resources are live', () => {
+test('removes the requested placeholders while keeping live dashboard sections and actions', () => {
   renderHome()
 
   const shortcuts = screen.getByRole('navigation', { name: 'Dashboard shortcuts' })
@@ -178,9 +178,9 @@ test('keeps unfinished dashboard features visible while training resources are l
   const training = screen.getByRole('heading', { name: 'Training Resources' }).closest('article')!
   const teams = screen.getByRole('heading', { name: 'Teams & Resources' }).closest('section')!
   const upcomingMeetings = within(teams).getByRole('heading', { name: 'Upcoming Meetings' }).closest('article')!
-  const importantChannels = within(teams).getByRole('heading', { name: 'Important Channels' }).closest('article')!
+  expect(within(teams).queryByRole('heading', { name: 'Important Channels', hidden: true })).not.toBeInTheDocument()
   expect(within(teams).queryByRole('heading', { name: 'Recent Documents', hidden: true })).not.toBeInTheDocument()
-  const submissions = screen.getByRole('heading', { name: 'Volunteer Submissions' }).closest('section')!
+  expect(screen.queryByRole('heading', { name: 'Volunteer Submissions', hidden: true })).not.toBeInTheDocument()
 
   expect(within(meetingInvites).queryByText('Coming Soon')).not.toBeInTheDocument()
   expect(meetingInvites).not.toHaveClass('dashboard-panel--coming-soon')
@@ -207,15 +207,6 @@ test('keeps unfinished dashboard features visible while training resources are l
   expect(teams).not.toHaveAttribute('aria-disabled')
   expect(upcomingMeetings).not.toHaveClass('dashboard-panel--coming-soon')
   expect(upcomingMeetings).not.toHaveAttribute('aria-disabled')
-  for (const placeholder of [importantChannels]) {
-    expect(within(placeholder).getByText('Coming Soon')).toBeInTheDocument()
-    expect(placeholder).toHaveClass('dashboard-panel--coming-soon')
-    expect(placeholder).toHaveAttribute('aria-disabled', 'true')
-    expect(within(placeholder).queryByRole('link')).not.toBeInTheDocument()
-  }
-  expect(within(submissions).getByText('Coming Soon')).toBeInTheDocument()
-  expect(submissions).toHaveClass('dashboard-section--coming-soon')
-  expect(submissions).toHaveAttribute('aria-disabled', 'true')
   expect(within(training).getAllByRole('link')).toHaveLength(3)
   expect(within(upcomingMeetings).getByRole('link', {
     name: 'Join Pending District Briefing in a new tab',
@@ -446,7 +437,7 @@ test('renders the five latest authenticated-user reports from dashboard data', a
   expect(screen.getByRole('link', { name: 'View all reports' })).toHaveAttribute('href', '/report')
 })
 
-test('renders both dashboard datasets as semantic tables', async () => {
+test('keeps the live Meeting Reports table and removes the placeholder submissions table', async () => {
   renderHome()
 
   const reportsTable = await screen.findByRole('table', { name: 'Meeting Reports' })
@@ -458,11 +449,7 @@ test('renders both dashboard datasets as semantic tables', async () => {
   expect(within(reportsTable).getByRole('cell', { name: 'DC' })).toBeInTheDocument()
   expect(within(reportsTable).queryByRole('columnheader', { name: 'Files' })).not.toBeInTheDocument()
 
-  const submissionsTable = screen.getByRole('table', { name: 'Volunteer Submissions' })
-  expect(within(submissionsTable).getByRole('columnheader', { name: 'Type' })).toBeInTheDocument()
-  expect(within(submissionsTable).getByRole('columnheader', { name: 'Subject' })).toBeInTheDocument()
-  expect(within(submissionsTable).getByRole('columnheader', { name: 'Date' })).toBeInTheDocument()
-  expect(within(submissionsTable).getByRole('columnheader', { name: 'Status' })).toBeInTheDocument()
+  expect(screen.queryByRole('table', { name: 'Volunteer Submissions' })).not.toBeInTheDocument()
 })
 
 test('exposes report and event dates as semantic time elements', async () => {
@@ -518,7 +505,7 @@ test('uses consistent vector icons for dashboard resources', () => {
   expect(training?.querySelectorAll('.dashboard-list-icon svg')).toHaveLength(3)
 
   const teamResources = screen.getByRole('heading', { name: 'Teams & Resources' }).closest('section')
-  expect(teamResources?.querySelectorAll('.dashboard-team-card__marker svg')).toHaveLength(2)
+  expect(teamResources?.querySelectorAll('.dashboard-team-card__marker svg')).toHaveLength(1)
 })
 
 test('keeps operational headings outside the bordered list cards', () => {
@@ -534,4 +521,34 @@ test('keeps operational headings outside the bordered list cards', () => {
 
   expect(matchingBorders[matchingBorders.length - 1]).toBe('0')
   style.remove()
+})
+
+
+test.each([
+  [['Volunteer', 'Staff', 'Administrators'], 'Administrator'],
+  [['Volunteer', 'Staff'], 'Staff'],
+  [[' authenticated users ', ' staff ', ' ADMINISTRATORS '], 'Administrator'],
+  [['Volunteer'], 'Volunteer'],
+  [[], 'Volunteer'],
+])('shows the highest-priority Home role for %j', (roles, expected) => {
+  renderHome(roles)
+  expect(screen.getByRole('heading', { level: 1, name: expected })).toBeInTheDocument()
+})
+
+test('shows newest meeting dates first on Home without mutating shared invite data', () => {
+  const invites = Object.freeze([
+    { ...dashboardInvites[0], title: 'September meeting', startDateTime: '2026-09-14T19:20:00Z' },
+    { ...dashboardInvites[1], title: 'October earlier meeting', startDateTime: '2026-10-20T20:00:00Z' },
+    { ...dashboardInvites[2], title: 'January next year', startDateTime: '2027-01-01T14:00:00Z' },
+    { ...dashboardInvites[0], id: '99999999-9999-4999-8999-999999999999', title: 'October latest meeting', startDateTime: '2026-10-20T22:00:00Z' },
+  ])
+  vi.mocked(useHomeDashboardData).mockReturnValue(dashboardData({ meetingInvites: invites }))
+  renderHome()
+  const list = screen.getByRole('region', { name: 'Meeting Invites list' })
+  expect(within(list).getAllByRole('listitem').map(row => within(row).getByRole('strong').textContent)).toEqual([
+    'January next year', 'October latest meeting', 'October earlier meeting', 'September meeting',
+  ])
+  expect(invites.map(invite => invite.title)).toEqual([
+    'September meeting', 'October earlier meeting', 'January next year', 'October latest meeting',
+  ])
 })

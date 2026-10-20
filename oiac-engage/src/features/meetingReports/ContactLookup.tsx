@@ -14,6 +14,8 @@ type ContactLookupProps = {
   readonly loadOptions?: (search: string, signal?: AbortSignal) => Promise<readonly ContactOption[]>
   readonly debounceMs?: number
   readonly compactSelection?: boolean
+  readonly normalizeSearch?: (search: string) => string
+  readonly emptyMessage?: string
 }
 
 export function ContactLookup({
@@ -26,10 +28,12 @@ export function ContactLookup({
   loadOptions = (search, signal) => searchContacts(kind, search, signal),
   debounceMs = 350,
   compactSelection = false,
+  normalizeSearch,
+  emptyMessage,
 }: ContactLookupProps) {
   const id = useId()
   const [open, setOpen] = useState(false)
-  const lookup = useMeetingReportLookup(loadOptions, debounceMs)
+  const lookup = useMeetingReportLookup(loadOptions, debounceMs, normalizeSearch)
   const input = useRef<HTMLInputElement>(null)
   const clear = useRef<HTMLButtonElement>(null)
   const previousSelection = useRef(value?.id)
@@ -79,6 +83,7 @@ export function ContactLookup({
           label={label}
           status={lookup.status}
           empty={lookup.options.length === 0}
+          emptyMessage={emptyMessage}
           retry={lookup.retry}
         >
           {lookup.options.map((option) => (
@@ -194,11 +199,12 @@ type LookupResultsProps = {
   readonly label: string
   readonly status: 'idle' | 'loading' | 'ready' | 'error'
   readonly empty: boolean
+  readonly emptyMessage?: string
   readonly retry: () => void
   readonly children: React.ReactNode
 }
 
-function LookupResults({ id, label, status, empty, retry, children }: LookupResultsProps) {
+function LookupResults({ id, label, status, empty, emptyMessage = 'No matching options.', retry, children }: LookupResultsProps) {
   if (status === 'loading' || status === 'idle') {
     return <p className="meeting-report-lookup__message" role="status">Loading options…</p>
   }
@@ -210,6 +216,6 @@ function LookupResults({ id, label, status, empty, retry, children }: LookupResu
       </div>
     )
   }
-  if (empty) return <p className="meeting-report-lookup__message" role="status">No matching options.</p>
+  if (empty) return <p className="meeting-report-lookup__message" role="status">{emptyMessage}</p>
   return <ul className="meeting-report-lookup__options" id={id} role="listbox" aria-label={`${label} options`}>{children}</ul>
 }

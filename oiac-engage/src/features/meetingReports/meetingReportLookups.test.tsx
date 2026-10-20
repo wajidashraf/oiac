@@ -200,3 +200,46 @@ test('renders District loading errors and allows retry', async () => {
   await user.click(screen.getByRole('button', { name: 'Retry State / District lookup' }))
   expect(await screen.findByRole('option', { name: 'DC' })).toBeInTheDocument()
 })
+
+
+test('opt-in normalized lookup keeps results for equivalent whitespace without extra requests', async () => {
+  const loader = vi.fn(async () => [sara])
+  render(<ContactLookup label="Appointment Contact" value={null} onChange={vi.fn()} loadOptions={loader} debounceMs={0}
+    normalizeSearch={value => value.trim().replace(/\s+/g, ' ')} emptyMessage="No matching contacts found" />)
+  const input = screen.getByRole('combobox', { name: 'Appointment Contact' })
+  fireEvent.focus(input)
+  expect(await screen.findByRole('option', { name: /Sara Rahimi/ })).toBeInTheDocument()
+  fireEvent.change(input, { target: { value: 'Sara' } })
+  expect(await screen.findByRole('option', { name: /Sara Rahimi/ })).toBeInTheDocument()
+  const calls = loader.mock.calls.length
+  fireEvent.change(input, { target: { value: '  Sara  ' } })
+  expect(await screen.findByRole('option', { name: /Sara Rahimi/ })).toBeInTheDocument()
+  expect(loader).toHaveBeenCalledTimes(calls)
+  expect(screen.queryByText(/Loading options/)).not.toBeInTheDocument()
+})
+
+test('contact-specific empty text is opt-in', async () => {
+  render(<ContactLookup label="Appointment Contact" value={null} onChange={vi.fn()} loadOptions={async () => []} debounceMs={0} emptyMessage="No matching contacts found" />)
+  fireEvent.focus(screen.getByRole('combobox', { name: 'Appointment Contact' }))
+  expect(await screen.findByText('No matching contacts found')).toBeInTheDocument()
+})
+
+
+test('opt-in normalized lookup retries when typing returns to an aborted debounced term', async () => {
+  vi.useFakeTimers()
+  const loader = vi.fn(async (_search: string) => [sara])
+  render(<ContactLookup label="Appointment Contact" value={null} onChange={vi.fn()} loadOptions={loader}
+    normalizeSearch={value => value.trim().replace(/\s+/g, ' ')} />)
+  const input = screen.getByRole('combobox', { name: 'Appointment Contact' })
+  await act(async () => { input.focus(); await vi.advanceTimersByTimeAsync(350) })
+  await act(async () => { fireEvent.change(input, { target: { value: 'Sara' } }); await vi.advanceTimersByTimeAsync(350) })
+  expect(screen.getByRole('option', { name: /Sara Rahimi/ })).toBeInTheDocument()
+  await act(async () => {
+    fireEvent.change(input, { target: { value: 'Sarax' } })
+    fireEvent.change(input, { target: { value: 'Sara' } })
+    await vi.advanceTimersByTimeAsync(350)
+  })
+  expect(loader.mock.calls.map(([search]) => search)).toEqual(['', 'Sara', 'Sara'])
+  expect(screen.getByRole('option', { name: /Sara Rahimi/ })).toBeInTheDocument()
+  expect(screen.queryByText(/Loading options/)).not.toBeInTheDocument()
+})
