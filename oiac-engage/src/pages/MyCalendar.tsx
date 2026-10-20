@@ -19,6 +19,9 @@ import { getCalendarEvents } from '../features/events/eventService'
 import type { EventItem } from '../features/events/eventTypes'
 import { getMeetingInvites } from '../features/meetingInvites/meetingInviteService'
 import type { MeetingInviteCollection } from '../features/meetingInvites/meetingInviteTypes'
+import { getCalendarAppointments } from '../features/appointments/appointmentService'
+import { appointmentsToCalendarItems } from '../features/appointments/appointmentCalendar'
+import type { AppointmentRecord } from '../features/appointments/appointmentTypes'
 import {
   classifyPowerPagesLoadFailure,
   type PowerPagesLoadFailureKind,
@@ -40,6 +43,7 @@ type MyCalendarProps = {
     contactId: string,
     signal?: AbortSignal,
   ) => Promise<MeetingInviteCollection>
+  readonly loadAppointments?: (month: string, signal?: AbortSignal) => Promise<readonly AppointmentRecord[]>
 }
 
 const defaultMonth = new Date()
@@ -117,6 +121,7 @@ export default function MyCalendar({
   loadRegistrations = getEventRegistrations,
   loadRegisteredEvents = getCalendarEvents,
   loadMeetingInvites = getMeetingInvites,
+  loadAppointments = getCalendarAppointments,
 }: MyCalendarProps) {
   const [selectedMonth, setSelectedMonth] = useState(
     () => new Date(initialMonth.getFullYear(), initialMonth.getMonth(), 1),
@@ -124,6 +129,10 @@ export default function MyCalendar({
   const [registeredEvents, setRegisteredEvents] = useState<readonly EventItem[]>([])
   const [registeredItems, setRegisteredItems] = useState<readonly CalendarItem[]>([])
   const [meetingItems, setMeetingItems] = useState<readonly CalendarItem[]>([])
+  const [appointmentItems, setAppointmentItems] = useState<readonly CalendarItem[]>([])
+  const [appointmentsStatus, setAppointmentsStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [appointmentsFailureKind, setAppointmentsFailureKind] = useState<PowerPagesLoadFailureKind | null>(null)
+  const [appointmentRetry, setAppointmentRetry] = useState(0)
   const [eventsStatus, setEventsStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [meetingsStatus, setMeetingsStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [eventsFailureKind, setEventsFailureKind] = useState<PowerPagesLoadFailureKind | null>(null)
@@ -136,18 +145,20 @@ export default function MyCalendar({
   const year = selectedMonth.getFullYear()
   const monthIndex = selectedMonth.getMonth()
   const items = useMemo(
-    () => [...acceptedItems, ...registeredItems, ...meetingItems],
-    [acceptedItems, meetingItems, registeredItems],
+    () => [...acceptedItems, ...registeredItems, ...meetingItems, ...appointmentItems],
+    [acceptedItems, meetingItems, registeredItems, appointmentItems],
   )
   const visibleItems = useMemo(() => itemsForMonth(items, year, monthIndex), [items, monthIndex, year])
   const registeredEventsById = useMemo(
     () => new Map(registeredEvents.map((event) => [event.id, event])),
     [registeredEvents],
   )
+  const originalSourcesFailed = eventsStatus === 'error' && meetingsStatus === 'error'
   const isLoading = eventsStatus === 'loading' || meetingsStatus === 'loading'
-  const bothFailed = eventsStatus === 'error' && meetingsStatus === 'error'
+  const bothFailed = originalSourcesFailed && appointmentsStatus === 'error'
   const isEmpty = eventsStatus === 'ready'
     && meetingsStatus === 'ready'
+    && appointmentsStatus === 'ready'
     && items.length === 0
 
   useEffect(() => {
@@ -228,6 +239,41 @@ export default function MyCalendar({
     return () => controller.abort()
   }, [acceptedItems, contactId, loadMeetingInvites, loadRegisteredEvents, loadRegistrations, requestNumber])
 
+  useEffect(() => {
+    const refreshAppointments = () => { if (document.visibilityState === 'visible') setAppointmentRetry((value) => value + 1) }
+    window.addEventListener('focus', refreshAppointments)
+    document.addEventListener('visibilitychange', refreshAppointments)
+    return () => {
+      window.removeEventListener('focus', refreshAppointments)
+      document.removeEventListener('visibilitychange', refreshAppointments)
+    }
+  }, [])
+
+  // Appointments are an independent source: failures or slow requests must not
+  // hide existing registered Events or accepted Meeting Invites.
+  useEffect(() => {
+    const controller = new AbortController()
+    setAppointmentItems([])
+    setAppointmentsStatus('loading')
+    setAppointmentsFailureKind(null)
+    if (!contactId) {
+      setAppointmentsStatus('error')
+      setAppointmentsFailureKind('processing')
+      return () => controller.abort()
+    }
+    const month = `${year}-${String(monthIndex + 1).padStart(2, '0')}`
+    void Promise.resolve().then(() => loadAppointments(month, controller.signal)).then((records) => {
+      if (controller.signal.aborted) return
+      setAppointmentItems(appointmentsToCalendarItems(records.filter((record) => [record.requester?.id, record.recipient?.id].some((id) => id?.toLowerCase() === contactId.toLowerCase()))))
+      setAppointmentsStatus('ready')
+    }).catch((error: unknown) => {
+      if (controller.signal.aborted) return
+      setAppointmentsFailureKind(classifyPowerPagesLoadFailure(error))
+      setAppointmentsStatus('error')
+    })
+    return () => controller.abort()
+  }, [contactId, loadAppointments, year, monthIndex, requestNumber, appointmentRetry])
+
   const retry = () => setRequestNumber((value) => value + 1)
   const openEventDetails = (event: EventItem, trigger: HTMLButtonElement) => {
     setSelectedEvent({ event, trigger })
@@ -250,6 +296,8 @@ export default function MyCalendar({
         <li><span className="oiac-calendar-page__legend-key oiac-calendar-page__legend-key--event" aria-hidden="true" />Registered events</li>
       </ul>
 
+      {!isLoading && appointmentsStatus === 'loading' ? <p role="status">Loading accepted appointments…</p> : null}
+
       {isLoading ? (
         <section className="oiac-calendar-page__state" role="status" aria-live="polite">
           <h2>Loading your calendar…</h2>
@@ -259,20 +307,25 @@ export default function MyCalendar({
         <section className="oiac-calendar-page__state oiac-calendar-page__state--error" role="alert">
           <h2>Your calendar could not be loaded</h2>
           <p>
-            {eventsFailureKind === 'processing' || meetingsFailureKind === 'processing'
+            {eventsFailureKind === 'processing' || meetingsFailureKind === 'processing' || appointmentsFailureKind === 'processing'
               ? 'Some calendar data was returned but could not be processed. Please try again.'
               : 'Please try again. If the problem continues, contact an administrator.'}
           </p>
           <button type="button" onClick={retry}>Try again</button>
         </section>
-      ) : isEmpty ? (
-        <section className="oiac-calendar-page__state">
-          <h2>No registered events or accepted meetings yet</h2>
-          <p>Register for an event or accept a meeting invitation to add it here.</p>
-          <Link to="/activity/events">Browse events</Link>
-        </section>
       ) : (
         <>
+          {isEmpty ? <section className="oiac-calendar-page__state">
+            <h2>No registered events or accepted meetings yet</h2>
+            <p>Register for an event or accept a meeting invitation to add it here. Use the calendar arrows to check other months for accepted appointments.</p>
+            <Link to="/activity/events">Browse events</Link>
+          </section> : null}
+          {appointmentsStatus === 'error' ? <section className="form-alert oiac-calendar-page__partial-error" role="alert">
+            <p>{appointmentsFailureKind === 'processing'
+              ? 'Some appointment data could not be processed. Existing events and meeting invitations are still shown.'
+              : 'Appointments could not be loaded. Existing events and meeting invitations are still shown.'}</p>
+            <button type="button" onClick={() => setAppointmentRetry((current) => current + 1)}>Try loading appointments again</button>
+          </section> : null}
           {eventsStatus === 'error' ? (
             <section className="form-alert oiac-calendar-page__partial-error" role="alert">
               <p>
@@ -288,14 +341,15 @@ export default function MyCalendar({
               <p>
                 {meetingsFailureKind === 'processing'
                   ? 'Some accepted meeting data could not be processed.'
-                  : 'Accepted meetings could not be loaded. Registered events are still shown.'}
+                  : registeredItems.length ? 'Accepted meetings could not be loaded. Registered events are still shown.'
+                    : 'Meeting invitations could not be loaded. Accepted appointments are still shown.'}
               </p>
               <button type="button" onClick={retry}>Try loading all calendar data again</button>
             </section>
           ) : null}
           <MonthCalendar
             items={items}
-            initialMonth={initialMonth}
+            initialMonth={selectedMonth}
             ariaLabelPrefix=""
             onMonthChange={setSelectedMonth}
             renderItem={(item) => renderCalendarItem(

@@ -1,0 +1,9 @@
+.page--site-activity-log .history-filters { display: flex; flex-wrap: wrap; align-items: end; gap: 1rem; margin-bottom: 1.5rem; }
+.page--site-activity-log .history-filters label { display: grid; gap: .35rem; font-weight: 600; }
+.page--site-activity-log .history-filters input, .page--site-activity-log .history-filters select { min-height: 2.75rem; padding: .5rem; border: 1px solid var(--color-border); border-radius: .35rem; background: var(--color-surface); color: var(--color-text); font: inherit; }
+.page--site-activity-log .history-table-scroll { overflow-x: auto; margin-block: 1rem; }
+.page--site-activity-log .history-table { width: 100%; border-collapse: collapse; text-align: left; }
+.page--site-activity-log .history-table th, .page--site-activity-log .history-table td { padding: .85rem; border-bottom: 1px solid var(--color-border); vertical-align: top; overflow-wrap: anywhere; }
+.page--site-activity-log .history-table th { color: var(--color-text-muted); }
+.page--site-activity-log .history-table td:first-child { min-width: 10rem; }
+.page--site-activity-log dd { margin: .25rem 0 1rem; white-space: pre-wrap; }

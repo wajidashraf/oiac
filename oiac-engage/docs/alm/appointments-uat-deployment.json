@@ -1,0 +1,135 @@
+{
+  "checkedAtUtc": "2026-10-17T07:10:53.629Z",
+  "environmentId": "16838866-275a-e2e7-838f-57313f30a416",
+  "environmentUrl": "https://org97063a46.crm.dynamics.com",
+  "websiteRecordId": "e7f400bd-1e04-4efa-b8b3-7a7a3b168662",
+  "runtimeWebsiteId": "5fb3972a-5518-4b27-a8e2-21abd2963fdc",
+  "websiteUrl": "https://oiac-engage-test.powerappsportals.com",
+  "productionChanged": false,
+  "upload": {
+    "userApproved": true,
+    "result": "succeeded",
+    "durationSeconds": 171.06,
+    "backupDirectory": ".superpowers/sdd/2026-10-17-appointment-personal-and-admin-views/deployment-backup-code/oiac-engage",
+    "stagingDirectory": ".superpowers/sdd/2026-10-17-appointment-personal-and-admin-views/deployment-stage",
+    "readbackDirectory": ".superpowers/sdd/2026-10-17-appointment-personal-and-admin-views/deployment-readback-code/oiac-engage",
+    "metadataFiles": 286,
+    "identicalMetadataFiles": 285,
+    "changed": [
+      "server-logic/appointments/appointments.js"
+    ],
+    "assets": [
+      {
+        "file": "index-CTyMfjef.css",
+        "sha256": "f4af1046fd059e10c8f07de4ed2e308056e42b7e519cf8726b3637c2b1ee7f35"
+      },
+      {
+        "file": "index-hefWVIpH.js",
+        "sha256": "8c7a0c1d0f26cd4c0c41bbf44fe2d6830b3fa97448322c3bb195eb00816221db"
+      }
+    ],
+    "serverLogicSha256": "6f5e9bcffac818e04b98f42d41ee272638de5c5cb8a4d510a1d0b3059e4cf927",
+    "compiledScript": "/assets/index-hefWVIpH.js",
+    "compiledStylesheet": "/assets/index-CTyMfjef.css"
+  },
+  "storedConfigurationChecks": {
+    "existingConfigurationFilesUnchanged": 114,
+    "participantReadPermissions": 2,
+    "serverLogicByteIdenticalToReviewedSource": true,
+    "administratorReadPermissions": 1,
+    "directAppointmentWebApiEnabled": false,
+    "existingPressCoverageServerLogicUnchanged": false,
+    "endpointRole": "Authenticated Users",
+    "all91ExistingSiteSettingsUnchanged": true,
+    "all20ExistingTablePermissionsUnchanged": true,
+    "all6ExistingWebRolesUnchanged": true,
+    "bothServerLogicSourcesMatchReadback": true
+  },
+  "runtimeChecks": {
+    "siteActivated": true,
+    "siteVisibility": "private",
+    "packageVersion": "9.8.8.15",
+    "restartPerformed": false,
+    "runtimeHtmlReferencesNewBuild": true,
+    "authenticatedPersistence": "passed: Appointment, Press and Featured forms save and survive refresh; logo upload/download bytes match",
+    "dataReadback": {
+      "coverageReadOk": true,
+      "creatorStamped": true,
+      "relatedContactSaved": true,
+      "businessDateCorrect": true,
+      "appointmentReadOk": true,
+      "requesterStamped": true,
+      "easternInstantCorrect": true,
+      "pendingStatusCorrect": true
+    },
+    "existingModuleReadRegression": "Seven pages and 28 API reads passed; zero console errors",
+    "authenticatedDirectTableApis": "404 for appointments and press coverage, as intended",
+    "anonymousApis": "Previously redirected to Microsoft sign-in without returning records",
+    "testSessionRoles": [
+      "Administrators",
+      "Volunteer",
+      "Authenticated Users"
+    ],
+    "remainingAcceptance": [
+      "Authenticated hosted checks used the Administrator and Volunteer testing session; separate ordinary participant A/B/C isolation and a real concurrent response race remain unverified.",
+      "Maximum-size uploads, file replacement and interrupted-upload acceptance remain pending."
+    ],
+    "personalAndAdminViews": "passed; administrator personal reads scoped, separate all read authorized",
+    "multiUserPersistenceAndRaceChecks": "Separate second-user acceptance and real race pending; SDK/UI both-party cases passed"
+  },
+  "localVerification": {
+    "frontendTests": 868,
+    "testFiles": 73,
+    "focusedFrontendTests": 144,
+    "appointmentSdkTests": 55,
+    "productionBuild": "passed",
+    "scopedAxeChecks": 17,
+    "serviceProxyBoundaryChecks": 2,
+    "screenshots": 13,
+    "review": "PASS: no critical/important findings"
+  },
+  "releaseStatus": "UAT deployed; right-area badges, personal/admin views and seven-page crawl passed; separate-user acceptance/race still pending",
+  "compatibilityUploads": [
+    {
+      "result": "succeeded",
+      "durationSeconds": 156.49,
+      "purpose": "runtime callback compatibility"
+    },
+    {
+      "result": "succeeded",
+      "durationSeconds": 161.88,
+      "purpose": "trusted platform Contact and suffix-method compatibility"
+    },
+    {
+      "result": "succeeded",
+      "durationSeconds": 171.87,
+      "purpose": "own-property runtime compatibility"
+    },
+    {
+      "result": "succeeded",
+      "durationSeconds": 146.65,
+      "purpose": "temporary coverage connector diagnostics"
+    }
+  ],
+  "previousUpload": {
+    "userApproved": true,
+    "result": "succeeded",
+    "durationSeconds": 181.35,
+    "backupDirectory": ".superpowers/module-corrections/deployment-backup-20261017/oiac-engage",
+    "stagingDirectory": ".superpowers/module-corrections/deployment-stage-20261017",
+    "readbackDirectory": ".superpowers/module-corrections/deployment-readback-20261017/oiac-engage",
+    "compiledScript": "/assets/index-BFsJxF4r.js",
+    "compiledStylesheet": "/assets/index-DKRVsayL.css",
+    "assets": [
+      {
+        "file": "index-BFsJxF4r.js",
+        "sha256": "61fb089fb58a748dfa963a4b418b0afb00904532c5b8190bff3bd29a0cfaf60f"
+      },
+      {
+        "file": "index-DKRVsayL.css",
+        "sha256": "7e931badcfef80d0f74ef2421e935ec2cd7fbbca3bf89172ca18e0502dbdd88e"
+      }
+    ]
+  },
+  "currentVerification": "appointment-views-uat-deployment.json"
+}

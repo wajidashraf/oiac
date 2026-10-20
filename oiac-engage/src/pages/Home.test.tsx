@@ -162,14 +162,14 @@ test('keeps unfinished dashboard features visible while training resources are l
   renderHome()
 
   const shortcuts = screen.getByRole('navigation', { name: 'Dashboard shortcuts' })
-  expect(within(shortcuts).queryByRole('link', { name: /Activity/ })).not.toBeInTheDocument()
-  expect(within(shortcuts).queryByRole('link', { name: /Appointments/ })).not.toBeInTheDocument()
-  const activityShortcut = within(shortcuts).getByText('Activity').closest<HTMLElement>('[aria-disabled="true"]')!
-  const appointmentsShortcut = within(shortcuts).getByText('Appointments').closest<HTMLElement>('[aria-disabled="true"]')!
+  expect(within(shortcuts).getByRole('link', { name: 'Activity' })).toHaveAttribute('href', '/activity/channel')
+  expect(within(shortcuts).getByRole('link', { name: 'Appointments' })).toHaveAttribute('href', '/activity/appointments')
+  const activityShortcut = within(shortcuts).getByRole('link', { name: 'Activity' })
+  const appointmentsShortcut = within(shortcuts).getByRole('link', { name: 'Appointments' })
   expect(activityShortcut).toBeInTheDocument()
-  expect(activityShortcut).toHaveClass('dashboard-shortcut--coming-soon')
+  expect(activityShortcut).not.toHaveAttribute('aria-disabled')
   expect(appointmentsShortcut).toBeInTheDocument()
-  expect(appointmentsShortcut).toHaveClass('dashboard-shortcut--coming-soon')
+  expect(appointmentsShortcut).toHaveAttribute('href', '/activity/appointments')
   expect(within(shortcuts).getByRole('link', { name: 'Events' })).toHaveAttribute('href', '/activity/events')
   expect(within(shortcuts).getByRole('link', { name: 'Resources' })).toHaveAttribute('href', '/resources')
 
@@ -241,7 +241,7 @@ test('opens Event details only from an Upcoming Event title', async () => {
   const dialog = screen.getByRole('dialog', { name: 'Registered Capitol Briefing' })
   expect(within(dialog).getByText('Virtual')).toBeInTheDocument()
   expect(within(dialog).getByText('Meeting')).toBeInTheDocument()
-  expect(within(dialog).getByRole('link', { name: 'Join meeting' })).toHaveAttribute(
+  expect(within(dialog).getByRole('link', { name: 'Join Event' })).toHaveAttribute(
     'href',
     'https://example.com/meeting',
   )

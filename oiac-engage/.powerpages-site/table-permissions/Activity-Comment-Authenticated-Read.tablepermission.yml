@@ -1,0 +1,12 @@
+adx_entitypermission_webrole:
+- 0353acdd-7b95-4c07-8997-ae95dafd978d
+append: false
+appendto: false
+create: false
+delete: false
+entitylogicalname: mss_activitycomment
+entityname: Activity Channel mss_activitycomment Authenticated Read
+id: 5ed3deae-f7a6-4ddf-94de-bb1ff5b2bd2a
+read: true
+scope: 756150000
+write: false

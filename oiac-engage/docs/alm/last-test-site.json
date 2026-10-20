@@ -1,0 +1,676 @@
+{
+  "url": "https://oiac-engage-test.powerappsportals.com",
+  "stageName": "Test/UAT",
+  "runAt": "2026-10-18T07:13:36.431Z",
+  "durationSec": 1234,
+  "runOutcome": "passed",
+  "summary": {
+    "critical": 0,
+    "high": 34,
+    "medium": 36,
+    "low": 13,
+    "total": 83,
+    "automated": 81,
+    "manual": 2,
+    "passed": 81,
+    "failed": 0,
+    "skipped": 2
+  },
+  "categories": [
+    {
+      "id": "activity-native",
+      "name": "Activity native API",
+      "tests": [
+        {
+          "id": "native-1",
+          "name": "feed succeeded",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-2",
+          "name": "Actual current account is Administrator",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-3",
+          "name": "Trusted server actor matches signed-in portal Contact",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-4",
+          "name": "Independent count request returns actual post count",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-5",
+          "name": "post succeeded",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-6",
+          "name": "Server stamped current author and false pin",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-7",
+          "name": "Post has persisted standard timestamp",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-8",
+          "name": "Direct table reads and direct pin PATCH blocked even for current Administrator",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-9",
+          "name": "post succeeded",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-10",
+          "name": "Same request ID safely replays the same post",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-11",
+          "name": "post succeeded",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-12",
+          "name": "comment succeeded",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-13",
+          "name": "Approved 8000-character comment persists without truncation",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-14",
+          "name": "reply succeeded",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-15",
+          "name": "reply succeeded",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-16",
+          "name": "Root, reply and nested reply retain immediate parents",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-17",
+          "name": "Every comment anchors original post and current author",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-18",
+          "name": "Cross-post reply rejected",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-19",
+          "name": "Caller-selected author and pin fields rejected",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-20",
+          "name": "Concurrent moderation has one winner and one conflict",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-21",
+          "name": "Pin stamps administrator and preserves creation time",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-22",
+          "name": "Stale moderation version rejected",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-23",
+          "name": "unpin succeeded",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-24",
+          "name": "Unpin clears moderation metadata",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-25",
+          "name": "comments succeeded",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-26",
+          "name": "Reloaded discussion contains all three saved records",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-27",
+          "name": "feed succeeded",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-28",
+          "name": "Actual count increases by two posts and excludes three comments/replies",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-29",
+          "name": "Own verification post removed through authorized action: 9b1e619e-7270-5e72-ade7-992035dc2344",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "native-30",
+          "name": "Own verification post removed through authorized action: 5a875beb-ae7f-5b73-b64e-49d8305febfa",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "id": "activity-ui",
+      "name": "Hosted Activity forms and responsive layout",
+      "tests": [
+        {
+          "id": "ui-1",
+          "name": "Hosted feed and native count loaded for current Administrator",
+          "severity": "low",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-2",
+          "name": "Activity dropdown has exactly the approved three entries",
+          "severity": "low",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-3",
+          "name": "Cancel and reopen retains the activity draft",
+          "severity": "low",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-4",
+          "name": "Native server definitively rejects invalid control character",
+          "severity": "low",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-5",
+          "name": "Definitive rejection retains the editable draft",
+          "severity": "low",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-6",
+          "name": "UI post saved successfully",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-7",
+          "name": "Corrected form uses a new request identity after definite no-write rejection",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-8",
+          "name": "Form save uses the actual signed-in author",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-9",
+          "name": "Safe HTTP link rendered from persisted content",
+          "severity": "low",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-10",
+          "name": "Markup-like user content is rendered as plain text",
+          "severity": "low",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-11",
+          "name": "UI comment saved successfully",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-12",
+          "name": "UI reply saved successfully",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-13",
+          "name": "UI reply saved successfully",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-14",
+          "name": "Real UI replies retain each immediate parent",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-15",
+          "name": "UI pin saved successfully",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-16",
+          "name": "Pin moves saved card to the top",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-17",
+          "name": "Post, nested conversation and pin survive full reload",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-18",
+          "name": "No horizontal overflow at 1440px",
+          "severity": "low",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-19",
+          "name": "Scoped axe checks pass at 1440px",
+          "severity": "low",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-20",
+          "name": "No horizontal overflow at 820px",
+          "severity": "low",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-21",
+          "name": "Scoped axe checks pass at 820px",
+          "severity": "low",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-22",
+          "name": "No horizontal overflow at 390px",
+          "severity": "low",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-23",
+          "name": "Scoped axe checks pass at 390px",
+          "severity": "low",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-24",
+          "name": "UI unpin saved successfully",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-25",
+          "name": "Deletion dialog explains native conversation removal",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-26",
+          "name": "Cancel deletion preserves the activity",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-27",
+          "name": "UI remove saved successfully",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "ui-28",
+          "name": "Confirmed UI deletion removes the card",
+          "severity": "medium",
+          "type": "automated",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "id": "existing-routes",
+      "name": "Existing route regression",
+      "tests": [
+        {
+          "id": "route-1",
+          "name": "/ → /",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed",
+          "details": "HTTP 200; expected heading; no alert or JavaScript error observed."
+        },
+        {
+          "id": "route-2",
+          "name": "/my-reports → /my-reports",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed",
+          "details": "HTTP 200; expected heading; no alert or JavaScript error observed."
+        },
+        {
+          "id": "route-3",
+          "name": "/my-calendar → /my-calendar",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed",
+          "details": "HTTP 200; expected heading; no alert or JavaScript error observed."
+        },
+        {
+          "id": "route-4",
+          "name": "/contact → /contact",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed",
+          "details": "HTTP 200; expected heading; no alert or JavaScript error observed."
+        },
+        {
+          "id": "route-5",
+          "name": "/activity/events → /activity/events",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed",
+          "details": "HTTP 200; expected heading; no alert or JavaScript error observed."
+        },
+        {
+          "id": "route-6",
+          "name": "/activity/appointments → /activity/appointments",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed",
+          "details": "HTTP 200; expected heading; no alert or JavaScript error observed."
+        },
+        {
+          "id": "route-7",
+          "name": "/press-coverage → /press-coverage",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed",
+          "details": "HTTP 200; expected heading; no alert or JavaScript error observed."
+        },
+        {
+          "id": "route-8",
+          "name": "/activity/activity-log → /activity/channel",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed",
+          "details": "HTTP 200; expected heading; no alert or JavaScript error observed."
+        },
+        {
+          "id": "route-9",
+          "name": "/activity → /activity/events",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed",
+          "details": "HTTP 200; expected heading; no alert or JavaScript error observed."
+        }
+      ]
+    },
+    {
+      "id": "existing-reads",
+      "name": "Existing API reads",
+      "tests": [
+        {
+          "id": "read-1",
+          "name": "/_api/mss_meetingreports",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed",
+          "details": "HTTP 200 during existing-route navigation; no business mutation."
+        },
+        {
+          "id": "read-2",
+          "name": "/_api/mss_eventregistrations",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed",
+          "details": "HTTP 200 during existing-route navigation; no business mutation."
+        },
+        {
+          "id": "read-3",
+          "name": "/_api/mss_meetinginviteses",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed",
+          "details": "HTTP 200 during existing-route navigation; no business mutation."
+        },
+        {
+          "id": "read-4",
+          "name": "/_api/contacts(<record-id>)",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed",
+          "details": "HTTP 200 during existing-route navigation; no business mutation."
+        },
+        {
+          "id": "read-5",
+          "name": "/_api/mss_meetinginviteparticipants",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed",
+          "details": "HTTP 200 during existing-route navigation; no business mutation."
+        },
+        {
+          "id": "read-6",
+          "name": "/_api/mss_teamsannouncementses",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed",
+          "details": "HTTP 200 during existing-route navigation; no business mutation."
+        },
+        {
+          "id": "read-7",
+          "name": "/_api/mss_eventses",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed",
+          "details": "HTTP 200 during existing-route navigation; no business mutation."
+        },
+        {
+          "id": "read-8",
+          "name": "/_api/serverlogics/appointments",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed",
+          "details": "HTTP 200 during existing-route navigation; no business mutation."
+        },
+        {
+          "id": "read-9",
+          "name": "/_api/contacts",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed",
+          "details": "HTTP 200 during existing-route navigation; no business mutation."
+        },
+        {
+          "id": "read-10",
+          "name": "/_api/serverlogics/press-coverage",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed",
+          "details": "HTTP 200 during existing-route navigation; no business mutation."
+        },
+        {
+          "id": "read-11",
+          "name": "/_api/serverlogics/activity-channel",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed",
+          "details": "HTTP 200 during existing-route navigation; no business mutation."
+        }
+      ]
+    },
+    {
+      "id": "authentication",
+      "name": "Anonymous authentication boundary",
+      "tests": [
+        {
+          "id": "anonymous-page",
+          "name": "Public entry redirects to Microsoft sign-in",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed"
+        },
+        {
+          "id": "anonymous-api",
+          "name": "Fixed Activity endpoint redirects anonymous request and returns no posts",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed",
+          "details": "HTTP 302 to tenant identity provider; redirects disabled for exact endpoint check."
+        }
+      ]
+    },
+    {
+      "id": "readback",
+      "name": "Deployment readback",
+      "tests": [
+        {
+          "id": "readback-build",
+          "name": "Hosted asset and actual bridge bytes match reviewed build/source; no unexpected metadata changes",
+          "severity": "high",
+          "type": "automated",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "id": "manual-followup",
+      "name": "Unavailable account acceptance",
+      "tests": [
+        {
+          "id": "user-a-b",
+          "name": "Real ordinary User A/User B authorization and nonowner controls",
+          "severity": "high",
+          "type": "manual",
+          "status": "skipped",
+          "details": "Only Administrator account available."
+        },
+        {
+          "id": "pending-user",
+          "name": "Real pending authenticated Contact session",
+          "severity": "medium",
+          "type": "manual",
+          "status": "skipped",
+          "details": "Account unavailable; local eligibility/routing tests passed."
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Real ordinary User A/User B and pending-user hosted sessions unavailable; SDK/component coverage does not replace those checks.",
+    "Large-feed performance was not load-tested; bounded queries and pagination have SDK/component tests.",
+    "Existing approximately 510 kB main-bundle advisory remains."
+  ],
+  "notes": [
+    "Automated checks passed for the available Administrator and anonymous boundary. Skipped real additional-account acceptance remains explicit.",
+    "Historical anonymous harness visibility timeout was superseded by exact authentication-redirect checks."
+  ]
+}

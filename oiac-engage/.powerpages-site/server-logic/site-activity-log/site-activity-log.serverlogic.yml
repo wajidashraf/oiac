@@ -1,0 +1,6 @@
+adx_serverlogic_adx_webrole:
+  - 0353acdd-7b95-4c07-8997-ae95dafd978d
+description: Read-only exact-site Activity Log; authenticated actor is stamped by Server.User.
+display_name: Site Activity Log
+id: 7e17407f-027f-4646-8888-fb353ef07ee1
+name: site-activity-log

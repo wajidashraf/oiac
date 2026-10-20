@@ -26,7 +26,7 @@ afterEach(() => {
 })
 
 describe('EventDetailsModal', () => {
-  test('shows complete Event details and a safe Join meeting action', () => {
+  test('shows complete Event details and a safe Join Event action', () => {
     render(
       <EventDetailsModal
         event={event}
@@ -45,7 +45,7 @@ describe('EventDetailsModal', () => {
     expect(dialog.querySelector(`time[datetime="${event.startDateTime}"]`)).toBeInTheDocument()
     expect(dialog.querySelector(`time[datetime="${event.endDateTime}"]`)).toBeInTheDocument()
 
-    const joinLink = within(dialog).getByRole('link', { name: 'Join meeting' })
+    const joinLink = within(dialog).getByRole('link', { name: 'Join Event' })
     expect(joinLink).toHaveAttribute('href', event.meetingUrl)
     expect(joinLink).toHaveAttribute('target', '_blank')
     expect(joinLink).toHaveAttribute('rel', 'noopener noreferrer')
@@ -71,7 +71,7 @@ describe('EventDetailsModal', () => {
     expect(within(dialog).getAllByText('Not available')).toHaveLength(2)
     expect(within(dialog).queryByText('Venue')).not.toBeInTheDocument()
     expect(within(dialog).queryByText('Description')).not.toBeInTheDocument()
-    expect(within(dialog).queryByRole('link', { name: 'Join meeting' })).not.toBeInTheDocument()
+    expect(within(dialog).queryByRole('link', { name: 'Join Event' })).not.toBeInTheDocument()
   })
 
   test('closes from its controls and direct backdrop interaction', async () => {
@@ -109,7 +109,7 @@ describe('EventDetailsModal', () => {
     )
 
     const closeButton = screen.getByRole('button', { name: 'Close event details' })
-    const joinLink = screen.getByRole('link', { name: 'Join meeting' })
+    const joinLink = screen.getByRole('link', { name: 'Join Event' })
     expect(closeButton).toHaveFocus()
     expect(document.body.style.overflow).toBe('hidden')
 

@@ -1,0 +1,6 @@
+adx_serverlogic_adx_webrole:
+  - 0353acdd-7b95-4c07-8997-ae95dafd978d
+description: 'Authenticated participant reads and atomic recipient responses; server-stamped requester.'
+display_name: 'Appointments'
+id: 76bb74c0-01a0-4a74-860a-533c2f407216
+name: appointments

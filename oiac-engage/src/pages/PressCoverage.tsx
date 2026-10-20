@@ -1,305 +1,202 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react'
-import { FiChevronLeft } from 'react-icons/fi'
+import { FiChevronLeft, FiFileText, FiStar } from 'react-icons/fi'
 import EmptyState from '../components/EmptyState'
-import { pressCoverage, type PressCoverageRecord } from '../data/portalData'
+import { CoverageForm } from '../features/pressCoverage/CoverageForm'
+import CoverageSavingOverlay from '../features/pressCoverage/CoverageSavingOverlay'
+import { downloadCoverageFile, uploadCoverageFile, validateCoverageFile } from '../features/pressCoverage/pressCoverageFiles'
+import { canEditCoverage, coverageListing, CoverageSaveUncertainError, createCoverage, displayCoverageDate, getCoverage, getCoveragePage, updateCoverage } from '../features/pressCoverage/pressCoverageService'
+import { emptyCoverageDraft, type CoverageDraft, type CoverageRecord, type CoverageVariant } from '../features/pressCoverage/pressCoverageTypes'
+import { validateCoverageDraft, type CoverageErrors } from '../features/pressCoverage/pressCoverageValidation'
+import { useCoverageNavigationGuard } from '../features/pressCoverage/useCoverageNavigationGuard'
+import '../features/pressCoverage/pressCoverage.css'
 
-type PressCoverageProps = { items?: readonly PressCoverageRecord[] }
-type CoverageDraft = Omit<PressCoverageRecord, 'id'>
+type PressCoverageProps = { contactId?: string; isAdmin?: boolean; canCreate?: boolean }
+type Screen = 'closed' | 'select' | 'form' | 'view' | 'loading-edit'
 
-const emptyDraft: CoverageDraft = {
-  newsTitle: '',
-  date: '',
-  source: '',
-  coverageType: '',
-  sentiment: '',
-  country: 'United States',
-  url: '',
-  pressAccount: '',
-  language: '',
-  rating: '',
-  regardingEvent: '',
-  mentions: '',
-}
+function errorMessage(error: unknown) { return error instanceof Error ? error.message : 'Coverage could not be saved. Try again.' }
 
-const sourceOptions = ['National', 'Online', 'Local'] as const
-const sentimentOptions = ['Positive', 'Neutral', 'Negative'] as const
-const coverageTypeOptions = ['News Article', 'Feature', 'Interview'] as const
-const languageOptions = ['English', 'Persian', 'Spanish', 'French']
-const ratingOptions = ['1', '2', '3', '4', '5']
-
-function formatCoverageDate(date: string) {
-  const [year, month, day] = date.split('-').map(Number)
-  return new Intl.DateTimeFormat('en-US', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(new Date(Date.UTC(year, month - 1, day)))
-}
-
-export default function PressCoverage({ items = pressCoverage }: PressCoverageProps) {
-  const [records, setRecords] = useState<PressCoverageRecord[]>(() => [...items])
-  const [draft, setDraft] = useState<CoverageDraft>(emptyDraft)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [isFormOpen, setIsFormOpen] = useState(false)
-  const [savedMessage, setSavedMessage] = useState('')
-  const titleInputRef = useRef<HTMLInputElement>(null)
+export default function PressCoverage({ contactId, isAdmin = false, canCreate = true }: PressCoverageProps) {
+  const [records, setRecords] = useState<readonly CoverageRecord[]>([])
+  const [loading, setLoading] = useState(true)
+  const [listError, setListError] = useState('')
+  const [nextLink, setNextLink] = useState<string | null>(null)
+  const [pages, setPages] = useState<readonly (string | undefined)[]>([undefined])
+  const [revision, setRevision] = useState(0)
+  const [screen, setScreen] = useState<Screen>('closed')
+  const [variant, setVariant] = useState<CoverageVariant>('press')
+  const [draft, setDraft] = useState<CoverageDraft>(emptyCoverageDraft)
+  const [original, setOriginal] = useState<CoverageRecord | null>(null)
+  const [file, setFile] = useState<File | null>(null)
+  const [errors, setErrors] = useState<CoverageErrors>({})
+  const [formError, setFormError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [savedRecordId, setSavedRecordId] = useState<string | null>(null)
+  const [uncertain, setUncertain] = useState(false)
+  const initialDraft = useRef(JSON.stringify(emptyCoverageDraft()))
+  const savingLock = useRef(false)
+  const editRequest = useRef<AbortController | null>(null)
+  const mounted = useRef(true)
+  const pageLink = pages[pages.length - 1]
+  const dirty = screen === 'form' && (JSON.stringify(draft) !== initialDraft.current || file !== null || savedRecordId !== null)
+  const navigationBlocked = useCoverageNavigationGuard({ dirty, saving, pendingFile: savedRecordId !== null })
 
   useEffect(() => {
     document.title = 'Press Coverage — OIAC Engage'
+    mounted.current = true
+    return () => { mounted.current = false; editRequest.current?.abort() }
   }, [])
 
   useEffect(() => {
-    if (isFormOpen) titleInputRef.current?.focus()
-  }, [editingId, isFormOpen])
+    const request = new AbortController()
+    let active = true
+    setLoading(true)
+    setListError('')
+    setNextLink(null)
+    getCoveragePage({ nextLink: pageLink }, request.signal).then((page) => {
+      if (!active || request.signal.aborted) return
+      setRecords(page.records)
+      setNextLink(page.nextLink)
+    }).catch((error: unknown) => {
+      if (!active || request.signal.aborted) return
+      setListError(errorMessage(error))
+    }).finally(() => { if (active) setLoading(false) })
+    return () => { active = false; request.abort() }
+  }, [pageLink, revision])
 
-  const updateDraft = (field: keyof CoverageDraft, value: string) => {
-    setDraft((current) => ({ ...current, [field]: value }) as CoverageDraft)
+  function mayDiscard() { return !savingLock.current && (!dirty || window.confirm(savedRecordId ? 'The coverage record is saved, but its file has not finished uploading. Leave this form?' : 'Discard your unsaved coverage changes?')) }
+  function resetForm() {
+    const empty = emptyCoverageDraft()
+    setDraft(empty)
+    initialDraft.current = JSON.stringify(empty)
+    setOriginal(null); setFile(null); setErrors({}); setFormError(''); setSavedRecordId(null); setUncertain(false)
   }
-
-  const openNewCoverage = () => {
-    setDraft(emptyDraft)
-    setEditingId(null)
-    setSavedMessage('')
-    setIsFormOpen(true)
+  function closeForm() {
+    if (!mayDiscard()) return
+    editRequest.current?.abort()
+    resetForm(); setScreen('closed')
   }
-
-  const openEditCoverage = (record: PressCoverageRecord) => {
-    const { id, ...editableRecord } = record
-    setDraft(editableRecord)
-    setEditingId(id)
-    setSavedMessage('')
-    setIsFormOpen(true)
+  function openSelector() {
+    if (!canCreate || !mayDiscard()) return
+    editRequest.current?.abort()
+    resetForm(); setSuccess(''); setScreen('select')
   }
-
-  const closeForm = () => {
-    setIsFormOpen(false)
-    setEditingId(null)
-    setDraft(emptyDraft)
+  function chooseType(nextVariant: CoverageVariant) {
+    if (savingLock.current) return
+    resetForm(); setVariant(nextVariant); setScreen('form')
   }
-
-  const saveCoverage = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const nextRecord: PressCoverageRecord = {
-      id: editingId ?? `press-${Date.now()}`,
-      ...draft,
+  async function openRecord(record: CoverageRecord, mode: 'form' | 'view') {
+    if ((mode === 'form' && !canEditCoverage(record, contactId, isAdmin)) || !mayDiscard()) return
+    editRequest.current?.abort()
+    const request = new AbortController()
+    editRequest.current = request
+    resetForm(); setSuccess(''); setScreen('loading-edit')
+    try {
+      const latest = await getCoverage(record.id, request.signal)
+      if (request.signal.aborted || !mounted.current || editRequest.current !== request) return
+      if (mode === 'form' && !canEditCoverage(latest, contactId, isAdmin)) throw new Error('You no longer have permission to edit this coverage.')
+      setDraft(latest)
+      initialDraft.current = JSON.stringify(latest)
+      setOriginal(latest); setVariant(latest.isFeatured ? 'featured' : 'press'); setScreen(mode)
+    } catch (error) {
+      if (request.signal.aborted || !mounted.current || editRequest.current !== request) return
+      setFormError(errorMessage(error)); setScreen('closed')
     }
-
-    setRecords((current) => editingId
-      ? current.map((record) => record.id === editingId ? nextRecord : record)
-      : [nextRecord, ...current])
-    closeForm()
-    setSavedMessage('Press coverage saved.')
+  }
+  function updateDraft<K extends keyof CoverageDraft>(key: K, value: CoverageDraft[K]) {
+    if (screen !== 'form' || savingLock.current || savedRecordId || uncertain) return
+    setDraft((current) => ({ ...current, [key]: value }))
+    setErrors((current) => ({ ...current, [key]: undefined }))
+  }
+  function updateFile(nextFile: File | null) {
+    if (screen !== 'form' || savingLock.current || uncertain) return
+    setFile(nextFile)
+    const error = nextFile ? validateCoverageFile(nextFile, variant) : null
+    setErrors((current) => ({ ...current, file: error ?? undefined }))
+  }
+  function refreshList() { setPages([undefined]); setRevision((current) => current + 1) }
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (screen !== 'form' || savingLock.current || uncertain || (original ? !canEditCoverage(original, contactId, isAdmin) : !canCreate)) return
+    const nextErrors = savedRecordId ? { file: file ? validateCoverageFile(file, variant) ?? undefined : 'Choose the file to retry its upload.' } : validateCoverageDraft(variant, draft, file, Boolean(original?.fileName))
+    setErrors(nextErrors)
+    const firstError = Object.keys(nextErrors).find((key) => nextErrors[key as keyof CoverageErrors])
+    if (firstError) { document.getElementById(`coverage-${firstError}`)?.focus(); return }
+    savingLock.current = true
+    setSaving(true); setFormError(''); setSuccess('')
+    let recordId = savedRecordId
+    try {
+      if (!recordId) {
+        const result = original ? await updateCoverage(original.id, variant, draft, original) : await createCoverage(variant, draft)
+        recordId = result.id
+        if (!mounted.current) return
+        if (file) setSavedRecordId(recordId)
+      }
+      if (file) await uploadCoverageFile(recordId, file, variant)
+      if (!mounted.current) return
+      resetForm(); setScreen('closed'); setSuccess(variant === 'featured' ? 'Featured coverage saved.' : 'Press coverage saved.'); refreshList()
+    } catch (error) {
+      if (!mounted.current) return
+      if (error instanceof CoverageSaveUncertainError) {
+        setUncertain(true)
+        setFormError(`${errorMessage(error)} Refresh the coverage list and check whether this record was saved before starting a new submission.`)
+      } else if (recordId && file) {
+        setSavedRecordId(recordId)
+        setFormError(`Coverage record saved. File upload failed: ${errorMessage(error)} Retry the file upload to finish.`)
+      } else setFormError(errorMessage(error))
+    } finally {
+      savingLock.current = false
+      if (mounted.current) setSaving(false)
+    }
+  }
+  async function downloadFile() {
+    if (!original) return
+    setFormError('')
+    try {
+      const { blob, fileName } = await downloadCoverageFile(original.id)
+      if (!mounted.current) return
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url; anchor.download = fileName; document.body.append(anchor); anchor.click(); anchor.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 0)
+    } catch (error) { if (mounted.current) setFormError(`File could not be downloaded. ${errorMessage(error)}`) }
   }
 
-  return (
-    <div className="page page--press-coverage">
-      <a className="press-coverage__back" href="/">
-        <FiChevronLeft aria-hidden="true" />
-        Back
-      </a>
-
-      <header className="press-coverage__header">
-        <h1>Press Coverage</h1>
-        <p>Log and track media coverage related to OIAC activities and advocacy.</p>
-      </header>
-
-      <div className="press-coverage__toolbar">
-        <button
-          aria-controls="press-coverage-form"
-          aria-expanded={isFormOpen}
-          className="button button--primary press-coverage__add"
-          onClick={openNewCoverage}
-          type="button"
-        >
-          + Add Press Coverage
-        </button>
-      </div>
-
-      {savedMessage ? <p className="form-success press-coverage__success" role="status">{savedMessage}</p> : null}
-
-      {isFormOpen ? (
-        <form
-          aria-label="Press Coverage"
-          className="press-coverage-form"
-          id="press-coverage-form"
-          onSubmit={saveCoverage}
-        >
-          <h2>Press Coverage</h2>
-          <div className="press-coverage-form__grid">
-            <label className="field">
-              <span>News Title <span aria-hidden="true" className="required-mark">*</span></span>
-              <input
-                aria-label="News Title"
-                aria-required="true"
-                onChange={(event) => updateDraft('newsTitle', event.target.value)}
-                placeholder="Article or segment title"
-                ref={titleInputRef}
-                required
-                type="text"
-                value={draft.newsTitle}
-              />
-            </label>
-
-            <label className="field">
-              <span>URL</span>
-              <input
-                onChange={(event) => updateDraft('url', event.target.value)}
-                placeholder="https://..."
-                type="url"
-                value={draft.url}
-              />
-            </label>
-
-            <label className="field">
-              <span>Date <span aria-hidden="true" className="required-mark">*</span></span>
-              <input
-                aria-label="Date"
-                aria-required="true"
-                onChange={(event) => updateDraft('date', event.target.value)}
-                required
-                type="date"
-                value={draft.date}
-              />
-            </label>
-
-            <label className="field">
-              <span>Country</span>
-              <input onChange={(event) => updateDraft('country', event.target.value)} type="text" value={draft.country} />
-            </label>
-
-            <label className="field">
-              <span>News Source Type</span>
-              <select onChange={(event) => updateDraft('source', event.target.value)} value={draft.source}>
-                <option value="">Select</option>
-                {sourceOptions.map((option) => <option key={option}>{option}</option>)}
-              </select>
-            </label>
-
-            <label className="field">
-              <span>Press Account</span>
-              <input
-                onChange={(event) => updateDraft('pressAccount', event.target.value)}
-                placeholder="Publication or outlet name"
-                type="text"
-                value={draft.pressAccount}
-              />
-            </label>
-
-            <label className="field">
-              <span>Sentiment</span>
-              <select onChange={(event) => updateDraft('sentiment', event.target.value)} value={draft.sentiment}>
-                <option value="">Select</option>
-                {sentimentOptions.map((option) => <option key={option}>{option}</option>)}
-              </select>
-            </label>
-
-            <label className="field">
-              <span>Coverage Type</span>
-              <select onChange={(event) => updateDraft('coverageType', event.target.value)} value={draft.coverageType}>
-                <option value="">Select</option>
-                {coverageTypeOptions.map((option) => <option key={option}>{option}</option>)}
-              </select>
-            </label>
-
-            <label className="field">
-              <span>Language</span>
-              <select onChange={(event) => updateDraft('language', event.target.value)} value={draft.language}>
-                <option value="">Select language</option>
-                {languageOptions.map((option) => <option key={option}>{option}</option>)}
-              </select>
-            </label>
-
-            <label className="field">
-              <span>Rating</span>
-              <select onChange={(event) => updateDraft('rating', event.target.value)} value={draft.rating}>
-                <option value="">Select</option>
-                {ratingOptions.map((option) => <option key={option} value={option}>{option}</option>)}
-              </select>
-            </label>
-
-            <label className="field">
-              <span>Regarding Event</span>
-              <input
-                onChange={(event) => updateDraft('regardingEvent', event.target.value)}
-                placeholder="Search or link an event..."
-                type="text"
-                value={draft.regardingEvent}
-              />
-            </label>
-
-            <label className="field">
-              <span>Mentions</span>
-              <input
-                onChange={(event) => updateDraft('mentions', event.target.value)}
-                placeholder="Select or search options..."
-                type="text"
-                value={draft.mentions}
-              />
-            </label>
-          </div>
-
-          <div className="press-coverage-form__actions">
-            <button className="button button--primary" type="submit">Save Coverage</button>
-            <button className="button button--quiet" onClick={closeForm} type="button">Cancel</button>
-          </div>
-        </form>
-      ) : null}
-
-      {records.length === 0 ? (
-        <EmptyState title="No press coverage yet" description="Add press coverage to begin tracking media activity." />
-      ) : (
-        <div className="press-coverage-table-scroll" role="region" aria-label="Press coverage table" tabIndex={0}>
-          <table className="press-coverage-table" aria-label="Press coverage">
-            <colgroup>
-              <col className="press-coverage-table__title-column" />
-              <col className="press-coverage-table__date-column" />
-              <col className="press-coverage-table__source-column" />
-              <col className="press-coverage-table__type-column" />
-              <col className="press-coverage-table__sentiment-column" />
-              <col className="press-coverage-table__country-column" />
-              <col className="press-coverage-table__action-column" />
-            </colgroup>
-            <thead>
-              <tr>
-                <th scope="col">News Title</th>
-                <th scope="col">Date</th>
-                <th scope="col">Source</th>
-                <th scope="col">Type</th>
-                <th scope="col">Sentiment</th>
-                <th scope="col">Country</th>
-                <th scope="col"><span className="sr-only">Actions</span></th>
-              </tr>
-            </thead>
-            <tbody>
-              {records.map((record) => (
-                <tr key={record.id}>
-                  <th scope="row">{record.newsTitle}</th>
-                  <td><time dateTime={record.date}>{formatCoverageDate(record.date)}</time></td>
-                  <td><span className="press-coverage-table__source">{record.source}</span></td>
-                  <td>{record.coverageType}</td>
-                  <td>
-                    <span className={`press-coverage-table__sentiment press-coverage-table__sentiment--${record.sentiment.toLowerCase() || 'unrated'}`}>
-                      {record.sentiment}
-                    </span>
-                  </td>
-                  <td>{record.country}</td>
-                  <td>
-                    <button
-                      aria-label={`Edit ${record.newsTitle}`}
-                      className="press-coverage-table__edit"
-                      onClick={() => openEditCoverage(record)}
-                      type="button"
-                    >
-                      Edit
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+  return <div className="page page--press-coverage">
+    {saving ? <CoverageSavingOverlay /> : null}
+    <a className="press-coverage__back" href="/"><FiChevronLeft aria-hidden="true" /> Back</a>
+    <header className="press-coverage__header"><h1>Press Coverage</h1><p>Log and track media coverage related to OIAC activities and advocacy.</p></header>
+    <div className="press-coverage__toolbar">{canCreate ? <button aria-controls="press-coverage-editor" aria-expanded={screen !== 'closed'} className="button button--primary press-coverage__add" disabled={saving} onClick={openSelector} type="button">+ Add Coverage</button> : null}</div>
+    {success ? <p className="form-success press-coverage__success" role="status">{success}</p> : null}
+    {navigationBlocked ? <p role="status" className="coverage-list-status">Coverage is still saving. Wait until it finishes before leaving this page.</p> : null}
+    {formError ? <div className="coverage-alert" role="alert"><p>{formError}</p>{uncertain ? <button className="button button--quiet" type="button" disabled={saving || loading} onClick={refreshList}>Refresh coverage list</button> : null}</div> : null}
+    <div id="press-coverage-editor">
+      {screen === 'select' ? <section className="coverage-selector" aria-label="Select coverage type">
+        <h2>Select coverage type</h2><p className="coverage-selector__description">Choose the type of record you want to add. The form will update with the relevant fields.</p><div className="coverage-selector__cards">
+          <button type="button" className="coverage-selector__card" onClick={() => chooseType('press')}><FiFileText aria-hidden="true" /><span><strong>Press Coverage</strong><span>Log complete media, interview, campaign, tone, contact, and follow-up details.</span></span></button>
+          <button type="button" className="coverage-selector__card" onClick={() => chooseType('featured')}><FiStar aria-hidden="true" /><span><strong>Featured Coverage</strong><span>Create a highlighted record with a publication logo, summary, date, and original link.</span></span></button>
+        </div><button className="button button--quiet" type="button" onClick={closeForm}>Cancel</button>
+      </section> : null}
+      {screen === 'loading-edit' ? <div className="coverage-loading"><p role="status">Loading latest coverage…</p><button type="button" className="button button--quiet" onClick={closeForm} aria-label="Cancel loading edit">Cancel</button></div> : null}
+      {screen === 'form' || screen === 'view' ? <CoverageForm readOnly={screen === 'view'} canEdit={Boolean(original && canEditCoverage(original, contactId, isAdmin))} onEdit={() => { if (original) void openRecord(original, 'form') }} variant={variant} original={original} draft={draft} file={file} errors={errors} saving={saving} uploadOnly={savedRecordId !== null} uncertain={uncertain} onChange={updateDraft} onFileChange={updateFile} onSubmit={save} onCancel={closeForm} onChangeType={openSelector} onDownload={() => { void downloadFile() }} /> : null}
     </div>
-  )
+    {loading ? <p className="coverage-list-status" role="status">Loading coverage…</p> : null}
+    {listError ? <div className="coverage-alert" role="alert"><p>{listError}</p><button className="button button--quiet" disabled={saving} onClick={() => setRevision((current) => current + 1)} type="button" aria-label="Retry loading coverage">Retry</button></div> : null}
+    {!loading && !listError && records.length === 0 ? <EmptyState title="No press coverage yet" description="Add coverage to begin tracking media activity." /> : null}
+    {records.length ? <div className="press-coverage-table-scroll" role="region" aria-label="Press coverage table" tabIndex={0} aria-busy={loading}>
+      <table className="press-coverage-table coverage-table" aria-label="Press coverage"><thead><tr>{['Headline', 'Date', 'Media Outlet', 'Coverage Type', 'Tone', 'Coverage Level', 'Featured', 'Actions'].map((heading) => <th scope="col" key={heading}>{heading}</th>)}</tr></thead>
+        <tbody>{records.map((record) => {
+          const row = coverageListing(record)
+          return <tr key={record.id} className={record.isFeatured ? 'coverage-table__featured-row' : undefined}>
+            <th scope="row"><button className="coverage-headline" type="button" disabled={saving} onClick={() => { void openRecord(record, 'view') }}>{row.headline}</button></th><td>{row.date ? <time dateTime={row.date}>{displayCoverageDate(row.date)}</time> : '—'}</td>
+            <td>{row.mediaOutlet && row.mediaOutlet !== '—' ? <span className="press-coverage-table__source">{row.mediaOutlet}</span> : '—'}</td>
+            <td>{row.coverageType}</td><td><span className={`press-coverage-table__sentiment press-coverage-table__sentiment--${row.tone.toLowerCase()}`}>{row.tone}</span></td><td>{row.coverageLevel}</td>
+            <td>{record.isFeatured ? <span className="coverage-featured-badge"><FiStar aria-hidden="true" /> Featured</span> : 'No'}</td>
+            <td><div className="coverage-row-actions">{canEditCoverage(record, contactId, isAdmin) ? <button type="button" className="press-coverage-table__edit" disabled={saving || screen === 'loading-edit'} onClick={() => { void openRecord(record, 'form') }} aria-label={`Edit ${row.headline}`}>Edit</button> : null}<button type="button" className="press-coverage-table__edit" disabled={saving} onClick={() => { void openRecord(record, 'view') }} aria-label={`View ${row.headline}`}>View</button></div></td>
+          </tr>
+        })}</tbody>
+      </table>
+    </div> : null}
+    {records.length || pages.length > 1 ? <nav className="coverage-pagination" aria-label="Coverage pages"><button className="button button--quiet" type="button" disabled={pages.length === 1 || loading || saving} onClick={() => setPages((current) => current.slice(0, -1))}>Previous</button><span>Page {pages.length}</span><button className="button button--quiet" type="button" disabled={!nextLink || Boolean(listError) || loading || saving} onClick={() => { if (nextLink && !listError) setPages((current) => [...current, nextLink]) }}>Next</button></nav> : null}
+  </div>
 }

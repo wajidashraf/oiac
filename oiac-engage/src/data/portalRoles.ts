@@ -20,7 +20,7 @@ export const portalRoles: readonly PortalRole[] = [
     id: 'volunteer',
     name: 'Volunteer',
     description: 'Record activity, join events, and keep up with assignments.',
-    destination: '/activity/activity-log',
+    destination: '/activity/channel',
     action: 'Open volunteer area',
   },
   {

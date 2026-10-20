@@ -1,0 +1,4 @@
+description: History reads use exact-site native authorization; no direct browser CRUD.
+id: f9ad2ccf-0ab5-4dd3-b6f1-60f8f924a2ea
+name: Webapi/mss_activitylog/enabled
+value: false

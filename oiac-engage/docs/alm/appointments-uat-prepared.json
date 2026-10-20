@@ -1,0 +1,43 @@
+{
+  "preparedOn": "2026-10-16",
+  "environmentUrl": "https://org97063a46.crm.dynamics.com",
+  "environmentId": "16838866-275a-e2e7-838f-57313f30a416",
+  "siteId": "e7f400bd-1e04-4efa-b8b3-7a7a3b168662",
+  "stage": ".superpowers/appointments/deployment-stage-20261016",
+  "existingMetadataFilesPreserved": 280,
+  "newMetadataFiles": [
+    ".powerpages-site/server-logic/appointments/appointments.js",
+    ".powerpages-site/server-logic/appointments/appointments.serverlogic.yml",
+    ".powerpages-site/site-settings/Webapi-mss_appointment-enabled.sitesetting.yml",
+    ".powerpages-site/table-permissions/Appointments-Requester-Read.tablepermission.yml",
+    ".powerpages-site/table-permissions/Appointments-Recipient-Read.tablepermission.yml",
+    ".powerpages-site/table-permissions/Appointments-Administrator-Read.tablepermission.yml"
+  ],
+  "siteUploaded": true,
+  "hostedParticipantChecksPassed": false,
+  "productionChanged": false,
+  "buildAssets": [
+    {
+      "sha256": "837a7453ec996d561045d52231622a181bbed387ebb9247410fa3270c70bdea0",
+      "name": "index-DZnxuc3T.js"
+    },
+    {
+      "sha256": "cc59bb30441e17e69a6e7994944bce58d9f8e7785b2b59ff4fbca38225222b8f",
+      "name": "index-Hu3Gle3J.css"
+    }
+  ],
+  "verification": {
+    "assemblyHashReadBackMatches": true,
+    "testFiles": 73,
+    "emptyActorDenied": true,
+    "frontendTests": 850,
+    "productionBuildPassed": true,
+    "sdkTests": 52,
+    "eligibleActorIncomingReadSucceeded": true,
+    "responsiveAxeChecks": 12,
+    "browserDstGapFoldChecked": true
+  },
+  "followupCompatibilityChange": "17 October correction deployed: compact theme UI, successful hosted submissions and native read-only coverage date adapter; see currentVerification",
+  "historicalPreparation": true,
+  "currentVerification": "appointment-views-uat-deployment.json"
+}

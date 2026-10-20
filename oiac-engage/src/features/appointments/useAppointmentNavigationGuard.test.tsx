@@ -1,0 +1,56 @@
+import { act, renderHook } from '@testing-library/react'
+import { afterEach, expect, test, vi } from 'vitest'
+import { useAppointmentNavigationGuard } from './useAppointmentNavigationGuard'
+
+afterEach(() => { vi.restoreAllMocks(); window.history.replaceState(null, '', '/') })
+
+test('intercepts a declined indexed back move before a router listener can unmount the draft', () => {
+  window.history.replaceState({ idx: 1 }, '', '/activity/appointments')
+  vi.spyOn(window, 'confirm').mockReturnValue(false)
+  const go = vi.spyOn(window.history, 'go').mockImplementation(() => undefined)
+  const router = vi.fn()
+  window.addEventListener('popstate', router)
+  const hook = renderHook(() => useAppointmentNavigationGuard({ dirty: true, saving: false }))
+  act(() => window.dispatchEvent(new PopStateEvent('popstate', { state: { idx: 0 } })))
+  expect(go).toHaveBeenCalledWith(1)
+  expect(router).not.toHaveBeenCalled()
+  act(() => window.dispatchEvent(new PopStateEvent('popstate', { state: { idx: 1 } })))
+  expect(router).not.toHaveBeenCalled()
+  hook.unmount(); window.removeEventListener('popstate', router)
+})
+
+test('locks history and same-origin and new-tab links while saving', () => {
+  window.history.replaceState({ idx: 2 }, '', '/activity/appointments')
+  const confirm = vi.spyOn(window, 'confirm')
+  const go = vi.spyOn(window.history, 'go').mockImplementation(() => undefined)
+  const hook = renderHook(() => useAppointmentNavigationGuard({ dirty: true, saving: true }))
+  act(() => window.dispatchEvent(new PopStateEvent('popstate', { state: { idx: 3 } })))
+  expect(go).toHaveBeenCalledWith(-1)
+  expect(hook.result.current).toBe(true)
+  const anchor = document.createElement('a'); anchor.href = '/'; anchor.target = '_blank'; document.body.append(anchor)
+  const click = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 })
+  act(() => { anchor.dispatchEvent(click) })
+  expect(click.defaultPrevented).toBe(true)
+  const modifiedClick = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0, ctrlKey: true })
+  act(() => { anchor.dispatchEvent(modifiedClick) })
+  expect(modifiedClick.defaultPrevented).toBe(true)
+  expect(confirm).not.toHaveBeenCalled()
+  anchor.remove(); hook.unmount()
+})
+
+test('guards refresh and permits a confirmed link navigation without another unload prompt', () => {
+  window.history.replaceState({ idx: 1 }, '', '/activity/appointments')
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
+  const hook = renderHook(() => useAppointmentNavigationGuard({ dirty: true, saving: false }))
+  const unload = new Event('beforeunload', { cancelable: true })
+  window.dispatchEvent(unload)
+  expect(unload.defaultPrevented).toBe(true)
+  const anchor = document.createElement('a'); anchor.href = '/'; document.body.append(anchor)
+  document.addEventListener('click', (event) => event.preventDefault(), { once: true })
+  anchor.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }))
+  expect(confirm).toHaveBeenCalledTimes(1)
+  const nextUnload = new Event('beforeunload', { cancelable: true })
+  window.dispatchEvent(nextUnload)
+  expect(nextUnload.defaultPrevented).toBe(false)
+  anchor.remove(); hook.unmount()
+})

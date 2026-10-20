@@ -1,0 +1,12 @@
+adx_entitypermission_webrole:
+- 6ec72c3e-4f1b-420f-9565-d20047b12c1f
+append: false
+appendto: false
+create: false
+delete: false
+entitylogicalname: mss_activitylog
+entityname: Site Activity Log Administrators Read
+id: 4d0b5984-a55f-4532-9c55-b91f4d2b4b1a
+read: true
+scope: 756150000
+write: false

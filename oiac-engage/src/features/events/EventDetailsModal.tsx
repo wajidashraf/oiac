@@ -173,7 +173,7 @@ export function EventDetailsModal({ event, returnFocusTo, onClose }: EventDetail
               target="_blank"
               rel="noopener noreferrer"
             >
-              Join meeting
+              Join Event
               <LuExternalLink aria-hidden="true" />
             </a>
           </footer>

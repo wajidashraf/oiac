@@ -1,0 +1,278 @@
+﻿{
+    "verifiedAt":  "2026-10-19T09:36:22.8858453Z",
+    "environmentUrl":  "https://org97063a46.crm.dynamics.com",
+    "environmentId":  "16838866-275a-e2e7-838f-57313f30a416",
+    "readOnly":  true,
+    "table":  {
+                  "entitySetName":  "mss_activitylogs",
+                  "logicalName":  "mss_activitylog",
+                  "auditEnabled":  true,
+                  "schemaName":  "mss_ActivityLog",
+                  "primaryId":  "mss_activitylogid",
+                  "metadataId":  "223dacfc-f33c-40b8-a330-32363d2e9376",
+                  "primaryName":  "mss_name",
+                  "ownership":  "UserOwned"
+              },
+    "keys":  [
+                 {
+                     "MetadataId":  "21601de2-9fcb-f111-a05a-7ced8d6dc550",
+                     "SchemaName":  "mss_Eventkey",
+                     "KeyAttributes":  [
+                                           "mss_eventkey"
+                                       ],
+                     "EntityKeyIndexStatus":  "Active"
+                 }
+             ],
+    "fields":  [
+                   {
+                       "maxLength":  null,
+                       "auditEnabled":  true,
+                       "logicalName":  "mss_action",
+                       "type":  "Picklist",
+                       "required":  "None"
+                   },
+                   {
+                       "maxLength":  null,
+                       "auditEnabled":  false,
+                       "logicalName":  "mss_activitylogid",
+                       "type":  "Uniqueidentifier",
+                       "required":  "SystemRequired"
+                   },
+                   {
+                       "maxLength":  100,
+                       "auditEnabled":  true,
+                       "logicalName":  "mss_actoridsnapshot",
+                       "type":  "String",
+                       "required":  "None"
+                   },
+                   {
+                       "maxLength":  100,
+                       "auditEnabled":  true,
+                       "logicalName":  "mss_actorname",
+                       "type":  "String",
+                       "required":  "None"
+                   },
+                   {
+                       "maxLength":  100,
+                       "auditEnabled":  true,
+                       "logicalName":  "mss_correlationid",
+                       "type":  "String",
+                       "required":  "None"
+                   },
+                   {
+                       "maxLength":  4000,
+                       "auditEnabled":  true,
+                       "logicalName":  "mss_detailsjson",
+                       "type":  "String",
+                       "required":  "None"
+                   },
+                   {
+                       "maxLength":  100,
+                       "auditEnabled":  true,
+                       "logicalName":  "mss_eventkey",
+                       "type":  "String",
+                       "required":  "ApplicationRequired"
+                   },
+                   {
+                       "maxLength":  null,
+                       "auditEnabled":  true,
+                       "logicalName":  "mss_module",
+                       "type":  "Picklist",
+                       "required":  "None"
+                   },
+                   {
+                       "maxLength":  850,
+                       "auditEnabled":  true,
+                       "logicalName":  "mss_name",
+                       "type":  "String",
+                       "required":  "None"
+                   },
+                   {
+                       "maxLength":  null,
+                       "auditEnabled":  true,
+                       "logicalName":  "mss_occurredon",
+                       "type":  "DateTime",
+                       "required":  "ApplicationRequired"
+                   },
+                   {
+                       "maxLength":  null,
+                       "auditEnabled":  false,
+                       "logicalName":  "mss_performedby",
+                       "type":  "Lookup",
+                       "required":  "None"
+                   },
+                   {
+                       "maxLength":  100,
+                       "auditEnabled":  true,
+                       "logicalName":  "mss_recordid",
+                       "type":  "String",
+                       "required":  "None"
+                   },
+                   {
+                       "maxLength":  100,
+                       "auditEnabled":  true,
+                       "logicalName":  "mss_recordtitle",
+                       "type":  "String",
+                       "required":  "None"
+                   },
+                   {
+                       "maxLength":  100,
+                       "auditEnabled":  true,
+                       "logicalName":  "mss_recordtype",
+                       "type":  "String",
+                       "required":  "None"
+                   },
+                   {
+                       "maxLength":  100,
+                       "auditEnabled":  true,
+                       "logicalName":  "mss_siteid",
+                       "type":  "String",
+                       "required":  "ApplicationRequired"
+                   },
+                   {
+                       "maxLength":  1000,
+                       "auditEnabled":  true,
+                       "logicalName":  "mss_summary",
+                       "type":  "String",
+                       "required":  "None"
+                   }
+               ],
+    "choices":  {
+                    "module":  [
+                                   {
+                                       "value":  866530000,
+                                       "label":  "Meeting Reports"
+                                   },
+                                   {
+                                       "value":  866530001,
+                                       "label":  "Events"
+                                   },
+                                   {
+                                       "value":  866530002,
+                                       "label":  "Registrations"
+                                   },
+                                   {
+                                       "value":  866530003,
+                                       "label":  "Appointments"
+                                   },
+                                   {
+                                       "value":  866530004,
+                                       "label":  "Press Coverage"
+                                   },
+                                   {
+                                       "value":  866530005,
+                                       "label":  "Activity Channel"
+                                   },
+                                   {
+                                       "value":  866530006,
+                                       "label":  "Contacts"
+                                   },
+                                   {
+                                       "value":  866530007,
+                                       "label":  "Profile"
+                                   }
+                               ],
+                    "action":  [
+                                   {
+                                       "value":  866530000,
+                                       "label":  "Created"
+                                   },
+                                   {
+                                       "value":  866530001,
+                                       "label":  "Updated"
+                                   },
+                                   {
+                                       "value":  866530002,
+                                       "label":  "Submitted"
+                                   },
+                                   {
+                                       "value":  866530003,
+                                       "label":  "Registered"
+                                   },
+                                   {
+                                       "value":  866530004,
+                                       "label":  "Approved"
+                                   },
+                                   {
+                                       "value":  866530005,
+                                       "label":  "Rejected"
+                                   },
+                                   {
+                                       "value":  866530006,
+                                       "label":  "Accepted"
+                                   },
+                                   {
+                                       "value":  866530007,
+                                       "label":  "Cancelled"
+                                   },
+                                   {
+                                       "value":  866530008,
+                                       "label":  "Closed"
+                                   },
+                                   {
+                                       "value":  866530009,
+                                       "label":  "Reopened"
+                                   },
+                                   {
+                                       "value":  866530010,
+                                       "label":  "Rescheduled"
+                                   },
+                                   {
+                                       "value":  866530011,
+                                       "label":  "Published"
+                                   },
+                                   {
+                                       "value":  866530012,
+                                       "label":  "Uploaded"
+                                   },
+                                   {
+                                       "value":  866530013,
+                                       "label":  "Joined"
+                                   },
+                                   {
+                                       "value":  866530014,
+                                       "label":  "Left"
+                                   },
+                                   {
+                                       "value":  866530015,
+                                       "label":  "Profile Updated"
+                                   },
+                                   {
+                                       "value":  866530016,
+                                       "label":  "Password Changed"
+                                   }
+                               ]
+                },
+    "performedByRelationship":  [
+                                    {
+                                        "MetadataId":  "3b6de1f4-9ecb-f111-a05a-7ced8d6dc550",
+                                        "SchemaName":  "mss_activitylog_PerformedBy_contact",
+                                        "ReferencingAttribute":  "mss_performedby",
+                                        "CascadeConfiguration":  {
+                                                                     "Assign":  "NoCascade",
+                                                                     "Delete":  "RemoveLink",
+                                                                     "Archive":  "RemoveLink",
+                                                                     "Merge":  "Cascade",
+                                                                     "Reparent":  "NoCascade",
+                                                                     "Share":  "NoCascade",
+                                                                     "Unshare":  "NoCascade",
+                                                                     "RollupView":  "NoCascade"
+                                                                 }
+                                    }
+                                ],
+    "occurredOn":  "UserLocal",
+    "environmentAuditEnabled":  false,
+    "notVerified":  [
+                        "Append-only guard and full security-role enforcement",
+                        "Notes/attachment settings",
+                        "Column descriptions"
+                    ],
+    "schemaChangesMade":  false,
+    "recordChangesMade":  false,
+    "userDecision":  {
+                         "acceptedOwnership":  "UserOwned",
+                         "reuseExistingTable":  true,
+                         "replaceOrRecreate":  false,
+                         "schemaCorrectionsApplied":  false
+                     }
+}

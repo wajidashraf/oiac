@@ -1,0 +1,6 @@
+adx_serverlogic_adx_webrole:
+  - 0353acdd-7b95-4c07-8997-ae95dafd978d
+description: 'Authenticated coverage reads, validated creator-stamped saves, permission-checked file upload and download.'
+display_name: 'Press Coverage'
+id: 7632efff-fd04-4a83-a7eb-ecb583e1d2c3
+name: press-coverage

@@ -1,0 +1,13 @@
+adx_entitypermission_webrole:
+- 0353acdd-7b95-4c07-8997-ae95dafd978d
+append: false
+appendto: false
+contactrelationship: mss_appointment_Contact_contact
+create: false
+delete: false
+entitylogicalname: mss_appointment
+entityname: Appointments Recipient Read
+id: a7417030-8727-4ced-a6cb-d8f7d4ec0a55
+read: true
+scope: 756150001
+write: false

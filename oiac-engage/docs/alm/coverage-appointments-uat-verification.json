@@ -1,0 +1,197 @@
+{
+  "verifiedAt": "2026-10-19T04:27:24.749Z",
+  "siteUrl": "https://oiac-engage-test.powerappsportals.com/",
+  "environmentId": "16838866-275a-e2e7-838f-57313f30a416",
+  "websiteId": "e7f400bd-1e04-4efa-b8b3-7a7a3b168662",
+  "scope": [
+    "Press Coverage",
+    "Appointments"
+  ],
+  "productionChanged": false,
+  "siteRestarted": false,
+  "otherPageSourceChangesDeployed": false,
+  "pendingActivityUIChangesExcluded": true,
+  "fixes": [
+    "Bounded coverage file upload/download with private server transfer state and verified record/file receipts",
+    "Download controls linked to each coverage record",
+    "Blank optional Related Contact omitted on create; existing Contact cleared with unannotated null navigation property",
+    "Incoming pending badge hidden while Accept/Request Reschedule controls are available"
+  ],
+  "validation": {
+    "focusedTests": {
+      "passed": 330,
+      "files": 14
+    },
+    "productionBuild": "passed",
+    "coverage": [
+      {
+        "check": "featured max-size form upload and row download",
+        "passed": true,
+        "id": "03d068f1-3c05-4cce-b323-ab042c0c7842",
+        "fileName": "logo-2mb.png",
+        "bytes": 2097152,
+        "sha256": "df204e8056a97113eb1a0064c7b808ff3a323042bfc30b680741b071d615499f",
+        "downloadName": "logo-2mb.png",
+        "createCount": 1,
+        "retryWithoutDuplicate": false
+      },
+      {
+        "check": "Replace logo on original record and download",
+        "passed": true,
+        "id": "03d068f1-3c05-4cce-b323-ab042c0c7842",
+        "sha256": "b1ff9c8ea3a780bad09b346c423d2d0e46815926879b18e841d928376a946640",
+        "createCount": 1
+      },
+      {
+        "check": "Simulated lost chunk response after server save",
+        "passed": true
+      },
+      {
+        "check": "press max-size form upload and row download",
+        "passed": true,
+        "id": "5f05d072-b82b-4bc8-b3c5-2d47d1c382b6",
+        "fileName": "coverage-10mb.pdf",
+        "bytes": 10485760,
+        "sha256": "0fb7bc80a12c9b5357e82f698c847c1cb7dced2a48612463470c1bddbd69f4ef",
+        "downloadName": "coverage-10mb.pdf",
+        "createCount": 1,
+        "retryWithoutDuplicate": true
+      }
+    ],
+    "maximumBrowserUploadBodyBytes": 349694,
+    "deliberatelyLostChunkResponses": 2,
+    "contact": [
+      {
+        "check": "Single Contact selection saved without changing attachment",
+        "passed": true,
+        "id": "5f05d072-b82b-4bc8-b3c5-2d47d1c382b6"
+      },
+      {
+        "check": "Existing Related Contact can be cleared without changing attachment",
+        "passed": true,
+        "id": "5f05d072-b82b-4bc8-b3c5-2d47d1c382b6"
+      },
+      {
+        "check": "Press Coverage mobile has no page overflow",
+        "passed": true
+      }
+    ],
+    "appointments": [
+      {
+        "check": "Pending incoming card, response buttons and 110px height",
+        "passed": true,
+        "id": "0176de43-9b02-4d45-87d8-df9949d666eb",
+        "height": 110
+      },
+      {
+        "check": "Accept form saved and own calendar includes appointment",
+        "passed": true,
+        "id": "0176de43-9b02-4d45-87d8-df9949d666eb"
+      },
+      {
+        "check": "Pending incoming card, response buttons and 110px height",
+        "passed": true,
+        "id": "76b6eff5-29c3-4894-ac90-78422952b1f8",
+        "height": 109.99996948242188
+      },
+      {
+        "check": "Reschedule form saved and proposal excluded from calendar",
+        "passed": true,
+        "id": "76b6eff5-29c3-4894-ac90-78422952b1f8"
+      },
+      {
+        "check": "New request saved once, single Contact selected, outgoing Pending retained",
+        "passed": true,
+        "id": "1809a3e5-2405-4f6b-9a3c-4261126fe870"
+      },
+      {
+        "check": "Appointments mobile page has no horizontal overflow",
+        "passed": true
+      }
+    ],
+    "privacy": {
+      "directCoverageStatus": 404,
+      "directAppointmentsStatus": 404,
+      "recordReadSucceeded": true,
+      "privateStateAbsent": true,
+      "tokenFieldsAbsent": true,
+      "passed": true
+    },
+    "finalCleanReload": [
+      {
+        "page": "coverage",
+        "check": "Clean reload after verification-record cleanup",
+        "passed": true,
+        "alerts": [],
+        "testMarkersVisible": 0
+      },
+      {
+        "page": "coverage",
+        "check": "No mobile page overflow",
+        "passed": true
+      },
+      {
+        "page": "appointments",
+        "check": "Clean reload after verification-record cleanup",
+        "passed": true,
+        "alerts": [],
+        "testMarkersVisible": 0
+      },
+      {
+        "page": "appointments",
+        "check": "No mobile page overflow",
+        "passed": true
+      }
+    ]
+  },
+  "deployment": {
+    "assets": [
+      {
+        "file": "assets/index-P6N5x6TZ.js",
+        "status": 200,
+        "bytes": 512482,
+        "sha256": "cb705c2b1b695c31464ae5e092fb46771673189caac0d09dc1862884454e903d",
+        "matchesScopedBuild": true
+      },
+      {
+        "file": "assets/index-CY5Fp30M.css",
+        "status": 200,
+        "bytes": 154888,
+        "sha256": "547eb2759d9cd7f6b8ef0b9e09607590d54351b13765fd70ea380ba16743517c",
+        "matchesScopedBuild": true
+      }
+    ],
+    "runtime": {
+      "sha256": "c263551b52a49b939c26893dd229a7f416c453ff875054c9ba7243170965e7fd",
+      "name": "Oiac.Engage.CoverageFiles",
+      "matchesReviewedRuntime": true
+    },
+    "bridge": {
+      "sha256": "bb2a95c853ed2aa2048e48fa7de1789b6b8cedfffd59bb698d0e4ff3120081a1",
+      "matchesReviewedSource": true
+    },
+    "preservedConfiguration": {
+      "page-templates": 5,
+      "web-roles": 6,
+      "site-settings": 93,
+      "web-templates": 30,
+      "server-logic": 6,
+      "content-snippets": 22,
+      "table-permissions": 22,
+      "weblink-sets": 5,
+      "webpage-rules": 2,
+      "website-accesss": 2
+    },
+    "unexpectedConfigurationChanges": []
+  },
+  "cleanup": {
+    "exactMarkerVerifiedRecordsRemoved": 10,
+    "remainingCoverageVerificationRecords": 0,
+    "remainingAppointmentVerificationRecords": 0
+  },
+  "limitations": [
+    "Only the current Administrator account was available. Live ordinary-user isolation, both-participant calendar visibility in separate sessions, and a real response race were not reverified.",
+    "Acceptance/reschedule tests used newly marked incoming legacy-style fixtures with no impersonated requester. The actual outgoing form request verified trusted requester stamping.",
+    "Appointments has no file-upload control; its request, accept, and reschedule submissions were verified."
+  ]
+}

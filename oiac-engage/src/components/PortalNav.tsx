@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { LuChevronDown, LuMenu } from 'react-icons/lu'
 import { NavLink, useLocation } from 'react-router-dom'
-import { getPrimaryRole } from '../auth/authorization'
+import { hasRole } from '../auth/authorization'
 import type { PortalUser } from '../auth/powerPagesSession'
 import ComingSoonBadge from './ComingSoonBadge'
 
@@ -13,13 +13,13 @@ const topLevelLinks = [
 ]
 
 const activityLinks = [
-  { label: 'Activity Log', to: '/activity/activity-log', comingSoon: true },
+  { label: 'Activity Channel', to: '/activity/channel', comingSoon: false },
   { label: 'Events', to: '/activity/events', comingSoon: false },
-  { label: 'Appointments', to: '/activity/appointments', comingSoon: true },
+  { label: 'Appointments', to: '/activity/appointments', comingSoon: false },
 ]
 
 const secondaryLinks = [
-  { label: 'Press Coverage', to: '/press-coverage', comingSoon: true },
+  { label: 'Press Coverage', to: '/press-coverage', comingSoon: false },
 ]
 
 function navClassName({ isActive }: { isActive: boolean }) {
@@ -29,7 +29,7 @@ function navClassName({ isActive }: { isActive: boolean }) {
 export default function PortalNav({ user }: { user: PortalUser }) {
   const location = useLocation()
   const activityActive = location.pathname.startsWith('/activity')
-  const roleLabel = getPrimaryRole({ status: 'authenticated', user }) ?? 'Authenticated User'
+  const roleLabel = hasRole({ status: 'authenticated', user }, 'Administrators') ? 'Administrators' : hasRole({ status: 'authenticated', user }, 'Staff') ? 'Staff' : 'Volunteer'
   const [menuOpen, setMenuOpen] = useState(false)
   const [activityOpen, setActivityOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)

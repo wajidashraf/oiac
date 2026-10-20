@@ -1,0 +1,12 @@
+adx_entitypermission_webrole:
+- 6ec72c3e-4f1b-420f-9565-d20047b12c1f
+append: true
+appendto: true
+create: true
+delete: false
+entitylogicalname: mss_presscoverage
+entityname: Press Coverage Administrator Manage
+id: 49382ae5-35ac-4e18-ba6a-936f408dbb29
+read: true
+scope: 756150000
+write: true

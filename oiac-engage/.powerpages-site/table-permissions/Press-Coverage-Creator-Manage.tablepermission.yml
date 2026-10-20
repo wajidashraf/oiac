@@ -1,0 +1,15 @@
+adx_entitypermission_webrole:
+- b743c85b-4db3-484a-bd49-ff5ff975ec2b
+- 89a4fe62-4c85-48cb-b848-7603374faca2
+- c0ff381c-44a5-497b-b738-a442d62b07c1
+append: true
+appendto: true
+contactrelationship: mss_presscoverage_SubmittedBy_contact
+create: true
+delete: false
+entitylogicalname: mss_presscoverage
+entityname: Press Coverage Creator Manage
+id: 2d6c3177-194f-458b-8a2d-ec145efcd4ed
+read: true
+scope: 756150001
+write: true

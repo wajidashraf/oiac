@@ -1,0 +1,13 @@
+{
+  "environmentUrl": "https://org97063a46.crm.dynamics.com",
+  "solution": "CRMSolution",
+  "assemblyId": "ff6f2259-1cca-f111-a05a-70a8a5b30c17",
+  "pluginId": "02702259-1cca-f111-a05a-70a8a5b30c17",
+  "apiId": "03702259-1cca-f111-a05a-70a8a5b30c17",
+  "assembly": "Oiac.Engage.ActivityChannel, Version=1.0.0.0, Culture=neutral, PublicKeyToken=352fba5ff74fa2f0",
+  "sha256": "7af4a7a30034525d47e221eaa664fa11c704887bd5002a8206547f0f2bb9ef0a",
+  "customApi": "mss_ActivityChannelCommand",
+  "executePrivilege": "prvReadmss_ActivityPost",
+  "sandbox": true,
+  "siteDeployed": false
+}

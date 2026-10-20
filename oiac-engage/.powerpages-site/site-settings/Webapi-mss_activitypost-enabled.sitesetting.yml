@@ -1,0 +1,4 @@
+description: Activity Channel access uses trusted Server Logic.
+id: 806bf357-664a-4dd6-ad70-7f5dd65afaeb
+name: Webapi/mss_activitypost/enabled
+value: false

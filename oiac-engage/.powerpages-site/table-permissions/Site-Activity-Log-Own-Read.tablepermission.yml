@@ -1,0 +1,13 @@
+adx_entitypermission_webrole:
+- 0353acdd-7b95-4c07-8997-ae95dafd978d
+append: false
+appendto: false
+contactrelationship: mss_activitylog_PerformedBy_contact
+create: false
+delete: false
+entitylogicalname: mss_activitylog
+entityname: Site Activity Log Own Read
+id: 077fcd31-44f2-4d26-a47d-c18bfc2d36c5
+read: true
+scope: 756150001
+write: false

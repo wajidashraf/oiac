@@ -1,0 +1,26 @@
+{
+  "verifiedOn": "2026-10-16",
+  "environment": {
+    "name": "OIAC Test/UAT",
+    "id": "16838866-275a-e2e7-838f-57313f30a416",
+    "url": "https://org97063a46.crm.dynamics.com",
+    "siteId": "e7f400bd-1e04-4efa-b8b3-7a7a3b168662"
+  },
+  "solution": { "uniqueName": "CRMSolution", "id": "dc98bc78-79ea-f011-8406-000d3a3b8459", "versionAtVerification": "1.0.0.50", "publisherPrefix": "mss" },
+  "table": { "logicalName": "mss_presscoverage", "entitySetName": "mss_presscoverages", "metadataId": "7c0d3472-218b-4514-b40a-896c9985c85d", "primaryId": "mss_presscoverageid", "primaryName": "mss_headlinetitle", "hasNotes": false },
+  "existingConstraints": {
+    "businessColumnsRequiredLevel": "None",
+    "primaryNameMaxLength": 850,
+    "otherBusinessTextAndMemoMaxLength": 100,
+    "dates": { "columns": ["mss_datepublishedaired", "mss_publicationdate"], "behavior": "UserLocal", "format": "DateOnly", "businessTimezoneCode": 129, "businessTimezoneName": "Jordan Standard Time", "writeLocalHour": 12 },
+    "relatedContact": { "logicalName": "mss_relatedcontact", "navigationProperty": "mss_RelatedContact", "relationship": "mss_presscoverage_RelatedContact_contact" }
+  },
+  "approvedAdditionsAppliedToUat": {
+    "submittedBy": { "logicalName": "mss_submittedby", "navigationProperty": "mss_SubmittedBy", "attributeMetadataId": "74630a54-3f1d-4034-ba74-8dc26c20738e", "relationship": "mss_presscoverage_SubmittedBy_contact", "relationshipMetadataId": "c95f22af-50c9-f111-aaaf-000d3a34ea0c", "target": "contact", "requiredLevel": "None", "deleteCascade": "RemoveLink" },
+    "file": { "logicalName": "mss_coveragefile", "schemaName": "mss_CoverageFile", "attributeMetadataId": "d42da4c4-50c9-f111-aaaf-000d3a34ea0c", "filenameColumn": "mss_coveragefile_name", "maxSizeInKB": 10240 }
+  },
+  "schemaPublished": true,
+  "addedToSolution": true,
+  "portalCodeAndPermissionsDeployed": true,
+  "liveRoleSecurityVerified": false
+}

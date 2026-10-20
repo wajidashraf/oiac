@@ -1,0 +1,4 @@
+description: Activity Channel access uses trusted Server Logic.
+id: 170bd6d5-12ac-4d58-be9d-2dfbc361d570
+name: Webapi/mss_activitycomment/enabled
+value: false

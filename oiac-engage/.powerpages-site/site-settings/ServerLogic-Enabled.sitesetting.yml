@@ -1,0 +1,4 @@
+description: Enable the protected Press Coverage server endpoint.
+id: f1ad467d-019e-4064-8e6d-a108e4d4fe99
+name: ServerLogic/Enabled
+value: true

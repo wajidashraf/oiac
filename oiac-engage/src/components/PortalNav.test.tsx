@@ -25,11 +25,7 @@ test('keeps unfinished navigation visible and exposes only implemented routes as
   expect(within(primaryNavigation).getByRole('link', { name: 'Meeting Report' })).toHaveAttribute('href', '/report')
   expect(within(primaryNavigation).getByRole('link', { name: 'My Calendar' })).toHaveAttribute('href', '/my-calendar')
   expect(within(primaryNavigation).getByRole('link', { name: 'Contact' })).toHaveAttribute('href', '/contact')
-  expect(within(primaryNavigation).queryByRole('link', { name: /Press Coverage/ })).not.toBeInTheDocument()
-  const pressCoverage = within(primaryNavigation).getByText('Press Coverage').closest<HTMLElement>('[aria-disabled="true"]')!
-  expect(pressCoverage).toBeInTheDocument()
-  expect(pressCoverage).toHaveClass('portal-nav__link--coming-soon')
-  expect(within(pressCoverage).getByText('Coming Soon')).toBeInTheDocument()
+  expect(within(primaryNavigation).getByRole('link', { name: 'Press Coverage' })).toHaveAttribute('href', '/press-coverage')
   expect(within(account).queryByRole('link', { name: 'Sign out' })).not.toBeInTheDocument()
   expect(within(account).getByRole('button', { name: 'Account menu for Volunteer' })).toHaveAttribute(
     'aria-expanded',
@@ -45,15 +41,10 @@ test('keeps unfinished navigation visible and exposes only implemented routes as
   expect(activityToggle.querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
   await user.click(activityToggle)
   expect(activityToggle).toHaveAttribute('aria-expanded', 'true')
-  expect(screen.queryByRole('link', { name: /Activity Log/ })).not.toBeInTheDocument()
-  const activityLog = screen.getByText('Activity Log').closest<HTMLElement>('[aria-disabled="true"]')!
-  expect(activityLog).toBeInTheDocument()
-  expect(activityLog).toHaveClass('portal-nav__link--coming-soon')
+  expect(screen.getByRole('link', { name: 'Activity Channel' })).toHaveAttribute('href', '/activity/channel')
+  expect([...document.querySelectorAll('#activity-navigation-list a')].map(link => link.textContent)).toEqual(['Activity Channel', 'Events', 'Appointments'])
   expect(screen.getByRole('link', { name: 'Events' })).toHaveAttribute('href', '/activity/events')
-  expect(screen.queryByRole('link', { name: /Appointments/ })).not.toBeInTheDocument()
-  const appointments = screen.getByText('Appointments').closest<HTMLElement>('[aria-disabled="true"]')!
-  expect(appointments).toBeInTheDocument()
-  expect(appointments).toHaveClass('portal-nav__link--coming-soon')
+  expect(screen.getByRole('link', { name: 'Appointments' })).toHaveAttribute('href', '/activity/appointments')
 })
 
 test('closes the responsive menu after navigation', async () => {

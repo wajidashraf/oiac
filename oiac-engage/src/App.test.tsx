@@ -60,10 +60,7 @@ const protectedRoutes = [
   '/contact',
   '/user-profile',
   '/activity',
-  '/activity/activity-log',
   '/activity/events',
-  '/activity/appointments',
-  '/press-coverage',
   '/report',
   '/report/new',
   '/report/11111111-1111-4111-8111-111111111111/edit',
@@ -143,10 +140,11 @@ test.each([
   ['/my-calendar', 'My Calendar'],
   ['/contact', 'Contacts'],
   ['/user-profile', 'My Profile'],
-  ['/activity/activity-log', 'Page not found'],
+  ['/activity/activity-log', 'Activity Channel'],
+  ['/activity/channel', 'Activity Channel'],
   ['/activity/events', 'Events'],
-  ['/activity/appointments', 'Page not found'],
-  ['/press-coverage', 'Page not found'],
+  ['/activity/appointments', 'Appointments'],
+  ['/press-coverage', 'Press Coverage'],
   ['/activity', 'Events'],
   ['/unknown', 'Page not found'],
 ])('renders %s as %s', (route, heading) => {
@@ -168,6 +166,22 @@ test('wires the exact Administrators role into the Contact directory', () => {
   renderApp('/contact', authenticatedSession)
   expect(screen.getByText('Contacts assigned to your district.')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Edit Sara Rahimi/ })).not.toBeInTheDocument()
+})
+
+test('allows an authenticated pending user to read coverage while preserving approval restrictions', () => {
+  renderApp('/press-coverage', deniedSession)
+  expect(screen.getByRole('heading', { name: 'Press Coverage', level: 1 })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: '+ Add Coverage' })).not.toBeInTheDocument()
+  expect(screen.getByTestId('current-path')).toHaveTextContent('/press-coverage')
+  expect(screen.queryByRole('navigation', { name: 'Primary navigation' })).not.toBeInTheDocument()
+})
+
+test('allows pending users to view their appointment requests without unlocking creation or other routes', () => {
+  renderApp('/activity/appointments', deniedSession)
+  expect(screen.getByRole('heading', { name: 'Appointments', level: 1 })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: '+ Request Appointment' })).not.toBeInTheDocument()
+  expect(screen.getByTestId('current-path')).toHaveTextContent('/activity/appointments')
+  expect(screen.queryByRole('navigation', { name: 'Primary navigation' })).not.toBeInTheDocument()
 })
 
 test('moves keyboard focus to the page heading after client-side navigation', async () => {
@@ -212,6 +226,8 @@ test.each([
   '/report',
   '/press-coverage',
   '/activity/appointments',
+  '/activity/channel',
+  '/activity/activity-log',
 ])('shows only the anonymous welcome experience at %s without a session', (route) => {
   const navigate = vi.fn()
   renderApp(route, { status: 'anonymous' }, navigate)
@@ -267,6 +283,13 @@ test('renders My Calendar for an authenticated user without a functional Web Rol
   expect(screen.getByRole('heading', { name: 'My Calendar', level: 1 })).toBeInTheDocument()
   expect(screen.getByTestId('current-path')).toHaveTextContent('/my-calendar')
   expect(screen.queryByRole('navigation', { name: 'Primary navigation' })).not.toBeInTheDocument()
+})
+
+test.each(['/activity/channel', '/activity/activity-log'])('allows pending authenticated users at %s with full navigation', (route) => {
+  renderApp(route, deniedSession)
+  expect(screen.getByRole('heading', { name: 'Activity Channel', level: 1 })).toBeInTheDocument()
+  expect(screen.getByRole('navigation', { name: 'Primary navigation' })).toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Your profile is under review' })).not.toBeInTheDocument()
 })
 
 test.each([

@@ -7,6 +7,9 @@ import RegistrationProfileGate from './components/RegistrationProfileGate'
 import RequirePortalRole from './components/RequirePortalRole'
 import type { ExternalNavigate } from './components/SignInRedirect'
 import AnonymousHome from './pages/AnonymousHome'
+import Appointments from './pages/Appointments'
+import ActivityChannel from './pages/ActivityChannel'
+import SiteActivityLog from './pages/SiteActivityLog'
 import Contact from './pages/Contact'
 import Events from './pages/Events'
 import Home from './pages/Home'
@@ -14,6 +17,7 @@ import MyCalendar from './pages/MyCalendar'
 import MyReports from './pages/MyReports'
 import MeetingReportForm from './pages/MeetingReportForm'
 import NotFound from './pages/NotFound'
+import PressCoverage from './pages/PressCoverage'
 import Report from './pages/Report'
 import Resources from './pages/Resources'
 import TrainingResource from './pages/TrainingResource'
@@ -47,6 +51,9 @@ export default function App({ session: suppliedSession }: AppProps) {
         <RequirePortalRole
           session={completedSession}
           calendarElement={<MyCalendar contactId={completedSession.user.contactId} />}
+          coverageElement={<PressCoverage contactId={completedSession.user.contactId} canCreate={false} />}
+          appointmentsElement={<Appointments contactId={completedSession.user.contactId} canCreate={false} />}
+          activityElement={<ActivityChannel />}
         >
           <AppShell user={completedSession.user}>
             <Routes>
@@ -64,7 +71,9 @@ export default function App({ session: suppliedSession }: AppProps) {
               />
               <Route path="/user-profile" element={<UserProfile user={completedSession.user} />} />
               <Route path="/activity" element={<Navigate to="/activity/events" replace />} />
-              {/* <Route path="/activity/activity-log" element={<ActivityLog />} /> */}
+              <Route path="/activity/channel" element={<ActivityChannel />} />
+              <Route path="/activity/history" element={<SiteActivityLog isAdmin={hasRole(completedSession, 'Administrators')} />} />
+              <Route path="/activity/activity-log" element={<Navigate to="/activity/channel" replace />} />
               <Route
                 path="/activity/events"
                 element={(
@@ -74,8 +83,11 @@ export default function App({ session: suppliedSession }: AppProps) {
                   />
                 )}
               />
-              {/* <Route path="/activity/appointments" element={<Appointments />} /> */}
-              {/* <Route path="/press-coverage" element={<PressCoverage />} /> */}
+              <Route path="/activity/appointments" element={<Appointments contactId={completedSession.user.contactId} isAdmin={hasRole(completedSession, 'Administrators')} />} />
+              <Route
+                path="/press-coverage"
+                element={<PressCoverage contactId={completedSession.user.contactId} isAdmin={hasRole(completedSession, 'Administrators')} />}
+              />
               <Route path="/report" element={<Report />} />
               <Route path="/report/new" element={<MeetingReportForm user={completedSession.user} />} />
               <Route path="/report/:reportId/edit" element={<MeetingReportForm user={completedSession.user} />} />

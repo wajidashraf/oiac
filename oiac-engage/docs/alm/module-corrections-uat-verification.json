@@ -1,0 +1,170 @@
+{
+  "checkedAtUtc": "2026-10-16T22:36:34.633Z",
+  "verificationDateLocal": "2026-10-17",
+  "environmentId": "16838866-275a-e2e7-838f-57313f30a416",
+  "environmentUrl": "https://org97063a46.crm.dynamics.com",
+  "websiteRecordId": "e7f400bd-1e04-4efa-b8b3-7a7a3b168662",
+  "websiteUrl": "https://oiac-engage-test.powerappsportals.com",
+  "productionChanged": false,
+  "restartPerformed": false,
+  "upload": {
+    "userApproved": true,
+    "result": "succeeded",
+    "durationSeconds": 181.35,
+    "backupDirectory": ".superpowers/module-corrections/deployment-backup-20261017/oiac-engage",
+    "stagingDirectory": ".superpowers/module-corrections/deployment-stage-20261017",
+    "readbackDirectory": ".superpowers/module-corrections/deployment-readback-20261017/oiac-engage",
+    "compiledScript": "/assets/index-BFsJxF4r.js",
+    "compiledStylesheet": "/assets/index-DKRVsayL.css",
+    "assets": [
+      {
+        "file": "index-BFsJxF4r.js",
+        "sha256": "61fb089fb58a748dfa963a4b418b0afb00904532c5b8190bff3bd29a0cfaf60f"
+      },
+      {
+        "file": "index-DKRVsayL.css",
+        "sha256": "7e931badcfef80d0f74ef2421e935ec2cd7fbbca3bf89172ca18e0502dbdd88e"
+      }
+    ]
+  },
+  "configuration": {
+    "groups": {
+      "site-settings": {
+        "files": 91,
+        "changed": []
+      },
+      "table-permissions": {
+        "files": 20,
+        "changed": []
+      },
+      "web-roles": {
+        "files": 6,
+        "changed": []
+      }
+    },
+    "serverLogic": {
+      "appointments": {
+        "matches": true
+      },
+      "press-coverage": {
+        "matches": true
+      }
+    },
+    "assets": [
+      {
+        "file": "index-BFsJxF4r.js",
+        "sha256": "61fb089fb58a748dfa963a4b418b0afb00904532c5b8190bff3bd29a0cfaf60f"
+      },
+      {
+        "file": "index-DKRVsayL.css",
+        "sha256": "7e931badcfef80d0f74ef2421e935ec2cd7fbbca3bf89172ca18e0502dbdd88e"
+      }
+    ],
+    "temporaryDiagnosticInStage": false
+  },
+  "verification": {
+    "frontendTests": 857,
+    "testFiles": 73,
+    "productionBuild": "passed",
+    "appointmentSdkTests": 52,
+    "coverageTimeSdkTests": 16,
+    "moduleCorrectionsScopedAxeChecks": 15,
+    "earlierAppointmentsScopedAxeChecks": 12,
+    "earlierCoverageScopedAxeChecks": 9,
+    "collapsedDesktopAndTabletCardHeightPx": 110,
+    "mobileActionsRemainUsable": true,
+    "hostedAppointmentCreateRefresh": "passed",
+    "hostedPressCreateWithRelatedContactRefresh": "passed",
+    "hostedFeaturedCreateLogoUploadDownloadRefresh": "passed; downloaded PNG bytes match uploaded bytes",
+    "hostedDataReadback": {
+      "coverageReadOk": true,
+      "creatorStamped": true,
+      "relatedContactSaved": true,
+      "businessDateCorrect": true,
+      "appointmentReadOk": true,
+      "requesterStamped": true,
+      "easternInstantCorrect": true,
+      "pendingStatusCorrect": true
+    },
+    "hostedPressLookupAlignment": {
+      "yesNoHeight": 44,
+      "contactHeight": 44,
+      "sameTop": true,
+      "singleSelectedControl": true,
+      "date": "2026-10-17"
+    },
+    "existingPageCrawl": [
+      {
+        "path": "/",
+        "status": 200,
+        "heading": "Volunteer",
+        "alerts": [],
+        "hasPortalContact": true,
+        "testDataVisible": false
+      },
+      {
+        "path": "/activity/events",
+        "status": 200,
+        "heading": "Events",
+        "alerts": [],
+        "hasPortalContact": true,
+        "testDataVisible": false
+      },
+      {
+        "path": "/my-calendar",
+        "status": 200,
+        "heading": "My Calendar",
+        "alerts": [],
+        "hasPortalContact": true,
+        "testDataVisible": false
+      },
+      {
+        "path": "/contact",
+        "status": 200,
+        "heading": "Contacts",
+        "alerts": [],
+        "hasPortalContact": true,
+        "testDataVisible": false
+      },
+      {
+        "path": "/report",
+        "status": 200,
+        "heading": "Meeting Reports",
+        "alerts": [],
+        "hasPortalContact": true,
+        "testDataVisible": false
+      },
+      {
+        "path": "/activity/appointments",
+        "status": 200,
+        "heading": "Appointments",
+        "alerts": [],
+        "hasPortalContact": true,
+        "testDataVisible": false
+      },
+      {
+        "path": "/press-coverage",
+        "status": 200,
+        "heading": "Press Coverage",
+        "alerts": [],
+        "hasPortalContact": true,
+        "testDataVisible": false
+      }
+    ],
+    "allObservedApiCallsSucceeded": true,
+    "observedApiRequestCount": 21,
+    "consoleErrors": 0,
+    "currentBuildObservedInRuntime": true
+  },
+  "cleanup": {
+    "onlyExactRecentVerificationRecordsDeleted": 5,
+    "absenceVerified": true,
+    "temporaryDiagnosticComponentDeleted": true,
+    "existingBusinessRecordsChanged": false
+  },
+  "limits": [
+    "Authenticated hosted checks used the Administrator and Volunteer testing session; separate ordinary participant A/B/C isolation and a real concurrent response race remain unverified.",
+    "Maximum-size uploads, file replacement and interrupted-upload acceptance remain pending."
+  ],
+  "pacOriginalProfileRestored": true
+}

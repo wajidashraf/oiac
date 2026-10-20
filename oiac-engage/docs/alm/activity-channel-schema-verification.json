@@ -1,0 +1,35 @@
+﻿{
+    "otherCascadePropertiesPreserved":  [
+                                            "Archive",
+                                            "Assign",
+                                            "Merge",
+                                            "Reparent",
+                                            "RollupView",
+                                            "Share",
+                                            "Unshare"
+                                        ],
+    "delete":  "Cascade",
+    "beforeCascade":  {
+                          "Assign":  "NoCascade",
+                          "Delete":  "RemoveLink",
+                          "Archive":  "RemoveLink",
+                          "Merge":  "NoCascade",
+                          "Reparent":  "NoCascade",
+                          "Share":  "NoCascade",
+                          "Unshare":  "NoCascade",
+                          "RollupView":  "NoCascade"
+                      },
+    "memoMaxLength":  8000,
+    "afterCascade":  {
+                         "Assign":  "NoCascade",
+                         "Delete":  "Cascade",
+                         "Archive":  "RemoveLink",
+                         "Merge":  "NoCascade",
+                         "Reparent":  "NoCascade",
+                         "Share":  "NoCascade",
+                         "Unshare":  "NoCascade",
+                         "RollupView":  "NoCascade"
+                     },
+    "relationshipId":  "5b11d577-b0c9-f111-a05a-70a8a5b30c17",
+    "environmentId":  "16838866-275a-e2e7-838f-57313f30a416"
+}

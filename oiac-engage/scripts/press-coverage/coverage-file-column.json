@@ -1,0 +1,8 @@
+{
+  "@odata.type": "#Microsoft.Dynamics.CRM.FileAttributeMetadata",
+  "SchemaName": "mss_CoverageFile",
+  "DisplayName": { "LocalizedLabels": [{ "Label": "Coverage File", "LanguageCode": 1033 }] },
+  "Description": { "LocalizedLabels": [{ "Label": "Publication logo for featured coverage or a supporting attachment for press coverage.", "LanguageCode": 1033 }] },
+  "RequiredLevel": { "Value": "None", "CanBeChanged": true },
+  "MaxSizeInKB": 10240
+}

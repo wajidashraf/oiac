@@ -1,0 +1,4 @@
+description: Coverage access uses authenticated Server Logic; disable direct portal Web API writes and reads.
+id: 86be0e70-ec88-4864-aff7-78704e0821c5
+name: Webapi/mss_presscoverage/enabled
+value: false

@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, test, vi } from 'vitest'
@@ -12,6 +12,7 @@ import {
   type MeetingInviteCollection,
 } from '../features/meetingInvites/meetingInviteTypes'
 import MyCalendar from './MyCalendar'
+import { APPOINTMENT_STATUS, type AppointmentRecord } from '../features/appointments/appointmentTypes'
 import { PowerPagesApiError, PowerPagesDataError } from '../shared/powerPagesApi'
 
 const contactId = '11111111-1111-4111-8111-111111111111'
@@ -83,10 +84,12 @@ function renderCalendar({
   loadRegistrations = vi.fn().mockResolvedValue(registrations),
   loadRegisteredEvents = vi.fn().mockResolvedValue([registeredEvent]),
   loadMeetingInvites = vi.fn().mockResolvedValue({ contactFullName: 'Sara Rahimi', invites: [] }),
+  loadAppointments = vi.fn().mockResolvedValue([]),
 }: {
   loadRegistrations?: (contactId: string, signal?: AbortSignal) => Promise<readonly EventRegistration[]>
   loadRegisteredEvents?: (eventIds: readonly string[], signal?: AbortSignal) => Promise<readonly EventItem[]>
   loadMeetingInvites?: (contactId: string, signal?: AbortSignal) => Promise<MeetingInviteCollection>
+  loadAppointments?: (month: string, signal?: AbortSignal) => Promise<readonly AppointmentRecord[]>
 } = {}) {
   return render(
     <MemoryRouter>
@@ -97,6 +100,7 @@ function renderCalendar({
         loadRegistrations={loadRegistrations}
         loadRegisteredEvents={loadRegisteredEvents}
         loadMeetingInvites={loadMeetingInvites}
+        loadAppointments={loadAppointments}
       />
     </MemoryRouter>,
   )
@@ -115,7 +119,7 @@ describe('My Calendar', () => {
 
     const dialog = screen.getByRole('dialog', { name: 'Volunteer Orientation Webinar' })
     expect(within(dialog).getByText('Virtual')).toBeInTheDocument()
-    expect(within(dialog).getByRole('link', { name: 'Join meeting' })).toHaveAttribute(
+    expect(within(dialog).getByRole('link', { name: 'Join Event' })).toHaveAttribute(
       'href',
       registeredEvent.meetingUrl,
     )
@@ -282,7 +286,7 @@ describe('My Calendar', () => {
 
     const dialog = screen.getByRole('dialog', { name: 'Volunteer Orientation Webinar' })
     expect(within(dialog).getByText('District Office Meeting Room')).toBeInTheDocument()
-    expect(within(dialog).queryByRole('link', { name: 'Join meeting' })).not.toBeInTheDocument()
+    expect(within(dialog).queryByRole('link', { name: 'Join Event' })).not.toBeInTheDocument()
     expect(within(grid).queryByRole('link', { name: /Volunteer Orientation Webinar/i })).not.toBeInTheDocument()
   })
 
@@ -365,10 +369,11 @@ describe('My Calendar', () => {
     expect(loadRegisteredEvents).toHaveBeenCalledTimes(2)
   })
 
-  test('shows the full Calendar error only when both data branches fail', async () => {
+  test('shows the full Calendar error when all three data sources fail', async () => {
     renderCalendar({
       loadRegistrations: vi.fn().mockRejectedValue(new PowerPagesApiError('events unavailable')),
       loadMeetingInvites: vi.fn().mockRejectedValue(new PowerPagesApiError('meetings unavailable')),
+      loadAppointments: vi.fn().mockRejectedValue(new PowerPagesApiError('appointments unavailable')),
     })
 
     expect(await screen.findByRole('heading', { name: 'Your calendar could not be loaded' })).toBeInTheDocument()
@@ -387,4 +392,127 @@ describe('My Calendar', () => {
       'Some accepted meeting data could not be processed.',
     )
   })
+})
+
+const acceptedAppointment: AppointmentRecord = {
+  id: registeredEventId, title: 'Accepted appointment in Eastern time', status: APPOINTMENT_STATUS.accepted,
+  statusLabel: 'Accepted', meetingFormat: 1, meetingFormatLabel: 'Microsoft Teams',
+  preferredDateTime: '2026-10-01T01:30:00Z', suggestedDateTime: '2026-10-02T15:00:00Z',
+  agenda: 'Outreach discussion', meetingLink: 'https://meet.example.org/appointment', reschedulingReason: '',
+  requester: { id: contactId, name: 'Requester' }, recipient: { id: secondRegisteredEventId, name: 'Recipient' }, rowVersion: '20',
+}
+
+test('adds accepted appointments on their Eastern date without colliding with an existing Event ID', async () => {
+  const loadAppointments = vi.fn().mockResolvedValue([acceptedAppointment, acceptedAppointment])
+  renderCalendar({ loadAppointments })
+  const grid = await screen.findByRole('grid', { name: 'September 2026 calendar' })
+  expect(await within(grid).findByText(acceptedAppointment.title)).toBeInTheDocument()
+  expect(within(grid).getByText(registeredEvent.title)).toBeInTheDocument()
+  const upcoming = screen.getByRole('heading', { name: 'Upcoming' }).closest('section')!
+  expect(within(upcoming).getByText('9:30 PM EDT · Online meeting')).toBeInTheDocument()
+  expect(within(upcoming).getByRole('link', { name: `Join ${acceptedAppointment.title} (opens in a new tab)` })).toHaveAttribute('href', acceptedAppointment.meetingLink)
+  expect(screen.getAllByText(acceptedAppointment.title)).toHaveLength(2)
+  expect(loadAppointments).toHaveBeenCalledWith('2026-09', expect.any(AbortSignal))
+})
+
+test('does not turn a reschedule proposal into an accepted calendar item', async () => {
+  renderCalendar({ loadAppointments: vi.fn().mockResolvedValue([{ ...acceptedAppointment, status: APPOINTMENT_STATUS.rescheduled }]) })
+  await screen.findByRole('grid')
+  expect(screen.queryByText(acceptedAppointment.title)).not.toBeInTheDocument()
+})
+
+test('keeps the existing calendar visible while the independent appointment source is slow or fails', async () => {
+  let reject!: (reason: Error) => void
+  const loadAppointments = vi.fn().mockReturnValue(new Promise((_resolve, fail) => { reject = fail }))
+  renderCalendar({ loadAppointments })
+  const grid = await screen.findByRole('grid')
+  expect(within(grid).getByText(registeredEvent.title)).toBeInTheDocument()
+  await waitFor(() => expect(loadAppointments).toHaveBeenCalledTimes(1))
+  reject(new PowerPagesApiError('Appointments unavailable'))
+  expect(await screen.findByText('Appointments could not be loaded. Existing events and meeting invitations are still shown.')).toBeInTheDocument()
+  expect(within(screen.getByRole('grid')).getByText(registeredEvent.title)).toBeInTheDocument()
+})
+
+test('still shows accepted appointments when both original calendar sources fail', async () => {
+  renderCalendar({
+    loadRegistrations: vi.fn().mockRejectedValue(new PowerPagesApiError('Events unavailable')),
+    loadMeetingInvites: vi.fn().mockRejectedValue(new PowerPagesApiError('Invites unavailable')),
+    loadAppointments: vi.fn().mockResolvedValue([acceptedAppointment]),
+  })
+  const grid = await screen.findByRole('grid')
+  expect(within(grid).getByText(acceptedAppointment.title)).toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: 'Your calendar could not be loaded' })).not.toBeInTheDocument()
+})
+
+test('loads appointments for the selected month without refetching Events and Meeting Invites', async () => {
+  const user = userEvent.setup()
+  const loadRegistrations = vi.fn().mockResolvedValue(registrations)
+  const loadMeetingInvites = vi.fn().mockResolvedValue({ contactFullName: 'Sara Rahimi', invites: [] })
+  const loadAppointments = vi.fn().mockResolvedValue([])
+  renderCalendar({ loadRegistrations, loadMeetingInvites, loadAppointments })
+  await screen.findByRole('grid', { name: 'September 2026 calendar' })
+  await user.click(screen.getByRole('button', { name: 'Show October 2026' }))
+  await waitFor(() => expect(loadAppointments).toHaveBeenLastCalledWith('2026-10', expect.any(AbortSignal)))
+  expect(loadRegistrations).toHaveBeenCalledTimes(1)
+  expect(loadMeetingInvites).toHaveBeenCalledTimes(1)
+})
+
+test('keeps month navigation available when only a different month has appointments', async () => {
+  const user = userEvent.setup()
+  const loadAppointments = vi.fn((month: string) => Promise.resolve(month === '2026-10' ? [{ ...acceptedAppointment, preferredDateTime: '2026-10-15T14:00:00Z' }] : []))
+  renderCalendar({ loadRegistrations: vi.fn().mockResolvedValue([]), loadAppointments })
+  await screen.findByRole('grid', { name: 'September 2026 calendar' })
+  await user.click(screen.getByRole('button', { name: 'Show October 2026' }))
+  expect(await within(screen.getByRole('grid')).findByText(acceptedAppointment.title)).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Show November 2026' }))
+  await waitFor(() => expect(loadAppointments).toHaveBeenLastCalledWith('2026-11', expect.any(AbortSignal)))
+  expect(screen.getByRole('grid', { name: 'November 2026 calendar' })).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Show October 2026' }))
+  expect(await within(screen.getByRole('grid')).findByText(acceptedAppointment.title)).toBeInTheDocument()
+})
+
+test('keeps the selected appointment month during a slow load when original calendar sources fail', async () => {
+  const user = userEvent.setup()
+  let finish!: (records: readonly AppointmentRecord[]) => void
+  const loadAppointments = vi.fn().mockResolvedValueOnce([acceptedAppointment]).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve }))
+  renderCalendar({ loadRegistrations: vi.fn().mockRejectedValue(new PowerPagesApiError('events unavailable')), loadMeetingInvites: vi.fn().mockRejectedValue(new PowerPagesApiError('invites unavailable')), loadAppointments })
+  await screen.findByRole('grid', { name: 'September 2026 calendar' })
+  await user.click(screen.getByRole('button', { name: 'Show October 2026' }))
+  await waitFor(() => expect(loadAppointments).toHaveBeenCalledTimes(2))
+  expect(screen.getByRole('grid', { name: 'October 2026 calendar' })).toBeInTheDocument()
+  finish([])
+  expect(await screen.findByRole('grid', { name: 'October 2026 calendar' })).toBeInTheDocument()
+})
+
+test('focus and visible return replace only appointments, abort stale reads and preserve the month', async () => {
+ const loadRegistrations = vi.fn().mockResolvedValue(registrations)
+ const loadMeetingInvites = vi.fn().mockResolvedValue({ contactFullName: 'Sara Rahimi', invites: [] })
+ let late!: (records: readonly AppointmentRecord[]) => void
+ let staleSignal!: AbortSignal
+ const october = { ...acceptedAppointment, preferredDateTime: '2026-10-15T14:00:00Z' }
+ const loadAppointments = vi.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([])
+   .mockImplementationOnce((_month: string, signal: AbortSignal) => { staleSignal = signal; return new Promise(resolve => { late = resolve }) })
+   .mockResolvedValueOnce([october, october]).mockResolvedValueOnce([])
+ renderCalendar({ loadRegistrations, loadMeetingInvites, loadAppointments })
+ await screen.findByRole('grid', { name: 'September 2026 calendar' })
+ await userEvent.setup().click(screen.getByRole('button', { name: 'Show October 2026' }))
+ await waitFor(() => expect(loadAppointments).toHaveBeenCalledTimes(2))
+ fireEvent(window, new Event('focus'))
+ await waitFor(() => expect(loadAppointments).toHaveBeenCalledTimes(3))
+ fireEvent(document, new Event('visibilitychange'))
+ await waitFor(() => expect(loadAppointments).toHaveBeenCalledTimes(4))
+ expect(staleSignal.aborted).toBe(true)
+ await act(async () => late([]))
+ const grid = screen.getByRole('grid', { name: 'October 2026 calendar' })
+ expect(await within(grid).findByText(october.title)).toBeInTheDocument()
+ expect(within(grid).getAllByText(october.title)).toHaveLength(1)
+ fireEvent(window, new Event('focus'))
+ await waitFor(() => expect(screen.queryByText(october.title)).not.toBeInTheDocument())
+ expect(screen.getByRole('grid', { name: 'October 2026 calendar' })).toBeInTheDocument()
+ expect(loadRegistrations).toHaveBeenCalledTimes(1); expect(loadMeetingInvites).toHaveBeenCalledTimes(1)
+})
+test('calendar rejects an unrelated appointment returned by its source', async () => {
+ renderCalendar({ loadAppointments: vi.fn().mockResolvedValue([{ ...acceptedAppointment, requester: { id: waitlistedEventId, name: 'Other' } }]) })
+ await screen.findByRole('grid'); await waitFor(() => expect(screen.queryByText('Loading accepted appointments?')).not.toBeInTheDocument())
+ expect(screen.queryByText(acceptedAppointment.title)).not.toBeInTheDocument()
 })

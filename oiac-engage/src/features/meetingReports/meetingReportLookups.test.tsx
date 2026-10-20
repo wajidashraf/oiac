@@ -121,6 +121,38 @@ test('keeps selected values inside every single lookup field', () => {
   expect(districtControl).toContainElement(screen.getByRole('button', { name: 'Clear State / District' }))
 })
 
+test('compact selection hides replacement search and returns keyboard focus to search when cleared', async () => {
+  const user = userEvent.setup()
+  function CompactLookup() {
+    const [value, setValue] = useState<ContactOption | null>(null)
+    return <ContactLookup label="Contact" compactSelection value={value} onChange={setValue} loadOptions={async () => [sara]} debounceMs={0} />
+  }
+  render(<CompactLookup />)
+  await user.click(screen.getByRole('combobox', { name: 'Contact' }))
+  const option = await screen.findByRole('option', { name: /Sara Rahimi/ })
+  option.focus()
+  await user.keyboard('{Enter}')
+  expect(screen.queryByRole('combobox', { name: 'Contact' })).not.toBeInTheDocument()
+  expect(screen.queryByPlaceholderText('Search to replace...')).not.toBeInTheDocument()
+  const clear = screen.getByRole('button', { name: 'Clear Contact' })
+  expect(clear).toHaveFocus()
+  expect(clear.parentElement).toHaveTextContent('Sara Rahimi')
+  await user.keyboard('{Enter}')
+  expect(screen.getByRole('combobox', { name: 'Contact' })).toHaveFocus()
+  expect(screen.queryByRole('button', { name: 'Clear Contact' })).not.toBeInTheDocument()
+})
+
+test('compact selection keeps the selected contact immutable while disabled', async () => {
+  const onChange = vi.fn()
+  const user = userEvent.setup()
+  render(<ContactLookup label="Contact" compactSelection value={sara} onChange={onChange} disabled loadOptions={async () => []} />)
+  const clear = screen.getByRole('button', { name: 'Clear Contact' })
+  expect(clear).toBeDisabled()
+  await user.click(clear)
+  expect(onChange).not.toHaveBeenCalled()
+  expect(screen.queryByRole('combobox', { name: 'Contact' })).not.toBeInTheDocument()
+})
+
 test('renders every multi-select as a checkbox dropdown with an in-field selection count', async () => {
   const user = userEvent.setup()
   render(<StatefulMultiContactLookup />)

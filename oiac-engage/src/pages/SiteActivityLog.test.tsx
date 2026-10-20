@@ -1,0 +1,104 @@
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { beforeEach, expect, test, vi } from 'vitest'
+import SiteActivityLog from './SiteActivityLog'
+import { listSiteActivity, getSiteActivity } from '../features/siteActivityLog/siteActivityLogService'
+vi.mock('../features/siteActivityLog/siteActivityLogService', async original => ({ ...await original<typeof import('../features/siteActivityLog/siteActivityLogService')>(), listSiteActivity: vi.fn(), getSiteActivity: vi.fn() }))
+const list = vi.mocked(listSiteActivity)
+const detail = vi.mocked(getSiteActivity)
+const id = '11111111-1111-4111-8111-111111111111'
+const entry = { id, actorName: 'Alice', module: 866530000, action: 866530000, recordType: 'mss_meetingreport', recordId: id, recordTitle: 'Report', occurredOn: '2026-10-19T10:00:00Z', summary: 'Created report' }
+beforeEach(() => { vi.resetAllMocks(); list.mockResolvedValue({ entries: [entry], nextPage: null, totalCount: null, canViewAll: false }) })
+test('defaults to own history and only shows All when both role and server allow', async () => {
+ render(<SiteActivityLog isAdmin />)
+ expect(await screen.findByText('Created report')).toBeInTheDocument()
+ expect(list).toHaveBeenCalledWith({ scope: 'mine', page: 1, module: null, action: null, from: null, to: null })
+ expect(screen.queryByRole('option', { name: 'All users' })).not.toBeInTheDocument()
+})
+test('appends pages and keeps existing records and filters on failure for retry', async () => {
+ list.mockResolvedValueOnce({ entries: [entry], nextPage: 2, totalCount: null, canViewAll: true }).mockRejectedValueOnce(new Error('secret')).mockResolvedValueOnce({ entries: [entry, { ...entry, id: '22222222-2222-4222-8222-222222222222', summary: 'Second report' }], nextPage: null, totalCount: null, canViewAll: true })
+ const user = userEvent.setup(); render(<SiteActivityLog isAdmin />)
+ await user.click(await screen.findByRole('button', { name: 'Load more' }))
+ expect(await screen.findByRole('alert')).not.toHaveTextContent('secret')
+ expect(screen.getByText('Created report')).toBeInTheDocument()
+ await user.click(screen.getByRole('button', { name: 'Retry' }))
+ expect(await screen.findByText('Second report')).toBeInTheDocument()
+ expect(screen.getAllByText('Created report')).toHaveLength(1)
+})
+test('filters use Eastern inclusive start and exclusive next-day end', async () => {
+ const user = userEvent.setup(); render(<SiteActivityLog />)
+ await screen.findByText('Created report')
+ await user.type(screen.getByLabelText('From date (Eastern)'), '2026-10-18')
+ await user.type(screen.getByLabelText('To date (Eastern)'), '2026-10-19')
+ await user.click(screen.getByRole('button', { name: 'Apply filters' }))
+ await waitFor(() => expect(list).toHaveBeenLastCalledWith(expect.objectContaining({ from: '2026-10-18T04:00:00.000Z', to: '2026-10-20T04:00:00.000Z', page: 1 })))
+})
+test('expands escaped safe detail text without identifiers or links', async () => {
+ detail.mockResolvedValue({ ...entry, details: { operation: 'PostPublished', schemaVersion: 1, Status: '<script>hello</script>', recordId: id, url: 'https://secret.example', token: 'secret' } })
+ const user = userEvent.setup(); render(<SiteActivityLog />)
+ await user.click(await screen.findByRole('button', { name: 'View details for Report' }))
+ expect(await screen.findByText('Post published')).toBeInTheDocument()
+ expect(screen.queryByText('<script>hello</script>')).not.toBeInTheDocument()
+ expect(screen.queryByText(id)).not.toBeInTheDocument()
+ expect(screen.queryByText('secret')).not.toBeInTheDocument()
+ expect(screen.queryByRole('link')).not.toBeInTheDocument()
+})
+test('admin can request all only after server permission and filters restart pagination', async () => {
+ list.mockResolvedValue({ entries: [entry], nextPage: 2, totalCount: 2, canViewAll: true })
+ const user = userEvent.setup(); render(<SiteActivityLog isAdmin />)
+ await user.selectOptions(await screen.findByLabelText('History scope'), 'all')
+ await user.selectOptions(screen.getByLabelText('Module'), '866530005')
+ await user.click(screen.getByRole('button', { name: 'Apply filters' }))
+ await waitFor(() => expect(list).toHaveBeenLastCalledWith(expect.objectContaining({ scope: 'all', module: 866530005, page: 1 })))
+})
+test('non-admin cannot select all even when server response permits it', async () => {
+ list.mockResolvedValue({ entries: [], nextPage: null, totalCount: 0, canViewAll: true })
+ render(<SiteActivityLog />)
+ expect(await screen.findByText('No activity matches these filters.')).toBeInTheDocument()
+ expect(screen.queryByLabelText('History scope')).not.toBeInTheDocument()
+})
+test('labels displayed Eastern time and retains precise UTC time in details', async () => {
+ const occurredOn = '2026-10-19T10:00:00.1234567Z'
+ list.mockResolvedValue({ entries: [{ ...entry, occurredOn }], nextPage: null, totalCount: null, canViewAll: false })
+ detail.mockResolvedValue({ ...entry, occurredOn, details: {} })
+ const user = userEvent.setup(); render(<SiteActivityLog />)
+ expect(await screen.findByRole('columnheader', { name: 'Date & Time (Eastern)' })).toBeInTheDocument()
+ await user.click(await screen.findByRole('button', { name: 'View details for Report' }))
+ expect(await screen.findByText(occurredOn)).toBeInTheDocument()
+ expect(screen.getByText('Occurred on (UTC)')).toBeInTheDocument()
+})
+test('ignores detail response from a previously expanded row', async () => {
+ let finishFirst!: (value: Awaited<ReturnType<typeof getSiteActivity>>) => void
+ detail.mockImplementationOnce(() => new Promise(resolve => { finishFirst = resolve })).mockResolvedValueOnce({ ...entry, id: '22222222-2222-4222-8222-222222222222', details: { operation: 'PostPublished' } })
+ list.mockResolvedValue({ entries: [entry, { ...entry, id: '22222222-2222-4222-8222-222222222222', recordTitle: 'Second' }], nextPage: null, totalCount: null, canViewAll: false })
+ const user = userEvent.setup(); render(<SiteActivityLog />)
+ await user.click(await screen.findByRole('button', { name: 'View details for Report' }))
+ await user.click(screen.getByRole('button', { name: 'View details for Second' }))
+ expect(await screen.findByText('Post published')).toBeInTheDocument()
+ finishFirst({ ...entry, details: { operation: 'AppointmentAccepted' } })
+ await waitFor(() => expect(screen.queryByText('Appointment accepted')).not.toBeInTheDocument())
+ expect(screen.getByText('Post published')).toBeInTheDocument()
+})
+test('filter change discards pending details and late detail completion', async () => {
+ let finishDetail!: (value: Awaited<ReturnType<typeof getSiteActivity>>) => void
+ detail.mockImplementationOnce(() => new Promise(resolve => { finishDetail = resolve }))
+ list.mockResolvedValueOnce({ entries: [entry], nextPage: null, totalCount: null, canViewAll: false }).mockResolvedValueOnce({ entries: [{ ...entry, id: '22222222-2222-4222-8222-222222222222', recordTitle: 'Filtered report', summary: 'Filtered summary' }], nextPage: null, totalCount: null, canViewAll: false })
+ const user = userEvent.setup(); render(<SiteActivityLog />)
+ await user.click(await screen.findByRole('button', { name: 'View details for Report' }))
+ await user.selectOptions(screen.getByLabelText('Module'), '866530005')
+ await user.click(screen.getByRole('button', { name: 'Apply filters' }))
+ await screen.findByText('Filtered summary')
+ finishDetail({ ...entry, details: { operation: 'AppointmentAccepted' } })
+ await waitFor(() => expect(screen.queryByText('Appointment accepted')).not.toBeInTheDocument())
+ expect(screen.queryByRole('region', { name: 'Details for Report' })).not.toBeInTheDocument()
+})
+test('shows readable appointment and file details without schema version or raw status integers', async () => {
+ detail.mockResolvedValue({ ...entry, module: 866530003, details: { schemaVersion: 1, operation: 'AppointmentAccepted', status: 866530001, fileKind: 'attachment', fileSize: 2048, confirmed: true, arbitrary: 'Internal value' } })
+ const user = userEvent.setup(); render(<SiteActivityLog />)
+ await user.click(await screen.findByRole('button', { name: 'View details for Report' }))
+ expect(await screen.findByText('Accepted', { selector: 'dd' })).toBeInTheDocument()
+ expect(screen.getByText('Attachment')).toBeInTheDocument()
+ expect(screen.getByText('2 KB')).toBeInTheDocument()
+ expect(screen.getByText('Yes')).toBeInTheDocument()
+ for (const hidden of ['schemaVersion', '866530001', 'Internal value', 'fileKind', 'fileSize']) expect(screen.queryByText(hidden)).not.toBeInTheDocument()
+})

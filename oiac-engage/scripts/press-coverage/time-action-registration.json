@@ -1,0 +1,15 @@
+{
+  "environmentUrl": "https://org97063a46.crm.dynamics.com",
+  "solution": "CRMSolution",
+  "assemblyId": "29f3e5f2-aec9-f111-a05a-70a8a5b30c17",
+  "pluginId": "2cf3e5f2-aec9-f111-a05a-70a8a5b30c17",
+  "apiId": "2ff3e5f2-aec9-f111-a05a-70a8a5b30c17",
+  "assembly": "Oiac.Engage.CoverageTime, Version=1.0.0.0, Culture=neutral, PublicKeyToken=3f69cf73abceeac5",
+  "sha256": "c07ba0c087482fdbed26d86305a1d2de276363812f39a89aeb3b28ec49cc2ac2",
+  "customApi": "mss_CoverageLocalTime",
+  "executePrivilege": "prvReadmss_PressCoverage",
+  "sandbox": true,
+  "siteDeployed": true,
+  "nativeSdkCurrentAndHistoricalConversionVerified": true,
+  "hostedEndpointCreateAndFileRoundtripVerified": true
+}

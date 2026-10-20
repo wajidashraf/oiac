@@ -1,0 +1,315 @@
+{
+  "status": "deployed-and-verified-current-administrator",
+  "verifiedOn": "2026-10-18",
+  "url": "https://oiac-engage-test.powerappsportals.com/activity/channel",
+  "environmentId": "16838866-275a-e2e7-838f-57313f30a416",
+  "environmentUrl": "https://org97063a46.crm.dynamics.com",
+  "tenantId": "11189a88-b50a-4458-8fd8-3ae0e3019c23",
+  "websiteId": "e7f400bd-1e04-4efa-b8b3-7a7a3b168662",
+  "productionChanged": false,
+  "siteRestartPerformed": false,
+  "originalPacProfileRestored": true,
+  "temporaryDiagnosticRemoved": true,
+  "temporaryDiagnosticRuntimeStatus": 404,
+  "cacheRefresh": {
+    "supportedContentCacheActionSubmitted": true,
+    "navigationWaitTimedOut": true,
+    "newBuildSubsequentlyVerified": true,
+    "siteRestart": false
+  },
+  "build": {
+    "indexSha256": "eac95125a2db0a48c509116e2eb024d64d6831126083558fe381cf17c7e7e8c0",
+    "assets": [
+      {
+        "sha256": "96c9edd22573b39f11755464130a0eeb9fcb1c98743cc25717a8c8b139f2b732",
+        "file": "index-CODnnBtD.js"
+      },
+      {
+        "sha256": "a4d894ba4ee51bad35607626471b50763b318917e8618f3b8bd5b51882828b51",
+        "file": "index-CTsfLSCZ.css"
+      }
+    ],
+    "hostedAssetHashesMatch": true,
+    "bridgeSha256": "64281633faf545263117bfc1d785a0059fe5e755bb8a571b38c857cb5f458159"
+  },
+  "action": {
+    "name": "mss_ActivityChannelCommand",
+    "assembly": "Oiac.Engage.ActivityChannel, Version=1.0.0.0, Culture=neutral, PublicKeyToken=352fba5ff74fa2f0",
+    "assemblySha256": "7af4a7a30034525d47e221eaa664fa11c704887bd5002a8206547f0f2bb9ef0a",
+    "sandbox": true,
+    "executePrivilege": "prvReadmss_ActivityPost"
+  },
+  "schema": {
+    "commentMaxLength": 8000,
+    "postCommentDelete": "Cascade",
+    "selfParentDelete": "RemoveLink",
+    "otherCascadePropertiesPreserved": true,
+    "existingBusinessRecordsDeletedDuringConfiguration": false
+  },
+  "preservation": {
+    "baselineMetadataFiles": 294,
+    "stagedByteIdenticalFiles": 291,
+    "reviewedActivityNormalizations": 3,
+    "readback": {
+      "baselineFiles": 294,
+      "byteIdenticalExistingFiles": 275,
+      "reissuedAnnotationDescriptors": 12,
+      "regeneratedLandingDescriptor": 1,
+      "retiredGeneratedBundleFiles": 4,
+      "expectedGeneratedHtmlUpdates": 2,
+      "manifestRegenerated": true,
+      "unexpectedChanges": 0,
+      "actualBridgeFileMatches": true,
+      "temporaryDiagnosticAbsent": true
+    }
+  },
+  "reviews": {
+    "taskReviewsApproved": true,
+    "finalBroadReviewImportantFindings": 1,
+    "finalFixScopedReviewApproved": true,
+    "remainingBlockingFindings": 0
+  },
+  "local": {
+    "vitest": {
+      "passed": 949,
+      "files": 78,
+      "failed": 0
+    },
+    "coveringTests": 79,
+    "productionBuild": "passed",
+    "sdk": {
+      "activity": 26,
+      "appointments": 55,
+      "pressCoverage": 16,
+      "failed": 0
+    },
+    "validationBrowserScenarios": 2
+  },
+  "hosted": {
+    "nativeApiChecks": {
+      "passed": 30,
+      "failed": 0,
+      "checks": [
+        "feed succeeded",
+        "Actual current account is Administrator",
+        "Trusted server actor matches signed-in portal Contact",
+        "Independent count request returns actual post count",
+        "post succeeded",
+        "Server stamped current author and false pin",
+        "Post has persisted standard timestamp",
+        "Direct table reads and direct pin PATCH blocked even for current Administrator",
+        "post succeeded",
+        "Same request ID safely replays the same post",
+        "post succeeded",
+        "comment succeeded",
+        "Approved 8000-character comment persists without truncation",
+        "reply succeeded",
+        "reply succeeded",
+        "Root, reply and nested reply retain immediate parents",
+        "Every comment anchors original post and current author",
+        "Cross-post reply rejected",
+        "Caller-selected author and pin fields rejected",
+        "Concurrent moderation has one winner and one conflict",
+        "Pin stamps administrator and preserves creation time",
+        "Stale moderation version rejected",
+        "unpin succeeded",
+        "Unpin clears moderation metadata",
+        "comments succeeded",
+        "Reloaded discussion contains all three saved records",
+        "feed succeeded",
+        "Actual count increases by two posts and excludes three comments/replies",
+        "Own verification post removed through authorized action: 9b1e619e-7270-5e72-ade7-992035dc2344",
+        "Own verification post removed through authorized action: 5a875beb-ae7f-5b73-b64e-49d8305febfa"
+      ]
+    },
+    "uiChecks": {
+      "passed": 28,
+      "failed": 0,
+      "checks": [
+        "Hosted feed and native count loaded for current Administrator",
+        "Activity dropdown has exactly the approved three entries",
+        "Cancel and reopen retains the activity draft",
+        "Native server definitively rejects invalid control character",
+        "Definitive rejection retains the editable draft",
+        "UI post saved successfully",
+        "Corrected form uses a new request identity after definite no-write rejection",
+        "Form save uses the actual signed-in author",
+        "Safe HTTP link rendered from persisted content",
+        "Markup-like user content is rendered as plain text",
+        "UI comment saved successfully",
+        "UI reply saved successfully",
+        "UI reply saved successfully",
+        "Real UI replies retain each immediate parent",
+        "UI pin saved successfully",
+        "Pin moves saved card to the top",
+        "Post, nested conversation and pin survive full reload",
+        "No horizontal overflow at 1440px",
+        "Scoped axe checks pass at 1440px",
+        "No horizontal overflow at 820px",
+        "Scoped axe checks pass at 820px",
+        "No horizontal overflow at 390px",
+        "Scoped axe checks pass at 390px",
+        "UI unpin saved successfully",
+        "Deletion dialog explains native conversation removal",
+        "Cancel deletion preserves the activity",
+        "UI remove saved successfully",
+        "Confirmed UI deletion removes the card"
+      ]
+    },
+    "viewports": [
+      {
+        "width": 1440,
+        "overflow": false,
+        "axeViolations": []
+      },
+      {
+        "width": 820,
+        "overflow": false,
+        "axeViolations": []
+      },
+      {
+        "width": 390,
+        "overflow": false,
+        "axeViolations": []
+      }
+    ],
+    "routes": [
+      {
+        "requested": "/",
+        "status": 200,
+        "path": "/",
+        "heading": "Volunteer",
+        "alerts": []
+      },
+      {
+        "requested": "/my-reports",
+        "status": 200,
+        "path": "/my-reports",
+        "heading": "My Reports",
+        "alerts": []
+      },
+      {
+        "requested": "/my-calendar",
+        "status": 200,
+        "path": "/my-calendar",
+        "heading": "My Calendar",
+        "alerts": []
+      },
+      {
+        "requested": "/contact",
+        "status": 200,
+        "path": "/contact",
+        "heading": "Contacts",
+        "alerts": []
+      },
+      {
+        "requested": "/activity/events",
+        "status": 200,
+        "path": "/activity/events",
+        "heading": "Events",
+        "alerts": []
+      },
+      {
+        "requested": "/activity/appointments",
+        "status": 200,
+        "path": "/activity/appointments",
+        "heading": "Appointments",
+        "alerts": []
+      },
+      {
+        "requested": "/press-coverage",
+        "status": 200,
+        "path": "/press-coverage",
+        "heading": "Press Coverage",
+        "alerts": []
+      },
+      {
+        "requested": "/activity/activity-log",
+        "status": 200,
+        "path": "/activity/channel",
+        "heading": "Activity Channel",
+        "alerts": []
+      },
+      {
+        "requested": "/activity",
+        "status": 200,
+        "path": "/activity/events",
+        "heading": "Events",
+        "alerts": []
+      }
+    ],
+    "apiReads": [
+      {
+        "path": "/_api/mss_meetingreports",
+        "status": 200
+      },
+      {
+        "path": "/_api/mss_eventregistrations",
+        "status": 200
+      },
+      {
+        "path": "/_api/mss_meetinginviteses",
+        "status": 200
+      },
+      {
+        "path": "/_api/contacts(<record-id>)",
+        "status": 200
+      },
+      {
+        "path": "/_api/mss_meetinginviteparticipants",
+        "status": 200
+      },
+      {
+        "path": "/_api/mss_teamsannouncementses",
+        "status": 200
+      },
+      {
+        "path": "/_api/mss_eventses",
+        "status": 200
+      },
+      {
+        "path": "/_api/serverlogics/appointments",
+        "status": 200
+      },
+      {
+        "path": "/_api/contacts",
+        "status": 200
+      },
+      {
+        "path": "/_api/serverlogics/press-coverage",
+        "status": 200
+      },
+      {
+        "path": "/_api/serverlogics/activity-channel",
+        "status": 200
+      }
+    ],
+    "apiResponseCount": 23,
+    "javaScriptErrors": 0,
+    "anonymous": {
+      "publicEntryRedirectToMicrosoft": true,
+      "fixedActivityEndpointStatus": 302,
+      "requiresAuthentication": true,
+      "returnedActivityData": false
+    },
+    "cleanup": {
+      "postsRemoved": 5,
+      "commentsAndRepliesRemoved": 9,
+      "exactIdsReadBackAbsent": true,
+      "nativeCascadeVerified": true
+    }
+  },
+  "limitations": [
+    "Real ordinary User A/User B and pending-user hosted sessions unavailable; SDK/component coverage does not replace those checks.",
+    "Large-feed performance was not load-tested; bounded queries and pagination have SDK/component tests.",
+    "Existing approximately 510 kB main-bundle advisory remains."
+  ],
+  "operationalNotes": [
+    "The first native connector failure cleared before acceptance without source, permission, registration or restart changes; exact platform cause unconfirmed.",
+    "Two hosted UI harness attempts stopped on selectors matching still-clearing draft controls. Selectors were corrected; all attempt records were cleaned up and exact IDs checked.",
+    "The initial anonymous harness assumed a visible heading/body during sign-in redirection. Separate public-entry and fixed-portal-endpoint checks verified authentication redirection without returning Activity data.",
+    "Join Event wording remains covered by local regression tests. No hosted event registration or existing business-record writes were performed."
+  ],
+  "evidenceDirectory": ".superpowers/sdd/2026-10-17-activity-channel",
+  "handoff": "docs/activity-channel.md"
+}

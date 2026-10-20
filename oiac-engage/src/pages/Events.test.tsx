@@ -166,7 +166,7 @@ describe('Events', () => {
 
     const dialog = screen.getByRole('dialog', { name: 'Volunteer Orientation Webinar' })
     expect(within(dialog).getByText('Volunteer orientation details.')).toBeInTheDocument()
-    expect(within(dialog).getByRole('link', { name: 'Join meeting' })).toHaveAttribute(
+    expect(within(dialog).getByRole('link', { name: 'Join Event' })).toHaveAttribute(
       'href',
       volunteerEvents[0].meetingUrl,
     )
@@ -184,7 +184,7 @@ describe('Events', () => {
     const dialog = screen.getByRole('dialog', { name: 'Community Engagement Meeting' })
     expect(within(dialog).getByText('In Person')).toBeInTheDocument()
     expect(within(dialog).getByText('District Office Meeting Room')).toBeInTheDocument()
-    expect(within(dialog).queryByRole('link', { name: 'Join meeting' })).not.toBeInTheDocument()
+    expect(within(dialog).queryByRole('link', { name: 'Join Event' })).not.toBeInTheDocument()
   })
 
   test('registers through Add to Calendar and marks the event as part of My Calendar', async () => {

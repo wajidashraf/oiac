@@ -47,6 +47,7 @@ export default function AppShell({ children, user }: AppShellProps) {
             <a href="https://oiac.org">oiac.org</a>
             <Link to="/resources">Resources</Link>
             <Link to="/contact">Contact</Link>
+            <Link to="/activity/history">Activity Log</Link>
           </nav>
         </div>
       </footer>

@@ -1,0 +1,15 @@
+{
+  "environmentUrl": "https://org97063a46.crm.dynamics.com",
+  "solution": "CRMSolution",
+  "assemblyId": "720a1ff2-82c9-f111-a05a-70a8a5b30c17",
+  "pluginId": "750a1ff2-82c9-f111-a05a-70a8a5b30c17",
+  "apiId": "760a1ff2-82c9-f111-a05a-70a8a5b30c17",
+  "assembly": "Oiac.Engage.Appointments, Version=1.0.0.0, Culture=neutral, PublicKeyToken=bd34e5f510d213f0",
+  "sha256": "68776062e563a810185bd8f4357951d0482f9dd00871ad02b8a0da69b41befe2",
+  "customApi": "mss_AppointmentCommand",
+  "executePrivilege": "prvReadmss_Appointment",
+  "sandbox": true,
+  "siteDeployed": true,
+  "assemblyReadbackMatches": true,
+  "hostedPersonalAndAdministratorReadsVerified": true
+}

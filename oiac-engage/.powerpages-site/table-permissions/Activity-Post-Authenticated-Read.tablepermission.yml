@@ -1,0 +1,12 @@
+adx_entitypermission_webrole:
+- 0353acdd-7b95-4c07-8997-ae95dafd978d
+append: false
+appendto: false
+create: false
+delete: false
+entitylogicalname: mss_activitypost
+entityname: Activity Channel mss_activitypost Authenticated Read
+id: 2938837c-1c2e-4be7-bd3a-7487bb9273ab
+read: true
+scope: 756150000
+write: false

@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { FiMapPin, FiUser, FiX } from 'react-icons/fi'
 import { searchContacts, searchDistricts } from './meetingReportService'
 import type { ContactLookupKind, ContactOption, DistrictOption } from './meetingReportTypes'
@@ -13,6 +13,7 @@ type ContactLookupProps = {
   readonly disabled?: boolean
   readonly loadOptions?: (search: string, signal?: AbortSignal) => Promise<readonly ContactOption[]>
   readonly debounceMs?: number
+  readonly compactSelection?: boolean
 }
 
 export function ContactLookup({
@@ -24,25 +25,37 @@ export function ContactLookup({
   disabled = false,
   loadOptions = (search, signal) => searchContacts(kind, search, signal),
   debounceMs = 350,
+  compactSelection = false,
 }: ContactLookupProps) {
   const id = useId()
   const [open, setOpen] = useState(false)
   const lookup = useMeetingReportLookup(loadOptions, debounceMs)
+  const input = useRef<HTMLInputElement>(null)
+  const clear = useRef<HTMLButtonElement>(null)
+  const previousSelection = useRef(value?.id)
+  const selectedCompact = compactSelection && value !== null
+  useEffect(() => {
+    if (!compactSelection || previousSelection.current === value?.id) return
+    previousSelection.current = value?.id
+    if (value) clear.current?.focus()
+    else input.current?.focus()
+  }, [compactSelection, value?.id, value])
 
   return (
-    <div className="field meeting-report-lookup">
-      <label htmlFor={id}>
+    <div className={`field meeting-report-lookup${compactSelection ? ' meeting-report-lookup--compact' : ''}`}>
+      <label id={`${id}-label`} htmlFor={selectedCompact ? undefined : id}>
         <span>{label}{required ? <span className="required-mark" aria-hidden="true"> *</span> : null}</span>
       </label>
       <div className="meeting-report-lookup__control">
         {value ? (
-          <div className="meeting-report-lookup__selection" title={[value.name, value.email].filter(Boolean).join(' · ')}>
+          <div className="meeting-report-lookup__selection" role={selectedCompact ? 'group' : undefined} aria-labelledby={selectedCompact ? `${id}-label` : undefined} title={[value.name, value.email].filter(Boolean).join(' · ')}>
             <FiUser className="meeting-report-lookup__selection-icon" aria-hidden="true" />
             <strong>{value.name}</strong>
-            <button type="button" onClick={() => onChange(null)} disabled={disabled} aria-label={`Clear ${label}`}><FiX aria-hidden="true" /></button>
+            <button ref={clear} type="button" onClick={() => { onChange(null); if (compactSelection) setOpen(false) }} disabled={disabled} aria-label={`Clear ${label}`}><FiX aria-hidden="true" /></button>
           </div>
         ) : null}
-        <input
+        {!selectedCompact ? <input
+          ref={input}
           id={id}
           role="combobox"
           aria-autocomplete="list"
@@ -58,9 +71,9 @@ export function ContactLookup({
             setOpen(true)
           }}
           onFocus={() => setOpen(true)}
-        />
+        /> : null}
       </div>
-      {open ? (
+      {open && !selectedCompact ? (
         <LookupResults
           id={`${id}-options`}
           label={label}

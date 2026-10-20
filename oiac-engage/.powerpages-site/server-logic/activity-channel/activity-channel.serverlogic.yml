@@ -1,0 +1,6 @@
+adx_serverlogic_adx_webrole:
+  - 0353acdd-7b95-4c07-8997-ae95dafd978d
+description: Authenticated Activity Channel trusted command bridge.
+display_name: Activity Channel
+id: 67349720-c9a8-4431-9bab-372e8f0b3779
+name: activity-channel

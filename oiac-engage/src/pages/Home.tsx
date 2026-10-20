@@ -29,9 +29,9 @@ import {
 } from '../data/dashboardData'
 
 const dashboardShortcuts = [
-  { label: 'Activity', href: '/activity/activity-log', comingSoon: true },
+  { label: 'Activity', href: '/activity/channel', comingSoon: false },
   { label: 'Events', href: '/activity/events', comingSoon: false },
-  { label: 'Appointments', href: '/activity/appointments', comingSoon: true },
+  { label: 'Appointments', href: '/activity/appointments', comingSoon: false },
   { label: 'Resources', href: '/resources', comingSoon: false },
 ] as const
 

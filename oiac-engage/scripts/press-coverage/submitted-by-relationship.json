@@ -1,0 +1,22 @@
+{
+  "@odata.type": "#Microsoft.Dynamics.CRM.OneToManyRelationshipMetadata",
+  "SchemaName": "mss_presscoverage_SubmittedBy_contact",
+  "ReferencedEntity": "contact",
+  "ReferencedAttribute": "contactid",
+  "ReferencingEntity": "mss_presscoverage",
+  "Lookup": {
+    "@odata.type": "#Microsoft.Dynamics.CRM.LookupAttributeMetadata",
+    "SchemaName": "mss_SubmittedBy",
+    "DisplayName": { "LocalizedLabels": [{ "Label": "Submitted By", "LanguageCode": 1033 }] },
+    "Description": { "LocalizedLabels": [{ "Label": "Original portal Contact, set by trusted Press Coverage server logic. Not the journalist or Related Contact.", "LanguageCode": 1033 }] },
+    "RequiredLevel": { "Value": "None", "CanBeChanged": true }
+  },
+  "CascadeConfiguration": {
+    "Assign": "NoCascade",
+    "Delete": "RemoveLink",
+    "Merge": "NoCascade",
+    "Reparent": "NoCascade",
+    "Share": "NoCascade",
+    "Unshare": "NoCascade"
+  }
+}

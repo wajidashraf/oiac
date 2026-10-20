@@ -1,0 +1,18 @@
+{
+  "@odata.type": "#Microsoft.Dynamics.CRM.OneToManyRelationshipMetadata",
+  "SchemaName": "mss_appointment_Requester_contact",
+  "ReferencedEntity": "contact",
+  "ReferencedAttribute": "contactid",
+  "ReferencingEntity": "mss_appointment",
+  "Lookup": {
+    "@odata.type": "#Microsoft.Dynamics.CRM.LookupAttributeMetadata",
+    "SchemaName": "mss_Requester",
+    "DisplayName": { "LocalizedLabels": [{ "Label": "Requester", "LanguageCode": 1033 }] },
+    "Description": { "LocalizedLabels": [{ "Label": "Original portal requester, stamped by trusted Appointments server logic; separate from recipient Contact.", "LanguageCode": 1033 }] },
+    "RequiredLevel": { "Value": "None", "CanBeChanged": true }
+  },
+  "CascadeConfiguration": {
+    "Assign": "NoCascade", "Delete": "RemoveLink", "Merge": "NoCascade",
+    "Reparent": "NoCascade", "Share": "NoCascade", "Unshare": "NoCascade"
+  }
+}

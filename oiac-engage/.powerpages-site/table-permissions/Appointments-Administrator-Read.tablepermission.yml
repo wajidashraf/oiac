@@ -1,0 +1,12 @@
+adx_entitypermission_webrole:
+- 6ec72c3e-4f1b-420f-9565-d20047b12c1f
+append: false
+appendto: false
+create: false
+delete: false
+entitylogicalname: mss_appointment
+entityname: Appointments Administrator Read
+id: da1b7200-194b-4b2d-bd22-8a04c8f16401
+read: true
+scope: 756150000
+write: false

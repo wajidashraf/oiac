@@ -1,0 +1,22 @@
+﻿{
+    "status":  "applied-and-read-back-in-test-uat",
+    "environmentId":  "16838866-275a-e2e7-838f-57313f30a416",
+    "environmentUrl":  "https://org97063a46.crm.dynamics.com",
+    "solution":  "CRMSolution",
+    "attribute":  {
+                      "entity":  "mss_activitycomment",
+                      "logicalName":  "mss_commenttext",
+                      "beforeMaxLength":  100,
+                      "afterMaxLength":  8000
+                  },
+    "relationship":  {
+                         "schemaName":  "mss_activitycomment_ActivityPost_mss_activitypost",
+                         "metadataId":  "5b11d577-b0c9-f111-a05a-70a8a5b30c17",
+                         "beforeDelete":  "RemoveLink",
+                         "afterDelete":  "Cascade",
+                         "preserveOtherCascadeSettings":  true
+                     },
+    "selfParentRelationshipChanged":  false,
+    "recordsDeleted":  false,
+    "actualExecutionManifest":  "docs/alm/activity-channel-schema-verification.json (sanitized full REST cascade comparison, including Archive)."
+}

@@ -1,0 +1,4 @@
+description: "Appointment reads and mutations use the authenticated, participant-checked server endpoint."
+id: 75ce3032-5fd3-4e75-9ad7-3c5b3b83858f
+name: Webapi/mss_appointment/enabled
+value: false

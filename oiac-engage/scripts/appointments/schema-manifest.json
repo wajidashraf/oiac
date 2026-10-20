@@ -1,0 +1,70 @@
+﻿{
+    "verifiedOn":  "2026-10-16",
+    "environmentId":  "16838866-275a-e2e7-838f-57313f30a416",
+    "environmentUrl":  "https://org97063a46.crm.dynamics.com",
+    "siteId":  "e7f400bd-1e04-4efa-b8b3-7a7a3b168662",
+    "solutionUniqueName":  "CRMSolution",
+    "solutionId":  "dc98bc78-79ea-f011-8406-000d3a3b8459",
+    "table":  "mss_appointment",
+    "entitySet":  "mss_appointments",
+    "tableMetadataId":  "1d929e62-00f1-f011-8406-00224809d7ba",
+    "primaryId":  "mss_appointmentid",
+    "primaryName":  "mss_appointmenttitle",
+    "optimisticConcurrency":  true,
+    "recipient":  {
+                      "logicalName":  "mss_contact",
+                      "navigationProperty":  "mss_Contact",
+                      "relationship":  "mss_appointment_Contact_contact"
+                  },
+    "approvedAdditionsAppliedToUat":  {
+                                          "requester":  {
+                                                            "logicalName":  "mss_requester",
+                                                            "schemaName":  "mss_Requester",
+                                                            "navigationProperty":  "mss_Requester",
+                                                            "attributeMetadataId":  "f85450f1-661d-499f-ba1a-bcdcf7010099",
+                                                            "relationship":  "mss_appointment_Requester_contact",
+                                                            "relationshipMetadataId":  "62fa74a0-65c9-f111-aaaf-000d3a34ea0c",
+                                                            "target":  "contact",
+                                                            "requiredLevel":  "None",
+                                                            "deleteCascade":  "RemoveLink"
+                                                        },
+                                          "meetingLink":  {
+                                                              "logicalName":  "mss_meetinglink",
+                                                              "schemaName":  "mss_MeetingLink",
+                                                              "attributeMetadataId":  "a2888c54-7716-4801-8557-7fafdccd7385",
+                                                              "previousMaxLength":  100,
+                                                              "maxLength":  2000
+                                                          }
+                                      },
+    "verifiedExistingLimits":  {
+                                   "mss_appointmenttitle":  850,
+                                   "mss_purposeagenda":  100,
+                                   "mss_reschedulingreason":  100
+                               },
+    "status":  {
+                   "Pending":  866530000,
+                   "Accepted":  866530001,
+                   "Rejected":  866530002,
+                   "Rescheduled":  866530003,
+                   "Cancelled":  866530004
+               },
+    "meetingFormat":  {
+                          "Microsoft Teams":  1,
+                          "Phone Call":  2,
+                          "In Person":  3
+                      },
+    "dateTime":  {
+                     "fields":  [
+                                    "mss_preferreddate",
+                                    "mss_suggesteddate"
+                                ],
+                     "behavior":  "UserLocal",
+                     "format":  "DateAndTime",
+                     "browserTimeZone":  "America/New_York",
+                     "serverTimeZone":  "Eastern Standard Time"
+                 },
+    "schemaPublished":  true,
+    "addedToSolution":  true,
+    "portalCodeAndPermissionsDeployed":  true,
+    "hostedParticipantSecurityVerified":  false
+}

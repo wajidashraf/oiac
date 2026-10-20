@@ -15,7 +15,7 @@ describe('portal role entry points', () => {
     expect(new Set(portalRoles.map((role) => role.id)).size).toBe(portalRoles.length)
     expect(portalRoles.map(({ id, destination }) => [id, destination])).toEqual([
       ['member', '/my-reports'],
-      ['volunteer', '/activity/activity-log'],
+      ['volunteer', '/activity/channel'],
       ['staff', '/activity/appointments'],
       ['applicant', '/contact'],
     ])

@@ -1,0 +1,178 @@
+{
+  "checkedAtUtc": "2026-10-16T22:36:34.633Z",
+  "environmentId": "16838866-275a-e2e7-838f-57313f30a416",
+  "environmentUrl": "https://org97063a46.crm.dynamics.com",
+  "websiteRecordId": "e7f400bd-1e04-4efa-b8b3-7a7a3b168662",
+  "runtimeWebsiteId": "5fb3972a-5518-4b27-a8e2-21abd2963fdc",
+  "websiteUrl": "https://oiac-engage-test.powerappsportals.com",
+  "productionChanged": false,
+  "upload": {
+    "userApproved": true,
+    "result": "succeeded",
+    "durationSeconds": 181.35,
+    "backupDirectory": ".superpowers/module-corrections/deployment-backup-20261017/oiac-engage",
+    "stagingDirectory": ".superpowers/module-corrections/deployment-stage-20261017",
+    "readbackDirectory": ".superpowers/module-corrections/deployment-readback-20261017/oiac-engage",
+    "compiledScript": "/assets/index-BFsJxF4r.js",
+    "compiledStylesheet": "/assets/index-DKRVsayL.css",
+    "assets": [
+      {
+        "file": "index-BFsJxF4r.js",
+        "sha256": "61fb089fb58a748dfa963a4b418b0afb00904532c5b8190bff3bd29a0cfaf60f"
+      },
+      {
+        "file": "index-DKRVsayL.css",
+        "sha256": "7e931badcfef80d0f74ef2421e935ec2cd7fbbca3bf89172ca18e0502dbdd88e"
+      }
+    ]
+  },
+  "storedConfigurationChecks": {
+    "serverLogicByteIdenticalToReviewedSource": true,
+    "serverLogicAuthenticatedRoleMatches": true,
+    "coverageTablePermissionCount": 3,
+    "existingFunctionalSettingsAndTablePermissionsUnchanged": true,
+    "serverLogicEnabled": true,
+    "directCoverageWebApiEnabled": false,
+    "all91ExistingSiteSettingsUnchanged": true,
+    "all20ExistingTablePermissionsUnchanged": true,
+    "all6ExistingWebRolesUnchanged": true,
+    "bothServerLogicSourcesMatchReadback": true
+  },
+  "runtimeChecks": {
+    "siteActivated": true,
+    "siteVisibility": "private",
+    "packageVersion": "9.8.8.15",
+    "restartPerformed": false,
+    "runtimeHtmlReferencesNewBuild": true,
+    "authenticatedPersistence": "passed: Appointment, Press and Featured forms save and survive refresh; logo upload/download bytes match",
+    "dataReadback": {
+      "coverageReadOk": true,
+      "creatorStamped": true,
+      "relatedContactSaved": true,
+      "businessDateCorrect": true,
+      "appointmentReadOk": true,
+      "requesterStamped": true,
+      "easternInstantCorrect": true,
+      "pendingStatusCorrect": true
+    },
+    "existingModuleReadRegression": "Seven pages passed; 21 API reads passed; zero console errors",
+    "authenticatedDirectTableApis": "404 for appointments and press coverage, as intended",
+    "anonymousApis": "Previously redirected to Microsoft sign-in without returning records",
+    "testSessionRoles": [
+      "Administrators",
+      "Volunteer",
+      "Authenticated Users"
+    ],
+    "remainingAcceptance": [
+      "Authenticated hosted checks used the Administrator and Volunteer testing session; separate ordinary participant A/B/C isolation and a real concurrent response race remain unverified.",
+      "Maximum-size uploads, file replacement and interrupted-upload acceptance remain pending."
+    ]
+  },
+  "localVerification": {
+    "frontendTests": 857,
+    "testFiles": 73,
+    "productionBuild": "passed",
+    "appointmentSdkTests": 52,
+    "coverageTimeSdkTests": 16,
+    "moduleCorrectionsScopedAxeChecks": 15,
+    "earlierAppointmentsScopedAxeChecks": 12,
+    "earlierCoverageScopedAxeChecks": 9,
+    "collapsedDesktopAndTabletCardHeightPx": 110,
+    "mobileActionsRemainUsable": true,
+    "hostedAppointmentCreateRefresh": "passed",
+    "hostedPressCreateWithRelatedContactRefresh": "passed",
+    "hostedFeaturedCreateLogoUploadDownloadRefresh": "passed; downloaded PNG bytes match uploaded bytes",
+    "hostedDataReadback": {
+      "coverageReadOk": true,
+      "creatorStamped": true,
+      "relatedContactSaved": true,
+      "businessDateCorrect": true,
+      "appointmentReadOk": true,
+      "requesterStamped": true,
+      "easternInstantCorrect": true,
+      "pendingStatusCorrect": true
+    },
+    "hostedPressLookupAlignment": {
+      "yesNoHeight": 44,
+      "contactHeight": 44,
+      "sameTop": true,
+      "singleSelectedControl": true,
+      "date": "2026-10-17"
+    },
+    "existingPageCrawl": [
+      {
+        "path": "/",
+        "status": 200,
+        "heading": "Volunteer",
+        "alerts": [],
+        "hasPortalContact": true,
+        "testDataVisible": false
+      },
+      {
+        "path": "/activity/events",
+        "status": 200,
+        "heading": "Events",
+        "alerts": [],
+        "hasPortalContact": true,
+        "testDataVisible": false
+      },
+      {
+        "path": "/my-calendar",
+        "status": 200,
+        "heading": "My Calendar",
+        "alerts": [],
+        "hasPortalContact": true,
+        "testDataVisible": false
+      },
+      {
+        "path": "/contact",
+        "status": 200,
+        "heading": "Contacts",
+        "alerts": [],
+        "hasPortalContact": true,
+        "testDataVisible": false
+      },
+      {
+        "path": "/report",
+        "status": 200,
+        "heading": "Meeting Reports",
+        "alerts": [],
+        "hasPortalContact": true,
+        "testDataVisible": false
+      },
+      {
+        "path": "/activity/appointments",
+        "status": 200,
+        "heading": "Appointments",
+        "alerts": [],
+        "hasPortalContact": true,
+        "testDataVisible": false
+      },
+      {
+        "path": "/press-coverage",
+        "status": 200,
+        "heading": "Press Coverage",
+        "alerts": [],
+        "hasPortalContact": true,
+        "testDataVisible": false
+      }
+    ],
+    "allObservedApiCallsSucceeded": true,
+    "observedApiRequestCount": 21,
+    "consoleErrors": 0,
+    "currentBuildObservedInRuntime": true
+  },
+  "releaseStatus": "UAT deployed; real form saves/readback and UI verified; separate-user/race and maximum-size upload acceptance pending",
+  "previousUpload": {
+    "userApproved": true,
+    "command": "pac pages upload-code-site",
+    "result": "succeeded",
+    "durationSeconds": 138.9,
+    "backupDirectory": ".superpowers/press-coverage/deployment-backup-20261016/oiac-engage",
+    "stagingDirectory": ".superpowers/press-coverage/deployment-stage-20261016",
+    "compiledScript": "/assets/index-Ch1Opjl5.js",
+    "compiledStylesheet": "/assets/index-CHov1W0U.css",
+    "cleanupWarning": "PAC reported a concurrent delete for stale component 7cc65c3d-a7b7-4bf5-8d6a-c6140d863667. Subsequent Dataverse read returned 404, confirming the stale record was removed."
+  },
+  "currentVerification": "module-corrections-uat-verification.json"
+}
