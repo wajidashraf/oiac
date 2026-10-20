@@ -1,9 +1,17 @@
 .page--site-activity-log .history-filters { display: flex; flex-wrap: wrap; align-items: end; gap: 1rem; margin-bottom: 1.5rem; }
+.page--site-activity-log .history-filters[hidden] { display: none; }
 .page--site-activity-log .history-filters label { display: grid; gap: .35rem; font-weight: 600; }
 .page--site-activity-log .history-filters input, .page--site-activity-log .history-filters select { min-height: 2.75rem; padding: .5rem; border: 1px solid var(--color-border); border-radius: .35rem; background: var(--color-surface); color: var(--color-text); font: inherit; }
-.page--site-activity-log .history-table-scroll { overflow-x: auto; margin-block: 1rem; }
-.page--site-activity-log .history-table { width: 100%; border-collapse: collapse; text-align: left; }
-.page--site-activity-log .history-table th, .page--site-activity-log .history-table td { padding: .85rem; border-bottom: 1px solid var(--color-border); vertical-align: top; overflow-wrap: anywhere; }
-.page--site-activity-log .history-table th { color: var(--color-text-muted); }
-.page--site-activity-log .history-table td:first-child { min-width: 10rem; }
+.page--site-activity-log .history-table-scroll { margin-block: 0 1rem; }
+.page--site-activity-log .history-table { min-width: 64rem; table-layout: auto; }
+.page--site-activity-log .history-table th, .page--site-activity-log .history-table td { padding: .85rem .9rem; }
+.page--site-activity-log .history-table thead th:first-child { width: 38%; min-width: 16rem; }
+.page--site-activity-log .history-table thead th:nth-child(2) { min-width: 8.5rem; }
+.page--site-activity-log .history-table thead th:nth-child(3) { min-width: 6.5rem; }
+.page--site-activity-log .history-table thead th:nth-child(4) { min-width: 8rem; }
+.page--site-activity-log .history-table thead th:nth-child(5) { min-width: 12rem; }
+.page--site-activity-log .history-table thead th:last-child { min-width: 5rem; }
+.page--site-activity-log .history-table tbody th { overflow-wrap: anywhere; }
+.page--site-activity-log .history-table tbody td:nth-child(3), .page--site-activity-log .history-detail-action { white-space: nowrap; }
+.page--site-activity-log .history-table section { overflow-wrap: anywhere; }
 .page--site-activity-log dd { margin: .25rem 0 1rem; white-space: pre-wrap; }
