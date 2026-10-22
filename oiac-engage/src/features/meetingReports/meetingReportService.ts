@@ -71,6 +71,7 @@ type DistrictApiRecord = {
 
 type ReportApiRecord = {
   readonly mss_meetingreportid?: unknown
+  readonly _mss_reportedby_value?: unknown
   readonly mss_subject?: unknown
   readonly mss_startdateandtime?: unknown
   readonly mss_enddateandtime?: unknown
@@ -404,6 +405,7 @@ function buildMeetingReportsQuery(limit?: number): string {
   const params = new URLSearchParams()
   params.set('$select', [
     'mss_meetingreportid',
+    '_mss_reportedby_value',
     'mss_subject',
     'mss_startdateandtime',
     'mss_dateofmeeting',
@@ -421,7 +423,16 @@ function buildMeetingReportsQuery(limit?: number): string {
   return `?${params.toString()}`
 }
 
-export async function getMeetingReportCount(signal?: AbortSignal): Promise<number> {
+function withReportedByFilter(path: string, contactId?: string): string {
+  if (contactId === undefined) return path
+  const id = requiredGuid(contactId, 'Reported By Contact')
+  const [pathname, search = ''] = path.split('?')
+  const params = new URLSearchParams(search)
+  params.set('$filter', `_mss_reportedby_value eq ${id}`)
+  return `${pathname}?${params.toString()}`
+}
+
+export async function getMeetingReportCount(signal?: AbortSignal, reportedByContactId?: string): Promise<number> {
   const params = new URLSearchParams()
   params.set('$select', 'mss_meetingreportid')
   params.set('$count', 'true')
@@ -430,7 +441,7 @@ export async function getMeetingReportCount(signal?: AbortSignal): Promise<numbe
   const response = await powerPagesFetch<{
     readonly value?: readonly ReportApiRecord[]
     readonly '@odata.count'?: unknown
-  }>(`/_api/mss_meetingreports?${params.toString()}`, { signal })
+  }>(withReportedByFilter(`/_api/mss_meetingreports?${params.toString()}`, reportedByContactId), { signal })
   const count = response['@odata.count']
   if (typeof count !== 'number' || !Number.isInteger(count) || count < 0) {
     throw new Error('Dataverse returned an invalid Meeting Report count.')
@@ -450,7 +461,7 @@ export async function getMeetingReports(
     readonly value?: readonly ReportApiRecord[]
     readonly '@odata.nextLink'?: string
   }>(
-    requestPath,
+    withReportedByFilter(requestPath, query.reportedByContactId),
     {
       signal,
       headers: {
@@ -464,6 +475,7 @@ export async function getMeetingReports(
     const sentiment = asSentiment(record.mss_overallsentiment)
     return {
       id: requiredGuid(record.mss_meetingreportid, 'Meeting Report'),
+      reportedByContactId: normalizeGuid(record._mss_reportedby_value),
       subject: text(record.mss_subject) || 'Untitled meeting report',
       representativeName: text(record['_mss_representative_value@OData.Community.Display.V1.FormattedValue']) || 'Not available',
       districtName: text(record['_mss_district_value@OData.Community.Display.V1.FormattedValue']) || 'Not available',

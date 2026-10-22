@@ -112,13 +112,13 @@ const existingReport: MeetingReportDetails = {
   sentiment: 2,
 }
 
-function renderReportRoute(route: string) {
+function renderReportRoute(route: string, currentUser: PortalUser = user) {
   return render(
     <MemoryRouter initialEntries={[route]}>
       <Routes>
-        <Route path="/report" element={<Report />} />
-        <Route path="/report/new" element={<MeetingReportForm user={user} />} />
-        <Route path="/report/:reportId/edit" element={<MeetingReportForm user={user} />} />
+        <Route path="/report" element={<Report contactId={currentUser.contactId} isAdmin={currentUser.userRoles.includes('Administrators')} />} />
+        <Route path="/report/new" element={<MeetingReportForm user={currentUser} />} />
+        <Route path="/report/:reportId/edit" element={<MeetingReportForm user={currentUser} />} />
       </Routes>
     </MemoryRouter>,
   )
@@ -136,6 +136,7 @@ beforeEach(() => {
       districtName: district.name,
       date: '2026-08-18T12:30:00Z',
       sentimentLabel: 'Supportive',
+      reportedByContactId: user.contactId,
     }],
     hasNext: false,
     nextLink: null,
@@ -175,6 +176,45 @@ test('lists Dataverse meeting reports with real record-specific edit actions', a
   expect(within(table).getByRole('link', { name: `Edit ${existingReport.subject}` }))
     .toHaveAttribute('href', `/report/${reportId}/edit`)
   expect(table.querySelector('time')).toHaveTextContent(/\d{1,2}:\d{2} (AM|PM)/)
+})
+
+test('shows reports returned by server permissions while offering Edit only on the signed-in Contact own reports', async () => {
+  const common = { representativeName: representative.name, districtName: district.name, date: '2026-08-18T12:30:00Z', sentimentLabel: 'Supportive' }
+  vi.mocked(getMeetingReports).mockResolvedValue({
+    reports: [
+      { ...common, id: reportId, subject: 'My report', reportedByContactId: user.contactId },
+      { ...common, id: staff.id, subject: 'Another user report', reportedByContactId: staff.id },
+      { ...common, id: volunteer.id, subject: 'Legacy report', reportedByContactId: null },
+    ], hasNext: false, nextLink: null,
+  })
+  renderReportRoute('/report')
+  expect(await screen.findByText('Another user report')).toBeInTheDocument()
+  expect(screen.getByText('Legacy report')).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Edit My report' })).toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: 'Edit Another user report' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: 'Edit Legacy report' })).not.toBeInTheDocument()
+})
+
+test('Administrators can edit another user report through the existing form and update workflow', async () => {
+  const admin = { ...user, contactId: staff.id, userRoles: ['Authenticated Users', 'Administrators'] }
+  renderReportRoute('/report', admin)
+  const actor = userEvent.setup()
+  await actor.click(await screen.findByRole('link', { name: `Edit ${existingReport.subject}` }))
+  await screen.findByDisplayValue('Sara Rahimi')
+  await actor.click(screen.getByRole('button', { name: 'Next: Meeting Details' }))
+  await actor.clear(screen.getByLabelText('Subject'))
+  await actor.type(screen.getByLabelText('Subject'), 'Administrator correction')
+  await actor.click(screen.getByRole('button', { name: 'Next: Report Content' }))
+  await actor.click(screen.getByRole('button', { name: 'Update Report' }))
+  await waitFor(() => expect(updateMeetingReport).toHaveBeenCalledWith(reportId, expect.objectContaining({ subject: 'Administrator correction' })))
+  expect(createMeetingReport).not.toHaveBeenCalled()
+  expect(await screen.findByText('Report updated.')).toBeInTheDocument()
+})
+
+test('Administrators can edit legacy reports without a Reported By contact', async () => {
+  vi.mocked(getMeetingReports).mockResolvedValue({ reports: [{ id: reportId, subject: 'Legacy report', representativeName: representative.name, districtName: district.name, date: '2026-08-18T12:30:00Z', sentimentLabel: 'Supportive', reportedByContactId: null }], hasNext: false, nextLink: null })
+  renderReportRoute('/report', { ...user, userRoles: ['Administrators'] })
+  expect(await screen.findByRole('link', { name: 'Edit Legacy report' })).toHaveAttribute('href', `/report/${reportId}/edit`)
 })
 
 test('paginates Meeting Reports with fifteen-record server pages', async () => {

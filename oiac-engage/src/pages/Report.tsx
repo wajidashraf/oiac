@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { getMeetingReports } from '../features/meetingReports/meetingReportService'
 import type { MeetingReportSummary } from '../features/meetingReports/meetingReportTypes'
 
-export default function Report() {
+export default function Report({ contactId, isAdmin = false }: { readonly contactId?: string; readonly isAdmin?: boolean }) {
   const location = useLocation()
   const saved = Boolean((location.state as { reportSaved?: boolean } | null)?.reportSaved)
   const updated = Boolean((location.state as { reportUpdated?: boolean } | null)?.reportUpdated)
@@ -93,7 +93,9 @@ export default function Report() {
                     <td><time dateTime={report.date}>{formatReportDate(report.date)}</time></td>
                     <td>{report.sentimentLabel}</td>
                     <td>{report.districtName}</td>
-                    <td><Link aria-label={`Edit ${report.subject}`} to={`/report/${report.id}/edit`}>Edit</Link></td>
+                    <td>{isAdmin || (contactId && report.reportedByContactId?.toLowerCase() === contactId.toLowerCase())
+                      ? <Link aria-label={`Edit ${report.subject}`} to={`/report/${report.id}/edit`}>Edit</Link>
+                      : null}</td>
                   </tr>
                 ))}
               </tbody>

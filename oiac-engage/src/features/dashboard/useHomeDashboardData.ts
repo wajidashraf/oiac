@@ -82,23 +82,28 @@ export function useHomeDashboardData(contactId?: string): HomeDashboardData {
     setReportsStatus('loading')
     setReports([])
     setReportCount(null)
-    void getMeetingReports({ limit: 5 }, signal).then((page) => {
-      if (signal.aborted) return
-      const latestReports = page.reports.slice(0, 5)
-      setReports(latestReports)
-      setReportsStatus('ready')
-    }).catch(() => {
-      if (signal.aborted) return
-      setReports([])
+    if (!contactId) {
       setReportsStatus('error')
-    })
-    void getMeetingReportCount(signal).then((count) => {
-      if (signal.aborted) return
-      setReportCount(count)
-    }).catch(() => {
-      if (signal.aborted) return
-      setReportCount(null)
-    })
+    } else {
+      // Keep Home personal when Administrators can read all reports on /report.
+      void getMeetingReports({ limit: 5, reportedByContactId: contactId }, signal).then((page) => {
+        if (signal.aborted) return
+        const latestReports = page.reports.slice(0, 5)
+        setReports(latestReports)
+        setReportsStatus('ready')
+      }).catch(() => {
+        if (signal.aborted) return
+        setReports([])
+        setReportsStatus('error')
+      })
+      void getMeetingReportCount(signal, contactId).then((count) => {
+        if (signal.aborted) return
+        setReportCount(count)
+      }).catch(() => {
+        if (signal.aborted) return
+        setReportCount(null)
+      })
+    }
 
     setRegistrationsStatus('loading')
     setRegistrationsFailureKind(null)

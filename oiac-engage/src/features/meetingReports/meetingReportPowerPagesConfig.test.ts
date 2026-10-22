@@ -18,6 +18,34 @@ import ownedReportAttachments from '../../../.powerpages-site/table-permissions/
 
 const authenticatedUsersRoleId = '0353acdd-7b95-4c07-8997-ae95dafd978d'
 const anonymousUsersRoleId = '0a919c57-3065-4cd3-aaa8-aec59acbbe67'
+const administratorsRoleId = '6ec72c3e-4f1b-420f-9565-d20047b12c1f'
+const tablePermissions = import.meta.glob<string>('../../../.powerpages-site/table-permissions/*.tablepermission.yml', {
+  query: '?raw', import: 'default', eager: true,
+})
+
+test('grants all-report editing exclusively to Administrators without global create or delete access', () => {
+  const globalReportPermissions = Object.values(tablePermissions).filter(metadata =>
+    /^entitylogicalname: mss_meetingreport$/m.test(metadata) && /^scope: 756150000$/m.test(metadata))
+  expect(globalReportPermissions).toHaveLength(1)
+  const metadata = globalReportPermissions[0]
+  expect(metadata.match(/^- [0-9a-f-]+$/gm)).toEqual([`- ${administratorsRoleId}`])
+  for (const privilege of ['read', 'write', 'append', 'appendto']) expect(metadata).toContain(`${privilege}: true`)
+  for (const privilege of ['create', 'delete']) {
+    expect(metadata).toContain(`${privilege}: false`)
+  }
+})
+
+test('allows Administrators to load attachment metadata through their report editing permission without attachment writes', () => {
+  const metadata = Object.values(tablePermissions).find(value =>
+    /^entitylogicalname: mss_attachments$/m.test(value) && value.includes(`- ${administratorsRoleId}`))
+  expect(metadata).toBeDefined()
+  expect(metadata).toContain('scope: 756150003')
+  expect(metadata).toContain('parententitypermission: 7804f2be-a10c-479f-b08a-370894223394')
+  expect(metadata).toContain('parentrelationship: mss_attachments_MeetingReport_mss_meetingreport')
+  expect(metadata).toContain('read: true')
+  expect(metadata?.match(/^- [0-9a-f-]+$/gm)).toEqual([`- ${administratorsRoleId}`])
+  for (const privilege of ['create', 'write', 'delete', 'append', 'appendto']) expect(metadata).toContain(`${privilege}: false`)
+})
 
 function expectAuthenticatedOnly(metadata: string) {
   expect(metadata).toContain(`- ${authenticatedUsersRoleId}`)

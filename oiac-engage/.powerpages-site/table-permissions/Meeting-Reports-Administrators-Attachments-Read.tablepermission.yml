@@ -1,0 +1,14 @@
+adx_entitypermission_webrole:
+- 6ec72c3e-4f1b-420f-9565-d20047b12c1f
+append: false
+appendto: false
+create: false
+delete: false
+entitylogicalname: mss_attachments
+entityname: Meeting Reports Administrators Attachments Read
+id: a8b8a3d9-1fd0-4341-915f-aab9ee23874b
+parententitypermission: 7804f2be-a10c-479f-b08a-370894223394
+parentrelationship: mss_attachments_MeetingReport_mss_meetingreport
+read: true
+scope: 756150003
+write: false

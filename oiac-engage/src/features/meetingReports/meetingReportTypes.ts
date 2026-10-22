@@ -49,6 +49,7 @@ export type MeetingReportDetails = MeetingReportDraft & {
 
 export type MeetingReportSummary = {
   readonly id: string
+  readonly reportedByContactId?: string | null
   readonly subject: string
   readonly representativeName: string
   readonly districtName: string
@@ -65,6 +66,7 @@ export type MeetingReportPage = {
 export type MeetingReportQuery = {
   readonly limit?: number
   readonly nextLink?: string | null
+  readonly reportedByContactId?: string
 }
 
 export type RelationshipKind = 'staff' | 'volunteer'

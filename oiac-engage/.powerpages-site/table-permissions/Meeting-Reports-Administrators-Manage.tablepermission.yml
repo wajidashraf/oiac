@@ -1,0 +1,12 @@
+adx_entitypermission_webrole:
+- 6ec72c3e-4f1b-420f-9565-d20047b12c1f
+append: true
+appendto: true
+create: false
+delete: false
+entitylogicalname: mss_meetingreport
+entityname: Meeting Reports Administrators Manage
+id: 7804f2be-a10c-479f-b08a-370894223394
+read: true
+scope: 756150000
+write: true

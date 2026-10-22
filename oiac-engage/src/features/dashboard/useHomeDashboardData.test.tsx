@@ -184,8 +184,8 @@ test('loads live report KPIs and only unique Registered events for the signed-in
   expect(listMeetingReportPageAttachments).not.toHaveBeenCalled()
   expect(result.current.registeredEventCount).toBe(2)
   expect(result.current.upcomingEvents.map((item) => item.id)).toEqual([activeEventId, secondEventId])
-  expect(getMeetingReports).toHaveBeenCalledWith({ limit: 5 }, expect.any(AbortSignal))
-  expect(getMeetingReportCount).toHaveBeenCalledWith(expect.any(AbortSignal))
+  expect(getMeetingReports).toHaveBeenCalledWith({ limit: 5, reportedByContactId: contactId }, expect.any(AbortSignal))
+  expect(getMeetingReportCount).toHaveBeenCalledWith(expect.any(AbortSignal), contactId)
   expect(getEventRegistrations).toHaveBeenCalledWith(contactId, expect.any(AbortSignal))
   expect(getCalendarEvents).toHaveBeenCalledWith(
     [activeEventId, secondEventId],
@@ -273,6 +273,13 @@ test('loads Teams announcements independently of the signed-in Contact', async (
 
   expect(result.current.teamAnnouncements).toEqual([teamAnnouncement])
   expect(getActiveTeamAnnouncements).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) })
+})
+
+test('never issues unscoped personal Home report requests when the Contact is unavailable', () => {
+  const { result } = renderHook(() => useHomeDashboardData())
+  expect(getMeetingReports).not.toHaveBeenCalled()
+  expect(getMeetingReportCount).not.toHaveBeenCalled()
+  expect(result.current.reportsStatus).toBe('error')
 })
 
 test('keeps other dashboard data ready when Teams announcements fail', async () => {

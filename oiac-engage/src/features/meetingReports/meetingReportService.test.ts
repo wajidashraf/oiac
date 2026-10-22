@@ -240,6 +240,7 @@ describe('meeting report mutations', () => {
         mss_meetingreportid: reportId,
         mss_subject: 'Existing meeting',
         mss_startdateandtime: '2026-08-18T12:00:00Z',
+        _mss_reportedby_value: contactId,
         '_mss_representative_value@OData.Community.Display.V1.FormattedValue': 'Rep. Carter',
         _mss_district_value: districtId,
         '_mss_district_value@OData.Community.Display.V1.FormattedValue': 'DC',
@@ -256,6 +257,7 @@ describe('meeting report mutations', () => {
         districtName: 'DC',
         date: '2026-08-18T12:00:00Z',
         sentimentLabel: 'Supportive',
+        reportedByContactId: contactId,
       }],
       hasNext: true,
       nextLink,
@@ -326,6 +328,35 @@ describe('meeting report mutations', () => {
     await getMeetingReports({ nextLink })
 
     expect(fetchMock).toHaveBeenCalledWith(nextLink, expect.objectContaining({ signal: undefined }))
+  })
+
+  test('keeps personal report list and count scoped to the current Contact even with administrator read access', async () => {
+    fetchMock.mockResolvedValue({ value: [], '@odata.count': 0 })
+    await getMeetingReports({ limit: 5, reportedByContactId: contactId })
+    await getMeetingReportCount(undefined, contactId)
+    for (const [path] of fetchMock.mock.calls) {
+      expect(new URL(path, window.location.origin).searchParams.get('$filter')).toBe(`_mss_reportedby_value eq ${contactId}`)
+    }
+  })
+
+  test('retains the personal reporter filter on continuation pages without losing the server token', async () => {
+    fetchMock.mockResolvedValue({ value: [] })
+    await getMeetingReports({ nextLink: '/_api/mss_meetingreports?%24skiptoken=opaque%2Bpage2', reportedByContactId: contactId })
+    const url = new URL(fetchMock.mock.calls[0][0], window.location.origin)
+    expect(url.searchParams.get('$skiptoken')).toBe('opaque+page2')
+    expect(url.searchParams.get('$filter')).toBe(`_mss_reportedby_value eq ${contactId}`)
+  })
+
+  test('selects the existing reporter lookup for ownership-aware list actions', async () => {
+    fetchMock.mockResolvedValue({ value: [] })
+    await getMeetingReports()
+    expect(new URL(fetchMock.mock.calls[0][0], window.location.origin).searchParams.get('$select')).toContain('_mss_reportedby_value')
+  })
+
+  test('rejects malformed personal reporter filters before calling the API', async () => {
+    await expect(getMeetingReports({ reportedByContactId: 'invalid or true' })).rejects.toThrow()
+    await expect(getMeetingReportCount(undefined, 'invalid or true')).rejects.toThrow()
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   test('builds only the relationship changes required for an update', () => {

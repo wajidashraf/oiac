@@ -88,7 +88,7 @@ export default function App({ session: suppliedSession }: AppProps) {
                 path="/press-coverage"
                 element={<PressCoverage contactId={completedSession.user.contactId} isAdmin={hasRole(completedSession, 'Administrators')} />}
               />
-              <Route path="/report" element={<Report />} />
+              <Route path="/report" element={<Report contactId={completedSession.user.contactId} isAdmin={hasRole(completedSession, 'Administrators')} />} />
               <Route path="/report/new" element={<MeetingReportForm user={completedSession.user} />} />
               <Route path="/report/:reportId/edit" element={<MeetingReportForm user={completedSession.user} />} />
               <Route path="/resources" element={<Resources />} />
